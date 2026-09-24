@@ -49,3 +49,9 @@ export function buildMonthGrid(
 export function orderedWeekdays(weekStart: WeekStart): number[] {
   return Array.from({ length: 7 }, (_, i) => (weekStart + i) % 7);
 }
+
+/** 月历网格覆盖的日期范围（含上下月补位的日期），用于一次读出要显示的班次 */
+export function monthGridRange(month: YearMonth, weekStart: WeekStart): { from: LocalDate; to: LocalDate } {
+  const weeks = buildMonthGrid(month, weekStart);
+  return { from: weeks[0][0].date, to: weeks[5][6].date };
+}

@@ -13,6 +13,8 @@ interface DataContextValue {
   repos: Repositories;
   settings: Settings;
   updateSettings: (patch: Partial<Settings>) => Promise<void>;
+  /** 每次有数据写入就 +1，界面据此重新读取 */
+  dataVersion: number;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -34,6 +36,7 @@ export function DataProvider({
   fallback: (state: { error?: Error }) => ReactNode;
 }) {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const [dataVersion, setDataVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +44,10 @@ export function DataProvider({
       const driver = createDefaultDriver();
       await driver.init();
       const settings = await loadSettings(driver);
-      const repos = createRepositories(driver, { newId: () => Crypto.randomUUID() });
+      const repos = createRepositories(driver, {
+        newId: () => Crypto.randomUUID(),
+        onChange: () => setDataVersion((v) => v + 1),
+      });
       await i18n.changeLanguage(settings.language);
       if (!cancelled) setState({ status: 'ready', driver, repos, settings });
     })().catch((error: unknown) => {
@@ -69,7 +75,13 @@ export function DataProvider({
 
   return (
     <DataContext.Provider
-      value={{ driver: state.driver, repos: state.repos, settings: state.settings, updateSettings }}>
+      value={{
+        driver: state.driver,
+        repos: state.repos,
+        settings: state.settings,
+        updateSettings,
+        dataVersion,
+      }}>
       {children}
     </DataContext.Provider>
   );

@@ -4,7 +4,23 @@
   },
   "common": {
     "loading": "読み込み中…",
-    "loadFailed": "データの読み込みに失敗しました：{{message}}"
+    "loadFailed": "データの読み込みに失敗しました：{{message}}",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "add": "追加",
+    "close": "閉じる",
+    "saveFailed": "保存に失敗しました：{{message}}"
+  },
+  "currency": {
+    "CNY": "人民元",
+    "JPY": "日本円",
+    "USD": "米ドル"
+  },
+  "duration": {
+    "hm": "{{hours}}時間{{minutes}}分",
+    "h": "{{hours}}時間",
+    "m": "{{minutes}}分"
   },
   "calendar": {
     "monthTitle": "{{year}}年{{month}}月",
@@ -12,12 +28,91 @@
     "prevMonth": "前の月",
     "nextMonth": "次の月",
     "weekdaysShort": ["日", "月", "火", "水", "木", "金", "土"],
-    "dayLabel": "{{month}}月{{day}}日"
+    "dayLabel": "{{month}}月{{day}}日",
+    "more": "+{{count}}"
+  },
+  "home": {
+    "jobs": "バイト",
+    "batch": "まとめて登録"
+  },
+  "batch": {
+    "hint": "シフトを入れる日をタップして選択",
+    "selected": "{{count}}日を選択中",
+    "apply": "テンプレートを適用",
+    "chooseTemplate": "適用するテンプレートを選択",
+    "noTemplates": "シフトテンプレートがありません。先に「バイト」でテンプレートを追加してください。",
+    "done": "{{count}}件のシフトを追加しました"
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",
     "weekdays": ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"],
     "empty": "この日の予定はまだありません",
-    "invalidDate": "無効な日付です"
+    "invalidDate": "無効な日付です",
+    "shifts": "シフト",
+    "quickAdd": "ワンタップ追加",
+    "manualAdd": "シフトを手動で追加",
+    "noJobs": "バイトがまだありません。シフトを記録するには、まずバイトを追加してください。",
+    "goJobs": "バイトを追加",
+    "noTemplates": "バイトにシフトテンプレートを追加すると、ここからワンタップで追加できます。"
+  },
+  "jobs": {
+    "title": "バイト",
+    "empty": "バイトがまだありません。下のボタンから追加してください。",
+    "add": "バイトを追加",
+    "newTitle": "バイトを新規作成",
+    "editTitle": "バイトを編集",
+    "name": "名前",
+    "namePlaceholder": "例：コンビニ",
+    "color": "色",
+    "hourlyWage": "時給",
+    "wageNote": "時給を変更しても、影響するのはこれから追加するシフトだけです。登録済みのシフトは元の時給のままです。",
+    "currency": "通貨",
+    "cutoffDay": "給料の締め日",
+    "cutoffEndOfMonth": "月末",
+    "cutoffPlaceholder": "1–31",
+    "cutoffHint": "その月に存在しない日（例：2月31日）は月末として扱います。",
+    "cutoffValue": "毎月{{day}}日",
+    "defaultBreak": "標準の休憩（分）",
+    "perHour": "{{amount}} / 時間",
+    "templates": "シフトテンプレート",
+    "noTemplates": "テンプレートがまだありません。",
+    "addTemplate": "テンプレートを追加",
+    "saveFirst": "テンプレートを追加するには、先にバイトを保存してください。",
+    "deleteTitle": "このバイトを削除しますか？",
+    "deleteMessage": "シフトテンプレートも削除されます。登録済みのシフトは残ります。"
+  },
+  "templates": {
+    "newTitle": "シフトテンプレートを新規作成",
+    "editTitle": "シフトテンプレートを編集",
+    "name": "テンプレート名",
+    "namePlaceholder": "例：早番",
+    "deleteTitle": "このテンプレートを削除しますか？",
+    "deleteMessage": "このテンプレートで追加したシフトには影響しません。"
+  },
+  "shift": {
+    "newTitle": "シフトを追加",
+    "editTitle": "シフトを編集",
+    "job": "バイト",
+    "date": "日付",
+    "startTime": "開始時刻",
+    "endTime": "終了時刻",
+    "timePlaceholder": "09:00",
+    "breakMinutes": "休憩（分）",
+    "note": "メモ",
+    "notePlaceholder": "任意",
+    "overnight": "日またぎ：翌日 {{time}} 終了",
+    "summary": "実働 {{duration}} · 給料 {{amount}}",
+    "wageSnapshot": "記録時の時給：{{amount}}",
+    "deleteTitle": "このシフトを削除しますか？"
+  },
+  "errors": {
+    "nameRequired": "名前を入力してください",
+    "wageInvalid": "正しい金額を入力してください",
+    "cutoffInvalid": "締め日は 1–31 の数字で入力してください",
+    "breakInvalid": "休憩時間は 0 以上の整数で入力してください",
+    "timeInvalid": "正しい時刻を入力してください（例：09:00）",
+    "breakTooLong": "休憩時間がシフトの長さ以上になっています",
+    "jobRequired": "バイトを選択してください",
+    "notFound": "データが見つかりません。削除された可能性があります"
   }
 }

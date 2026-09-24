@@ -4,7 +4,23 @@
   },
   "common": {
     "loading": "加载中…",
-    "loadFailed": "数据加载失败：{{message}}"
+    "loadFailed": "数据加载失败：{{message}}",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "add": "添加",
+    "close": "关闭",
+    "saveFailed": "保存失败：{{message}}"
+  },
+  "currency": {
+    "CNY": "人民币",
+    "JPY": "日元",
+    "USD": "美元"
+  },
+  "duration": {
+    "hm": "{{hours}}小时{{minutes}}分",
+    "h": "{{hours}}小时",
+    "m": "{{minutes}}分"
   },
   "calendar": {
     "monthTitle": "{{year}}年{{month}}月",
@@ -12,12 +28,91 @@
     "prevMonth": "上个月",
     "nextMonth": "下个月",
     "weekdaysShort": ["日", "一", "二", "三", "四", "五", "六"],
-    "dayLabel": "{{month}}月{{day}}日"
+    "dayLabel": "{{month}}月{{day}}日",
+    "more": "+{{count}}"
+  },
+  "home": {
+    "jobs": "兼职",
+    "batch": "批量排班"
+  },
+  "batch": {
+    "hint": "点选要排班的日期",
+    "selected": "已选 {{count}} 天",
+    "apply": "套用模板",
+    "chooseTemplate": "选择要套用的模板",
+    "noTemplates": "还没有班次模板。请先在「兼职」里为兼职添加模板。",
+    "done": "已添加 {{count}} 个班次"
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",
     "weekdays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
     "empty": "这一天还没有安排",
-    "invalidDate": "日期无效"
+    "invalidDate": "日期无效",
+    "shifts": "班次",
+    "quickAdd": "一键添加",
+    "manualAdd": "手动添加班次",
+    "noJobs": "还没有兼职。先添加一份兼职，才能记录班次。",
+    "goJobs": "去添加兼职",
+    "noTemplates": "给兼职添加班次模板后，就可以在这里一键添加。"
+  },
+  "jobs": {
+    "title": "兼职",
+    "empty": "还没有兼职，点下面的按钮添加。",
+    "add": "添加兼职",
+    "newTitle": "新建兼职",
+    "editTitle": "编辑兼职",
+    "name": "名称",
+    "namePlaceholder": "例如：便利店",
+    "color": "颜色",
+    "hourlyWage": "时薪",
+    "wageNote": "修改时薪只影响之后新建的班次，已有记录保持原来的时薪。",
+    "currency": "币种",
+    "cutoffDay": "工资截止日",
+    "cutoffEndOfMonth": "月末",
+    "cutoffPlaceholder": "1–31",
+    "cutoffHint": "超过当月天数时（比如 2 月没有 31 日）按月末计算。",
+    "cutoffValue": "每月 {{day}} 日",
+    "defaultBreak": "默认休息（分钟）",
+    "perHour": "{{amount}} / 小时",
+    "templates": "班次模板",
+    "noTemplates": "还没有模板。",
+    "addTemplate": "添加模板",
+    "saveFirst": "先保存兼职，才能添加模板。",
+    "deleteTitle": "删除这份兼职？",
+    "deleteMessage": "它的班次模板也会删除；已有的班次记录会保留。"
+  },
+  "templates": {
+    "newTitle": "新建班次模板",
+    "editTitle": "编辑班次模板",
+    "name": "模板名称",
+    "namePlaceholder": "例如：早班",
+    "deleteTitle": "删除这个模板？",
+    "deleteMessage": "用这个模板添加过的班次不受影响。"
+  },
+  "shift": {
+    "newTitle": "添加班次",
+    "editTitle": "编辑班次",
+    "job": "兼职",
+    "date": "日期",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "timePlaceholder": "09:00",
+    "breakMinutes": "休息（分钟）",
+    "note": "备注",
+    "notePlaceholder": "可以不填",
+    "overnight": "跨夜班：第二天 {{time}} 结束",
+    "summary": "实际 {{duration}} · 工钱 {{amount}}",
+    "wageSnapshot": "记录时的时薪：{{amount}}",
+    "deleteTitle": "删除这个班次？"
+  },
+  "errors": {
+    "nameRequired": "请输入名称",
+    "wageInvalid": "请输入正确的金额",
+    "cutoffInvalid": "截止日请输入 1–31 的数字",
+    "breakInvalid": "休息时间请输入 0 或以上的整数",
+    "timeInvalid": "请输入正确的时间，例如 09:00",
+    "breakTooLong": "休息时间不能大于或等于班次时长",
+    "jobRequired": "请选择兼职",
+    "notFound": "找不到这条记录，可能已被删除"
   }
 }

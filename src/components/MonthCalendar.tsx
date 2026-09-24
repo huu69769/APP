@@ -7,20 +7,31 @@ import type { LocalDate, YearMonth } from '@/lib/date';
 import { colors } from '@/theme/colors';
 
 const SWIPE_DISTANCE = 50;
+const MAX_BARS = 3;
+
+/** 格子里显示的一条班次色块 */
+export interface DayBar {
+  id: string;
+  color: string;
+  label: string;
+}
 
 interface Props {
   month: YearMonth;
   weekStart: WeekStart;
   today: LocalDate;
+  bars?: Map<LocalDate, DayBar[]>;
+  /** 批量排班时选中的日期；传入时格子显示选中状态 */
+  selected?: Set<LocalDate>;
   onPressDay: (date: LocalDate) => void;
   onSwipe: (delta: 1 | -1) => void;
 }
 
 /**
  * 月历：6 行 × 7 列。左右滑动切换月份。
- * M2 以后会在每个格子里显示班次色块、日程圆点、农历和节假日。
+ * 每个班次用兼职的颜色显示成一条色块。M5 起还会显示农历和节假日。
  */
-export function MonthCalendar({ month, weekStart, today, onPressDay, onSwipe }: Props) {
+export function MonthCalendar({ month, weekStart, today, bars, selected, onPressDay, onSwipe }: Props) {
   const { t } = useTranslation();
   const weekdayNames = t('calendar.weekdaysShort', { returnObjects: true }) as string[];
   const weeks = buildMonthGrid(month, weekStart, today);
@@ -47,7 +58,13 @@ export function MonthCalendar({ month, weekStart, today, onPressDay, onSwipe }: 
         {weeks.map((week) => (
           <View key={week[0].date} style={styles.week}>
             {week.map((day) => (
-              <DayCell key={day.date} day={day} onPress={onPressDay} />
+              <DayCell
+                key={day.date}
+                day={day}
+                bars={bars?.get(day.date) ?? []}
+                selected={selected?.has(day.date)}
+                onPress={onPressDay}
+              />
             ))}
           </View>
         ))}
@@ -56,14 +73,28 @@ export function MonthCalendar({ month, weekStart, today, onPressDay, onSwipe }: 
   );
 }
 
-function DayCell({ day, onPress }: { day: CalendarDay; onPress: (date: LocalDate) => void }) {
+function DayCell({
+  day,
+  bars,
+  selected,
+  onPress,
+}: {
+  day: CalendarDay;
+  bars: DayBar[];
+  selected?: boolean;
+  onPress: (date: LocalDate) => void;
+}) {
   const { t } = useTranslation();
   const [, month] = day.date.split('-').map(Number);
+  const shown = bars.slice(0, MAX_BARS);
+  const hidden = bars.length - shown.length;
+
   return (
     <Pressable
-      style={({ pressed }) => [styles.cell, pressed && styles.cellPressed]}
+      style={({ pressed }) => [styles.cell, pressed && styles.cellPressed, selected && styles.cellSelected]}
       onPress={() => onPress(day.date)}
       accessibilityRole="button"
+      accessibilityState={selected === undefined ? undefined : { selected }}
       accessibilityLabel={t('calendar.dayLabel', { month, day: day.day })}>
       <View style={[styles.dayNumberWrap, day.isToday && styles.todayWrap]}>
         <Text
@@ -76,6 +107,17 @@ function DayCell({ day, onPress }: { day: CalendarDay; onPress: (date: LocalDate
           {day.day}
         </Text>
       </View>
+      <View style={[styles.bars, !day.inMonth && styles.barsOutOfMonth]}>
+        {shown.map((bar) => (
+          <View key={bar.id} style={[styles.bar, { backgroundColor: bar.color }]}>
+            <Text style={styles.barText} numberOfLines={1}>
+              {bar.label}
+            </Text>
+          </View>
+        ))}
+        {hidden > 0 && <Text style={styles.more}>{t('calendar.more', { count: hidden })}</Text>}
+      </View>
+      {selected && <View style={styles.check} />}
     </Pressable>
   );
 }
@@ -101,19 +143,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
-  cell: { flex: 1, alignItems: 'center', paddingTop: 4, minHeight: 56 },
+  cell: { flex: 1, alignItems: 'center', paddingTop: 4, minHeight: 56, overflow: 'hidden' },
   cellPressed: { backgroundColor: colors.surface },
+  cellSelected: { backgroundColor: '#DCEBFD' },
   dayNumberWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   todayWrap: { backgroundColor: colors.primary },
-  dayNumber: { fontSize: 14, color: colors.text },
+  dayNumber: { fontSize: 13, color: colors.text },
   todayText: { color: colors.onPrimary, fontWeight: '600' },
   outOfMonth: { color: colors.textFaint },
   sunday: { color: colors.sunday },
   saturday: { color: colors.saturday },
+  bars: { alignSelf: 'stretch', gap: 2, marginTop: 2, paddingHorizontal: 2 },
+  barsOutOfMonth: { opacity: 0.4 },
+  bar: { borderRadius: 3, paddingHorizontal: 2, paddingVertical: 1 },
+  barText: { fontSize: 10, color: '#FFFFFF', fontWeight: '600' },
+  more: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
+  check: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
 });

@@ -10,7 +10,7 @@
 ## 开发进度
 
 - [x] **M1 框架**：Expo 项目、多语言、存储抽象层、自动构建与发布、首页空白月历
-- [ ] M2 打工：兼职管理、班次模板、录入、月历色块
+- [x] **M2 打工**：兼职管理、班次模板、录入（一键 / 批量 / 手动）、月历色块
 - [ ] M3 统计
 - [ ] M4 日程、笔记、提醒
 - [ ] M5 节假日、农历
@@ -33,16 +33,21 @@ npm run typecheck  # 类型检查
 ```
 src/
   app/            页面（expo-router：每个文件就是一个页面）
-    index.tsx       首页（月历）
-    day/[date].tsx  当天详情页
+    index.tsx       首页（月历、批量排班）
+    day/[date].tsx  当天详情页（班次列表、一键添加）
+    jobs/           兼职列表、编辑兼职（含班次模板）
+    templates/      编辑班次模板
+    shift/          手动添加 / 编辑班次
   components/     界面组件（月历等）
   data/           数据层
     types.ts        数据表的类型
     repository.ts   repository 层：界面只通过它读写数据
     settings.ts     设置（键值对）
+    shifts.ts       创建班次（时薪快照）、批量排班
+    useQuery.ts     读取数据，数据变化时自动刷新
     storage/        底层存储：手机用 SQLite，网页用浏览器存储
   i18n/           多语言，界面文字都在 locales/*.json 里
-  lib/            日期、月历等纯计算函数（都有单元测试）
+  lib/            纯计算函数（都有单元测试）：日期、月历、时长、工钱、金额
   theme/          颜色
 plugins/          Expo 配置插件（release 签名）
 .github/workflows 自动构建与发布

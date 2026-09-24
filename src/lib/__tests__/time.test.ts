@@ -1,0 +1,45 @@
+import {
+  formatTimeInput,
+  isValidTime,
+  minutesToTime,
+  normalizeTime,
+  splitMinutes,
+  timeToMinutes,
+} from '../time';
+
+describe('time helpers', () => {
+  it('validates HH:mm', () => {
+    expect(isValidTime('00:00')).toBe(true);
+    expect(isValidTime('23:59')).toBe(true);
+    expect(isValidTime('24:00')).toBe(false);
+    expect(isValidTime('9:00')).toBe(false);
+    expect(isValidTime('12:60')).toBe(false);
+  });
+
+  it('converts between HH:mm and minutes', () => {
+    expect(timeToMinutes('09:30')).toBe(570);
+    expect(minutesToTime(570)).toBe('09:30');
+    expect(minutesToTime(1440 + 60)).toBe('01:00');
+  });
+
+  it('formats typed digits', () => {
+    expect(formatTimeInput('9')).toBe('9');
+    expect(formatTimeInput('930')).toBe('9:30');
+    expect(formatTimeInput('0930')).toBe('09:30');
+    expect(formatTimeInput('09:305')).toBe('09:30');
+  });
+
+  it('normalizes loose input', () => {
+    expect(normalizeTime('9:30')).toBe('09:30');
+    expect(normalizeTime('0930')).toBe('09:30');
+    expect(normalizeTime('9')).toBe('09:00');
+    expect(normalizeTime('22')).toBe('22:00');
+    expect(normalizeTime('25')).toBeNull();
+    expect(normalizeTime('9:75')).toBeNull();
+    expect(normalizeTime('')).toBeNull();
+  });
+
+  it('splits minutes', () => {
+    expect(splitMinutes(390)).toEqual({ hours: 6, minutes: 30 });
+  });
+});

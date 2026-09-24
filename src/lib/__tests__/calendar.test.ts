@@ -1,4 +1,4 @@
-import { buildMonthGrid, orderedWeekdays } from '../calendar';
+import { buildMonthGrid, monthGridRange, orderedWeekdays } from '../calendar';
 import { addDays, addMonths, isValidLocalDate, today } from '../date';
 
 describe('buildMonthGrid', () => {
@@ -72,5 +72,12 @@ describe('date helpers', () => {
     expect(isValidLocalDate('2026-02-29')).toBe(false);
     expect(isValidLocalDate('2028-02-29')).toBe(true);
     expect(isValidLocalDate('2026-9-1')).toBe(false);
+  });
+});
+
+describe('monthGridRange', () => {
+  it('covers the visible 6 weeks', () => {
+    expect(monthGridRange('2026-09', 0)).toEqual({ from: '2026-08-30', to: '2026-10-10' });
+    expect(monthGridRange('2026-09', 1)).toEqual({ from: '2026-08-31', to: '2026-10-11' });
   });
 });

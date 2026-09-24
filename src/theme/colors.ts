@@ -11,3 +11,17 @@ export const colors = {
   saturday: '#208AEF',
   danger: '#E5484D',
 } as const;
+
+/** 兼职可选的颜色 */
+export const JOB_COLORS = [
+  '#E5484D',
+  '#F76B15',
+  '#FFB224',
+  '#30A46C',
+  '#12A594',
+  '#208AEF',
+  '#3E63DD',
+  '#8E4EC6',
+  '#D6409F',
+  '#8D8D86',
+] as const;

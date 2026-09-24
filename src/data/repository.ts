@@ -6,6 +6,8 @@ import type { BaseEntity, EntityTables, NewEntity, TableName } from './types';
 export interface RepositoryDeps {
   newId: () => string;
   now?: () => Date;
+  /** 每次写入后调用，用于通知界面刷新 */
+  onChange?: (table: TableName) => void;
 }
 
 /**
@@ -29,6 +31,11 @@ export class Repository<T extends BaseEntity> {
     return ((await this.driver.getAll(this.table)) as T[]).filter((r) => !r.deletedAt);
   }
 
+  /** 包括已删除的记录（比如已删除兼职的颜色，旧班次还要用） */
+  async listWithDeleted(): Promise<T[]> {
+    return (await this.driver.getAll(this.table)) as T[];
+  }
+
   async get(id: string): Promise<T | null> {
     const row = (await this.driver.getById(this.table, id)) as T | null;
     return row && !row.deletedAt ? row : null;
@@ -50,6 +57,7 @@ export class Repository<T extends BaseEntity> {
       deletedAt: null,
     } as T;
     await this.driver.put(this.table, row);
+    this.deps.onChange?.(this.table);
     return row;
   }
 
@@ -58,6 +66,7 @@ export class Repository<T extends BaseEntity> {
     if (!existing) throw new Error(`${this.table}: record ${id} not found`);
     const row = { ...existing, ...patch, id, updatedAt: this.timestamp() } as T;
     await this.driver.put(this.table, row);
+    this.deps.onChange?.(this.table);
     return row;
   }
 
@@ -67,6 +76,7 @@ export class Repository<T extends BaseEntity> {
     if (!existing) return;
     const ts = this.timestamp();
     await this.driver.put(this.table, { ...existing, deletedAt: ts, updatedAt: ts });
+    this.deps.onChange?.(this.table);
   }
 }
 
