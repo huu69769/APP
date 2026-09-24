@@ -55,3 +55,9 @@ export function addDays(date: LocalDate, delta: number): LocalDate {
 export function nowIso(now: Date = new Date()): string {
   return now.toISOString();
 }
+
+/** 现在的本地日期和时间 { date: "YYYY-MM-DD", time: "HH:mm" } */
+export function localNow(now: Date = new Date()): { date: LocalDate; time: string } {
+  const d = dayjs(now);
+  return { date: d.format(DATE_FORMAT), time: d.format('HH:mm') };
+}

@@ -27,7 +27,15 @@
     "today": "今天",
     "prevMonth": "上个月",
     "nextMonth": "下个月",
-    "weekdaysShort": ["日", "一", "二", "三", "四", "五", "六"],
+    "weekdaysShort": [
+      "日",
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六"
+    ],
     "dayLabel": "{{month}}月{{day}}日",
     "more": "+{{count}}"
   },
@@ -45,7 +53,15 @@
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",
-    "weekdays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+    "weekdays": [
+      "周日",
+      "周一",
+      "周二",
+      "周三",
+      "周四",
+      "周五",
+      "周六"
+    ],
     "empty": "这一天还没有安排",
     "invalidDate": "日期无效",
     "shifts": "班次",
@@ -114,5 +130,36 @@
     "breakTooLong": "休息时间不能大于或等于班次时长",
     "jobRequired": "请选择兼职",
     "notFound": "找不到这条记录，可能已被删除"
+  },
+  "stats": {
+    "title": "统计",
+    "open": "查看统计详情",
+    "barCalendarMonth": "{{month}}月",
+    "barPayPeriod": "{{month}}月 · 工资周期",
+    "hours": "打工时长",
+    "hoursValue": "{{hours}}小时",
+    "wage": "工钱",
+    "completed": "已完成",
+    "expected": "预计",
+    "freeDays": "空闲天数",
+    "freeDaysValue": "{{count}}天",
+    "freeHours": "空闲时间",
+    "periodMode": "统计周期",
+    "calendarMonth": "自然月",
+    "payPeriod": "工资周期",
+    "wageDisplay": "工钱显示",
+    "wageTotal": "只显示总数",
+    "wageSplit": "已完成 + 预计",
+    "range": "{{from}} ~ {{to}}",
+    "byJob": "按兼职",
+    "attendance": "出勤 {{count}} 天",
+    "noShifts": "这个周期还没有班次",
+    "freeTime": "空闲时间",
+    "freeRange": "统计范围：{{from}} ~ {{to}}",
+    "payNote": "工资周期按每份兼职自己的截止日计算。各兼职截止日不同时，空闲时间按自然月统计。",
+    "freeNote": "不在打工的时间都算空闲；休息时间也算打工占用。",
+    "year": "{{year}}年累计收入",
+    "yearTotal": "全年合计",
+    "monthLabel": "{{month}}月"
   }
 }

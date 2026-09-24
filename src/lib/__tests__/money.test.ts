@@ -1,4 +1,4 @@
-import { formatMoney, moneyToInput, parseMoney } from '../money';
+import { formatMoney, formatMoneyMulti, moneyToInput, parseMoney } from '../money';
 
 describe('parseMoney', () => {
   it('parses CNY/USD into cents without floating point', () => {
@@ -41,5 +41,13 @@ describe('formatMoney', () => {
     expect(formatMoney(5, 'CNY')).toBe('¥0.05');
     expect(formatMoney(0, 'JPY')).toBe('0円');
     expect(formatMoney(-150, 'USD')).toBe('-$1.50');
+  });
+});
+
+describe('formatMoneyMulti', () => {
+  it('joins currencies without converting', () => {
+    expect(formatMoneyMulti({ CNY: 320000, USD: 5000 }, 'CNY')).toBe('¥3,200.00 + $50.00');
+    expect(formatMoneyMulti({ USD: 5000, JPY: 1200 }, 'CNY')).toBe('1,200円 + $50.00');
+    expect(formatMoneyMulti({}, 'JPY')).toBe('0円');
   });
 });

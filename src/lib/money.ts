@@ -52,3 +52,19 @@ export function formatMoney(amount: MinorUnits, currency: Currency): string {
       return `${sign}$${body}`;
   }
 }
+
+const CURRENCY_ORDER: Currency[] = ['CNY', 'JPY', 'USD'];
+
+/**
+ * 多币种金额：不同币种不换算、不相加，按币种分别显示，比如「¥3,200.00 + $50.00」。
+ * 没有任何金额时显示 fallback 币种的 0。
+ */
+export function formatMoneyMulti(
+  money: Partial<Record<Currency, MinorUnits>>,
+  fallback: Currency
+): string {
+  const parts = CURRENCY_ORDER.filter((c) => money[c] !== undefined).map((c) =>
+    formatMoney(money[c]!, c)
+  );
+  return parts.length ? parts.join(' + ') : formatMoney(0, fallback);
+}

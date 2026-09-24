@@ -6,17 +6,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { showMessage } from '@/components/confirm';
 import { MonthCalendar, type DayBar } from '@/components/MonthCalendar';
+import { StatsBar } from '@/components/StatsBar';
 import { TemplatePicker } from '@/components/TemplatePicker';
 import { useData } from '@/data/DataProvider';
 import { applyTemplateToDates, sortShifts } from '@/data/shifts';
 import type { ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
+import { useMonthStats } from '@/data/useStats';
 import { monthGridRange } from '@/lib/calendar';
 import { addMonths, currentMonth, today as getToday, type LocalDate } from '@/lib/date';
 import { colors } from '@/theme/colors';
 
 /**
- * 首页 = 统计栏（M3 加入）+ 月历
+ * 首页 = 统计栏 + 月历
  */
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -53,6 +55,8 @@ export default function HomeScreen() {
     },
     [month, settings.weekStart]
   );
+
+  const { data: statsData } = useMonthStats(month);
 
   const onPressDay = (date: LocalDate) => {
     if (!batchMode) {
@@ -112,7 +116,18 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {batchMode && <Text style={styles.batchHint}>{t('batch.hint')}</Text>}
+      {batchMode ? (
+        <Text style={styles.batchHint}>{t('batch.hint')}</Text>
+      ) : (
+        <StatsBar
+          month={month}
+          mode={settings.statsPeriod}
+          wageDisplay={settings.wageDisplay}
+          currency={settings.defaultCurrency}
+          stats={statsData?.stats}
+          onPress={() => router.push({ pathname: '/stats', params: { month } })}
+        />
+      )}
 
       <MonthCalendar
         month={month}

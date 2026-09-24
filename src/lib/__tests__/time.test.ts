@@ -1,4 +1,5 @@
 import {
+  formatHours,
   formatTimeInput,
   isValidTime,
   minutesToTime,
@@ -41,5 +42,15 @@ describe('time helpers', () => {
 
   it('splits minutes', () => {
     expect(splitMinutes(390)).toEqual({ hours: 6, minutes: 30 });
+  });
+});
+
+describe('formatHours', () => {
+  it('shows at most one decimal', () => {
+    expect(formatHours(0)).toBe('0');
+    expect(formatHours(480)).toBe('8');
+    expect(formatHours(750)).toBe('12.5');
+    expect(formatHours(20)).toBe('0.3');
+    expect(formatHours(59)).toBe('1');
   });
 });

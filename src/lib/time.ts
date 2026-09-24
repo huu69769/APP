@@ -49,3 +49,9 @@ export function normalizeTime(raw: string): TimeOfDay | null {
 export function splitMinutes(minutes: number): { hours: number; minutes: number } {
   return { hours: Math.floor(minutes / 60), minutes: minutes % 60 };
 }
+
+/** 分钟数 → 小时数文字，最多一位小数："12.5"、"8"、"0.3" */
+export function formatHours(minutes: number): string {
+  const tenths = Math.round((minutes / 60) * 10);
+  return tenths % 10 === 0 ? String(tenths / 10) : (tenths / 10).toFixed(1);
+}
