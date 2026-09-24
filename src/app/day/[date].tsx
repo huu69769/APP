@@ -3,12 +3,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ActionSheet } from '@/components/ActionSheet';
 import { showMessage } from '@/components/confirm';
 import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/form';
+import { useToast } from '@/components/Toast';
 import { useData } from '@/data/DataProvider';
 import { buildPendingShift, buildShiftFromTemplate, sortShifts } from '@/data/shifts';
-import { primaryTask, tasksOnDate } from '@/data/tasks';
-import { isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
+import { tasksOnDate } from '@/data/tasks';
+import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { formatDuration } from '@/i18n/format';
 import { isValidLocalDate, parseLocalDate } from '@/lib/date';
@@ -17,15 +19,20 @@ import { isOvernight, shiftWage, workedMinutes } from '@/lib/shift';
 import { colors } from '@/theme/colors';
 
 /**
- * 当天详情页：当天的班次列表、模板一键添加、手动添加。
- * M4 起还会显示日程和笔记。
+ * 当天详情页：
+ * - 当天的班次、DDL 是这天的项目
+ * - 一键添加：模板、时间待定
+ * - ＋ 添加：手动添加班次 / 项目
+ * M4 起还会有日程和笔记。
  */
 export default function DayScreen() {
   const { t } = useTranslation();
   const { date } = useLocalSearchParams<{ date: string }>();
   const { repos } = useData();
+  const toast = useToast();
   const valid = !!date && isValidLocalDate(date);
   const [adding, setAdding] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const { data } = useQuery(
     async (r) => {
@@ -36,24 +43,16 @@ export default function DayScreen() {
         r.shift_templates.list(),
         r.tasks.list(),
       ]);
-      const jobsById = new Map(allJobs.map((j) => [j.id, j]));
       const activeJobs = allJobs
-        .filter((j) => !j.deletedAt)
+        .filter(isActiveJob)
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-      const tasks = tasksOnDate(allTasks, date).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-      // 每份「按项目结算」兼职的主项目：点它时打开兼职页面编辑
-      const primaryIds = new Set(
-        tasks.map((task) => primaryTask(allTasks, task.jobId)?.id).filter(Boolean)
-      );
       return {
         shifts: sortShifts(shifts),
-        jobsById,
+        tasks: tasksOnDate(allTasks, date),
+        jobsById: new Map(allJobs.map((j) => [j.id, j])),
         hourlyJobs: activeJobs.filter((j) => jobPayType(j) === 'hourly'),
-        pieceJobs: activeJobs.filter((j) => jobPayType(j) === 'piece'),
         activeJobs,
         templates,
-        tasks,
-        primaryIds,
       };
     },
     [date, valid]
@@ -71,13 +70,18 @@ export default function DayScreen() {
   const weekdays = t('day.weekdays', { returnObjects: true }) as string[];
   const title = t('day.title', { month: d.month() + 1, day: d.date(), weekday: weekdays[d.day()] });
 
-  const addFromTemplate = async (job: Job, template: ShiftTemplate | null) => {
+  /** 一键添加：模板或「时间待定」，添加后显示可以撤销的提示 */
+  const quickAdd = async (job: Job, template: ShiftTemplate | null) => {
     if (adding) return;
     setAdding(true);
     try {
-      await repos.shifts.create(
+      const shift = await repos.shifts.create(
         template ? buildShiftFromTemplate(job, template, date) : buildPendingShift(job, date)
       );
+      const what = template
+        ? `${job.name} ${template.startTime}–${template.endTime}`
+        : t('day.pendingChip', { job: job.name });
+      toast(t('toast.added', { what }), { onUndo: () => repos.shifts.remove(shift.id) });
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
     } finally {
@@ -85,154 +89,175 @@ export default function DayScreen() {
     }
   };
 
+  const nothing = data && data.shifts.length === 0 && data.tasks.length === 0;
+
   return (
     <FormScreen>
       <Stack.Screen options={{ title }} />
       {data && (
         <>
-          {(data.shifts.length > 0 ||
-            data.pieceJobs.length === 0 ||
-            data.hourlyJobs.length > 0) && (
-            <Section title={t('day.shifts')}>
-              {data.shifts.length === 0 && <EmptyText>{t('day.empty')}</EmptyText>}
-              {data.shifts.map((s) => {
-                const job = data.jobsById.get(s.jobId);
-                if (!isTimed(s)) {
-                  return (
-                    <ListRow
-                      key={s.id}
-                      color={job?.color}
-                      title={t('shift.pendingTitle', { job: job?.name ?? '' })}
-                      subtitle={s.note || undefined}
-                      right="—"
-                      onPress={() => router.push({ pathname: '/shift/[id]', params: { id: s.id } })}
-                    />
-                  );
-                }
-                const overnight = isOvernight(s.startTime, s.endTime);
-                return (
-                  <ListRow
-                    key={s.id}
-                    color={job?.color}
-                    title={`${job?.name ?? ''}  ${s.startTime} – ${overnight ? '+1 ' : ''}${s.endTime}`}
-                    subtitle={[
-                      formatDuration(t, workedMinutes(s)),
-                      s.breakMinutes > 0 ? `☕ ${formatDuration(t, s.breakMinutes)}` : null,
-                      s.note || null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                    right={formatMoney(shiftWage(s), s.currencySnapshot)}
-                    onPress={() => router.push({ pathname: '/shift/[id]', params: { id: s.id } })}
-                  />
-                );
-              })}
+          {nothing ? (
+            <Section>
+              <EmptyText>{t('day.empty')}</EmptyText>
             </Section>
+          ) : (
+            <>
+              {data.shifts.length > 0 && (
+                <Section title={t('day.shifts')}>
+                  {data.shifts.map((s) => {
+                    const job = data.jobsById.get(s.jobId);
+                    const open = () =>
+                      router.push({ pathname: '/shift/[id]', params: { id: s.id } });
+                    if (!isTimed(s)) {
+                      return (
+                        <ListRow
+                          key={s.id}
+                          color={job?.color}
+                          title={t('shift.pendingTitle', { job: job?.name ?? '' })}
+                          subtitle={s.note || undefined}
+                          right="—"
+                          onPress={open}
+                        />
+                      );
+                    }
+                    const overnight = isOvernight(s.startTime, s.endTime);
+                    return (
+                      <ListRow
+                        key={s.id}
+                        color={job?.color}
+                        title={`${job?.name ?? ''}  ${s.startTime} – ${overnight ? '+1 ' : ''}${s.endTime}`}
+                        subtitle={[
+                          formatDuration(t, workedMinutes(s)),
+                          s.breakMinutes > 0 ? `☕ ${formatDuration(t, s.breakMinutes)}` : null,
+                          s.note || null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                        right={formatMoney(shiftWage(s), s.currencySnapshot)}
+                        onPress={open}
+                      />
+                    );
+                  })}
+                </Section>
+              )}
+              {data.tasks.length > 0 && (
+                <Section title={t('day.tasks')}>
+                  {data.tasks.map((task) => {
+                    const job = data.jobsById.get(task.jobId);
+                    return (
+                      <ListRow
+                        key={task.id}
+                        color={job?.color}
+                        title={task.title}
+                        subtitle={[job?.name, t('day.taskDue')].filter(Boolean).join(' · ')}
+                        right={formatMoney(task.amount, task.currency)}
+                        onPress={() =>
+                          router.push({ pathname: '/task/[id]', params: { id: task.id } })
+                        }
+                      />
+                    );
+                  })}
+                </Section>
+              )}
+            </>
           )}
-
-          <Section
-            title={t('day.tasks')}
-            right={
-              <Button
-                variant="secondary"
-                title={t('day.addTask')}
-                onPress={() =>
-                  router.push({
-                    pathname: '/jobs/[id]',
-                    params: { id: 'new', payType: 'piece', due: date },
-                  })
-                }
-              />
-            }>
-            {data.tasks.map((task) => {
-              const job = data.jobsById.get(task.jobId);
-              return (
-                <ListRow
-                  key={task.id}
-                  color={job?.color}
-                  title={`${task.deliveredDate ? '✓ ' : ''}${task.title}`}
-                  subtitle={[
-                    task.dueDate === date ? t('day.taskDue') : null,
-                    task.deliveredDate
-                      ? t('day.taskDeliveredOn', { date: task.deliveredDate })
-                      : t('task.open'),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                  right={formatMoney(task.amount, task.currency)}
-                  onPress={() =>
-                    data.primaryIds.has(task.id)
-                      ? router.push({ pathname: '/jobs/[id]', params: { id: task.jobId } })
-                      : router.push({ pathname: '/task/[id]', params: { id: task.id } })
-                  }
-                />
-              );
-            })}
-          </Section>
 
           {data.activeJobs.length === 0 ? (
             <Section>
               <EmptyText>{t('day.noJobs')}</EmptyText>
-              <Button title={t('day.goJobs')} onPress={() => router.push('/jobs')} />
-            </Section>
-          ) : data.hourlyJobs.length === 0 ? null : (
-            <>
-              <Section title={t('day.quickAdd')}>
-                <View style={styles.chips}>
-                  {data.hourlyJobs.flatMap((job) => [
-                    ...data.templates
-                      .filter((tpl) => tpl.jobId === job.id)
-                      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                      .map((tpl) => (
-                        <Pressable
-                          key={tpl.id}
-                          onPress={() => addFromTemplate(job, tpl)}
-                          disabled={adding}
-                          accessibilityRole="button"
-                          style={({ pressed }) => [
-                            styles.chip,
-                            { borderColor: job.color },
-                            pressed && styles.chipPressed,
-                          ]}>
-                          <View style={[styles.chipDot, { backgroundColor: job.color }]} />
-                          <Text style={styles.chipText}>
-                            {job.name} · {tpl.name}
-                          </Text>
-                          <Text style={styles.chipTime}>
-                            {tpl.startTime}–{tpl.endTime}
-                          </Text>
-                        </Pressable>
-                      )),
-                    <Pressable
-                      key={`pending-${job.id}`}
-                      onPress={() => addFromTemplate(job, null)}
-                      disabled={adding}
-                      accessibilityRole="button"
-                      style={({ pressed }) => [
-                        styles.chip,
-                        styles.chipPending,
-                        { borderColor: job.color },
-                        pressed && styles.chipPressed,
-                      ]}>
-                      <View style={[styles.chipDot, { backgroundColor: job.color }]} />
-                      <Text style={styles.chipText}>{t('day.pendingChip', { job: job.name })}</Text>
-                    </Pressable>,
-                  ])}
-                </View>
-                {data.templates.length === 0 && <EmptyText>{t('day.noTemplates')}</EmptyText>}
-              </Section>
               <Button
-                variant="secondary"
-                title={t('day.manualAdd')}
-                onPress={() =>
-                  router.push({ pathname: '/shift/[id]', params: { id: 'new', date } })
-                }
+                title={t('day.goJobs')}
+                onPress={() => router.push({ pathname: '/jobs/[id]', params: { id: 'new' } })}
               />
+            </Section>
+          ) : (
+            <>
+              {data.hourlyJobs.length > 0 && (
+                <Section title={t('day.quickAdd')}>
+                  <View style={styles.chips}>
+                    {data.hourlyJobs.flatMap((job) => [
+                      ...data.templates
+                        .filter((tpl) => tpl.jobId === job.id)
+                        .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                        .map((tpl) => (
+                          <Chip
+                            key={tpl.id}
+                            color={job.color}
+                            label={`${job.name} · ${tpl.name}`}
+                            detail={`${tpl.startTime}–${tpl.endTime}`}
+                            disabled={adding}
+                            onPress={() => quickAdd(job, tpl)}
+                          />
+                        )),
+                      <Chip
+                        key={`pending-${job.id}`}
+                        color={job.color}
+                        label={t('day.pendingChip', { job: job.name })}
+                        dashed
+                        disabled={adding}
+                        onPress={() => quickAdd(job, null)}
+                      />,
+                    ])}
+                  </View>
+                  {data.templates.length === 0 && <EmptyText>{t('day.noTemplates')}</EmptyText>}
+                </Section>
+              )}
+              <Button title={t('day.add')} onPress={() => setSheetOpen(true)} />
             </>
           )}
+
+          <ActionSheet
+            visible={sheetOpen}
+            title={t('day.addTitle')}
+            onClose={() => setSheetOpen(false)}
+            actions={[
+              {
+                label: t('day.addShift'),
+                onPress: () =>
+                  router.push({ pathname: '/shift/[id]', params: { id: 'new', date } }),
+              },
+              {
+                label: t('day.addProject'),
+                onPress: () => router.push({ pathname: '/task/[id]', params: { id: 'new', date } }),
+              },
+            ]}
+          />
         </>
       )}
     </FormScreen>
+  );
+}
+
+function Chip({
+  color,
+  label,
+  detail,
+  dashed,
+  disabled,
+  onPress,
+}: {
+  color: string;
+  label: string;
+  detail?: string;
+  dashed?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.chip,
+        { borderColor: color },
+        dashed && styles.chipDashed,
+        pressed && styles.chipPressed,
+      ]}>
+      <View style={[styles.chipDot, { backgroundColor: color }]} />
+      <Text style={styles.chipText}>{label}</Text>
+      {detail && <Text style={styles.chipTime}>{detail}</Text>}
+    </Pressable>
   );
 }
 
@@ -248,8 +273,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: colors.background,
   },
+  chipDashed: { borderStyle: 'dashed' },
   chipPressed: { opacity: 0.5 },
-  chipPending: { borderStyle: 'dashed' },
   chipDot: { width: 8, height: 8, borderRadius: 4 },
   chipText: { fontSize: 14, color: colors.text },
   chipTime: { fontSize: 12, color: colors.textMuted },

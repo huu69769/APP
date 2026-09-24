@@ -61,11 +61,3 @@ export function localNow(now: Date = new Date()): { date: LocalDate; time: strin
   const d = dayjs(now);
   return { date: d.format(DATE_FORMAT), time: d.format('HH:mm') };
 }
-
-/** 日期输入框的自动格式化：只留数字，自动插入「-」。"20260930" → "2026-09-30" */
-export function formatDateInput(raw: string): string {
-  const d = raw.replace(/\D/g, '').slice(0, 8);
-  if (d.length <= 4) return d;
-  if (d.length <= 6) return `${d.slice(0, 4)}-${d.slice(4)}`;
-  return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
-}

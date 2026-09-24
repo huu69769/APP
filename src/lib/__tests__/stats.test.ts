@@ -274,16 +274,10 @@ describe('pending shifts in stats', () => {
   });
 });
 
-describe('piece-rate tasks in stats', () => {
-  const task = (
-    dueDate: string,
-    deliveredDate: string | null,
-    amount = 80000,
-    currency: 'CNY' | 'JPY' | 'USD' = 'CNY'
-  ) => ({
+describe('project tasks in stats', () => {
+  const task = (dueDate: string, amount = 80000, currency: 'CNY' | 'JPY' | 'USD' = 'CNY') => ({
     jobId: 't',
     dueDate,
-    deliveredDate,
     amount,
     currency,
   });
@@ -293,14 +287,14 @@ describe('piece-rate tasks in stats', () => {
   ];
   const now = { date: '2026-09-15', time: '12:00' };
 
-  it('counts delivered tasks by delivery date as completed, open tasks by due date as expected', () => {
+  it('counts income on the due date: passed = completed, upcoming = expected', () => {
     const s = periodStats({
       shifts: [shift('2026-09-01', '09:00', '10:00')],
       tasks: [
-        task('2026-10-05', '2026-09-28'), // 提前在 9 月交付 → 9 月已完成
-        task('2026-09-30', null, 50000), // 9 月截止未交付 → 9 月预计
-        task('2026-09-10', '2026-10-02'), // 10 月才交付 → 不算 9 月
-        task('2026-09-20', '2026-09-20', 3000, 'USD'),
+        task('2026-09-10'), // DDL 已过 → 已完成
+        task('2026-09-15', 50000), // 今天截止 → 还算预计
+        task('2026-10-02'), // 10 月，不算 9 月
+        task('2026-09-20', 3000, 'USD'), // 还没到 → 预计
       ],
       jobs,
       activeJobs: jobs,
@@ -308,26 +302,26 @@ describe('piece-rate tasks in stats', () => {
       month: '2026-09',
       now,
     });
-    expect(s.wage.completed).toEqual({ CNY: 1000 + 80000, USD: 3000 });
-    expect(s.wage.expected).toEqual({ CNY: 50000 });
+    expect(s.wage.completed).toEqual({ CNY: 1000 + 80000 });
+    expect(s.wage.expected).toEqual({ CNY: 50000, USD: 3000 });
     expect(s.wage.total).toEqual({ CNY: 131000, USD: 3000 });
-    // 任务不计入打工时长，也不影响空闲
+    // 项目不计入打工时长，也不影响空闲
     expect(s.totalMinutes).toBe(60);
     expect(s.freeDays).toBe(29);
     expect(s.jobs.find((j) => j.jobId === 't')).toMatchObject({
       minutes: 0,
       days: 0,
-      tasksDone: 2,
-      tasksOpen: 1,
+      tasksDone: 1,
+      tasksOpen: 2,
       wage: { CNY: 130000, USD: 3000 },
     });
   });
 
-  it('uses the job cutoff for tasks in pay period mode', () => {
+  it('uses the job cutoff in pay period mode', () => {
     const cutJobs = [{ id: 't', cutoffDay: 25 }];
     const s = periodStats({
       shifts: [],
-      tasks: [task('2026-09-30', '2026-09-26'), task('2026-09-30', '2026-09-25', 100)],
+      tasks: [task('2026-09-26'), task('2026-09-25', 100)],
       jobs: cutJobs,
       activeJobs: cutJobs,
       mode: 'payPeriod',
@@ -337,10 +331,10 @@ describe('piece-rate tasks in stats', () => {
     expect(s.wage.total).toEqual({ CNY: 100 });
   });
 
-  it('adds task income to the yearly totals by income date', () => {
+  it('adds project income to the yearly totals by due date', () => {
     const r = yearIncome({
       shifts: [],
-      tasks: [task('2026-03-31', '2026-04-01'), task('2026-05-10', null, 500)],
+      tasks: [task('2026-04-01'), task('2026-05-10', 500)],
       jobs,
       mode: 'calendarMonth',
       year: 2026,

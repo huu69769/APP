@@ -9,7 +9,8 @@ import { isOvernight, shiftWage, validateShift, workedMinutes, type ShiftTimes }
 import { normalizeTime } from '@/lib/time';
 import { colors } from '@/theme/colors';
 
-import { EmptyText, Field, Input, Segmented, TimeInput } from './form';
+import { EmptyText, Field, Input, Segmented } from './form';
+import { TimePicker } from './pickers/TimePicker';
 
 /** 开始 / 结束 / 休息 三个输入框的状态，以及校验结果 */
 export function useShiftTimeState() {
@@ -119,18 +120,20 @@ function TimeFields({
     <>
       <View style={styles.row}>
         <Field label={t('shift.startTime')}>
-          <TimeInput
+          <TimePicker
             value={state.startTime}
-            onChangeText={state.setStartTime}
+            onChange={state.setStartTime}
             placeholder={t('shift.timePlaceholder')}
+            accessibilityLabel={t('shift.startTime')}
           />
         </Field>
         <Text style={styles.dash}>–</Text>
         <Field label={t('shift.endTime')}>
-          <TimeInput
+          <TimePicker
             value={state.endTime}
-            onChangeText={state.setEndTime}
+            onChange={state.setEndTime}
             placeholder={t('shift.timePlaceholder')}
+            accessibilityLabel={t('shift.endTime')}
           />
         </Field>
         <Field label={t('shift.breakMinutes')}>

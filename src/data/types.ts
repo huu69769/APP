@@ -46,10 +46,17 @@ export interface Job extends BaseEntity {
   /** 截止日 1–31；null = 月末 */
   cutoffDay: number | null;
   defaultBreakMinutes: number;
+  /** 结束日期；null / 没有 = 进行中。已结束的工作不再出现在添加班次、项目的选项里，但记录保留 */
+  endedAt?: LocalDate | null;
 }
 
 export function jobPayType(job: Pick<Job, 'payType'>): PayType {
   return job.payType ?? 'hourly';
+}
+
+/** 进行中的工作（没删除、没结束） */
+export function isActiveJob(job: Pick<Job, 'deletedAt' | 'endedAt'>): boolean {
+  return !job.deletedAt && !job.endedAt;
 }
 
 export interface ShiftTemplate extends BaseEntity {
@@ -93,8 +100,8 @@ export function isTimed<T extends Pick<Shift, 'startTime' | 'endTime'>>(
 }
 
 /**
- * 按件计酬兼职的一个任务（工作单）。
- * 收入按交付日计入「已完成」；未交付的按截止日计入「预计」。
+ * 按项目结算（客户）的一个项目。
+ * 收入算在截止日（DDL）：DDL 过了算「已完成」，还没到算「预计」。
  */
 export interface Task extends BaseEntity {
   jobId: string;
@@ -104,10 +111,6 @@ export interface Task extends BaseEntity {
   /** 报酬（最小单位整数） */
   amount: MinorUnits;
   currency: Currency;
-  /** 交付日；null = 进行中 */
-  deliveredDate: LocalDate | null;
-  /** 实际用时（分钟），可不填，只作参考，不计入打工时长 */
-  minutesSpent: number | null;
   note: string;
   reminderMinutesBefore: number | null;
 }

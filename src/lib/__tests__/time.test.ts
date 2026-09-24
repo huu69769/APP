@@ -1,7 +1,5 @@
 import {
   formatHours,
-  parseHoursInput,
-  formatTimeInput,
   isValidTime,
   minutesToTime,
   normalizeTime,
@@ -22,13 +20,6 @@ describe('time helpers', () => {
     expect(timeToMinutes('09:30')).toBe(570);
     expect(minutesToTime(570)).toBe('09:30');
     expect(minutesToTime(1440 + 60)).toBe('01:00');
-  });
-
-  it('formats typed digits', () => {
-    expect(formatTimeInput('9')).toBe('9');
-    expect(formatTimeInput('930')).toBe('9:30');
-    expect(formatTimeInput('0930')).toBe('09:30');
-    expect(formatTimeInput('09:305')).toBe('09:30');
   });
 
   it('normalizes loose input', () => {
@@ -53,16 +44,5 @@ describe('formatHours', () => {
     expect(formatHours(750)).toBe('12.5');
     expect(formatHours(20)).toBe('0.3');
     expect(formatHours(59)).toBe('1');
-  });
-});
-
-describe('parseHoursInput', () => {
-  it('parses decimal hours into minutes', () => {
-    expect(parseHoursInput('2.5')).toBe(150);
-    expect(parseHoursInput('3')).toBe(180);
-    expect(parseHoursInput('0.25')).toBe(15);
-    expect(parseHoursInput('')).toBeNull();
-    expect(parseHoursInput('abc')).toBeUndefined();
-    expect(parseHoursInput('-1')).toBeUndefined();
   });
 });

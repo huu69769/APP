@@ -1,38 +1,19 @@
-import { primaryTask, tasksOnDate } from '../tasks';
+import { isTaskDone, tasksOnDate } from '../tasks';
 
-const task = (
-  id: string,
-  jobId: string,
-  createdAt: string,
-  dueDate = '2026-09-30',
-  deliveredDate: string | null = null
-) => ({
-  id,
-  jobId,
-  createdAt,
-  dueDate,
-  deliveredDate,
-});
-
-describe('primaryTask', () => {
-  it('returns the earliest created task of the job', () => {
+describe('tasksOnDate', () => {
+  it('matches the due date', () => {
     const tasks = [
-      task('b', 'j1', '2026-09-02T00:00:00Z'),
-      task('a', 'j1', '2026-09-01T00:00:00Z'),
-      task('c', 'j2', '2026-08-01T00:00:00Z'),
+      { id: 'a', dueDate: '2026-09-30' },
+      { id: 'b', dueDate: '2026-10-01' },
     ];
-    expect(primaryTask(tasks, 'j1')?.id).toBe('a');
-    expect(primaryTask(tasks, 'j3')).toBeUndefined();
+    expect(tasksOnDate(tasks, '2026-09-30').map((t) => t.id)).toEqual(['a']);
   });
 });
 
-describe('tasksOnDate', () => {
-  it('matches the due date or the delivered date', () => {
-    const tasks = [
-      task('a', 'j', 'x', '2026-09-30'),
-      task('b', 'j', 'x', '2026-10-05', '2026-09-30'),
-      task('c', 'j', 'x', '2026-10-01'),
-    ];
-    expect(tasksOnDate(tasks, '2026-09-30').map((t) => t.id)).toEqual(['a', 'b']);
+describe('isTaskDone', () => {
+  it('is done only after the due date has passed', () => {
+    expect(isTaskDone({ dueDate: '2026-09-29' }, '2026-09-30')).toBe(true);
+    expect(isTaskDone({ dueDate: '2026-09-30' }, '2026-09-30')).toBe(false);
+    expect(isTaskDone({ dueDate: '2026-10-01' }, '2026-09-30')).toBe(false);
   });
 });

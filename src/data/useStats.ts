@@ -2,6 +2,7 @@ import { localNow, type YearMonth } from '@/lib/date';
 import { periodStats, statsLoadRange, yearIncome } from '@/lib/stats';
 
 import { useData } from './DataProvider';
+import { isActiveJob } from './types';
 import { useQuery } from './useQuery';
 
 /** 读取某个月（统计周期）的统计数据；数据变化时自动刷新 */
@@ -16,7 +17,7 @@ export function useMonthStats(month: YearMonth) {
         r.jobs.listWithDeleted(),
         r.tasks.list(),
       ]);
-      const activeJobs = jobs.filter((j) => !j.deletedAt);
+      const activeJobs = jobs.filter(isActiveJob);
       const stats = periodStats({ shifts, tasks, jobs, activeJobs, mode, month, now: localNow() });
       return { stats, jobsById: new Map(jobs.map((j) => [j.id, j])) };
     },

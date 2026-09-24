@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyText, Field, FormScreen, ListRow, Section, Segmented } from '@/components/form';
 import { useData } from '@/data/DataProvider';
-import { jobPayType } from '@/data/types';
+import { isActiveJob, jobPayType } from '@/data/types';
 import { useMonthStats, useYearIncome } from '@/data/useStats';
 import { addMonths, currentMonth, type YearMonth } from '@/lib/date';
 import { formatMoneyMulti } from '@/lib/money';
@@ -126,7 +126,11 @@ export default function StatsScreen() {
                       color={job.color}
                       title={job.name}
                       subtitle={[
-                        t('stats.tasksSummary', { done: j.tasksDone, open: j.tasksOpen }),
+                        t('stats.tasksSummary', {
+                          count: j.tasksDone + j.tasksOpen,
+                          done: j.tasksDone,
+                          open: j.tasksOpen,
+                        }),
                         settings.statsPeriod === 'payPeriod' ? range(j.range) : null,
                       ]
                         .filter(Boolean)

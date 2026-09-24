@@ -2,11 +2,10 @@ import type { LocalDate } from '@/lib/date';
 
 import type { Job, NewEntity, Task } from './types';
 
-/** 新建任务。币种默认用兼职的币种 */
+/** 新建项目。币种默认用客户（工作）的币种 */
 export function buildTask(
   job: Job,
-  input: Pick<Task, 'title' | 'dueDate' | 'amount'> &
-    Partial<Pick<Task, 'currency' | 'deliveredDate' | 'minutesSpent' | 'note'>>
+  input: Pick<Task, 'title' | 'dueDate' | 'amount'> & Partial<Pick<Task, 'currency' | 'note'>>
 ): NewEntity<Task> {
   return {
     jobId: job.id,
@@ -14,30 +13,17 @@ export function buildTask(
     dueDate: input.dueDate,
     amount: input.amount,
     currency: input.currency ?? job.currency,
-    deliveredDate: input.deliveredDate ?? null,
-    minutesSpent: input.minutesSpent ?? null,
     note: input.note ?? '',
     reminderMinutesBefore: null,
   };
 }
 
-/** 截止日或交付日是这一天的任务 */
-export function tasksOnDate<T extends Pick<Task, 'dueDate' | 'deliveredDate'>>(
-  tasks: T[],
-  date: LocalDate
-): T[] {
-  return tasks.filter((t) => t.dueDate === date || t.deliveredDate === date);
+/** DDL 已经过了（统计里算「已完成」） */
+export function isTaskDone(task: Pick<Task, 'dueDate'>, today: LocalDate): boolean {
+  return task.dueDate < today;
 }
 
-/**
- * 「按项目结算」的兼职本身就是一个项目：兼职页面直接编辑它的报酬、截止日等。
- * 这里取这份兼职最早建立的那条任务作为「这个项目」。
- */
-export function primaryTask<T extends Pick<Task, 'jobId' | 'createdAt'>>(
-  tasks: T[],
-  jobId: string
-): T | undefined {
-  return tasks
-    .filter((t) => t.jobId === jobId)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+/** DDL 是这一天的项目 */
+export function tasksOnDate<T extends Pick<Task, 'dueDate'>>(tasks: T[], date: LocalDate): T[] {
+  return tasks.filter((t) => t.dueDate === date);
 }

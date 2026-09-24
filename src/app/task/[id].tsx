@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { confirmAsync, showMessage } from '@/components/confirm';
 import {
   Button,
-  DateInput,
   EmptyText,
   Field,
   FormScreen,
@@ -14,15 +13,18 @@ import {
   Section,
   Segmented,
 } from '@/components/form';
+import { DatePicker } from '@/components/pickers/TimePicker';
 import { useData } from '@/data/DataProvider';
 import { buildTask } from '@/data/tasks';
-import { CURRENCIES, jobPayType, type Currency, type Job, type Task } from '@/data/types';
-import { isValidLocalDate, today } from '@/lib/date';
+import { CURRENCIES, isActiveJob, jobPayType, type Currency, type Job } from '@/data/types';
+import { isValidLocalDate } from '@/lib/date';
 import { moneyToInput, parseMoney } from '@/lib/money';
-import { parseHoursInput } from '@/lib/time';
 
 /**
- * 按件计酬的任务：新建（id = "new"，参数 date 作为默认截止日）或编辑。
+ * 项目（按项目结算的客户下面的一个案子）：新建或编辑。
+ * 只需要填：项目名称、报酬、DDL、备注。收入算在 DDL 那天。
+ *
+ * 新建时的参数：date（默认 DDL）、jobId（默认选中的客户）
  */
 export default function TaskEditScreen() {
   const { t } = useTranslation();
@@ -33,12 +35,11 @@ export default function TaskEditScreen() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobId, setJobId] = useState('');
   const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState(params.date ?? today());
+  const [dueDate, setDueDate] = useState(
+    params.date && isValidLocalDate(params.date) ? params.date : ''
+  );
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('CNY');
-  const [delivered, setDelivered] = useState(false);
-  const [deliveredDate, setDeliveredDate] = useState(today());
-  const [hours, setHours] = useState('');
   const [note, setNote] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [missing, setMissing] = useState(false);
@@ -48,10 +49,9 @@ export default function TaskEditScreen() {
     (async () => {
       if (isNew) {
         const list = (await repos.jobs.list())
-          .filter((j) => jobPayType(j) === 'piece')
+          .filter((j) => jobPayType(j) === 'piece' && isActiveJob(j))
           .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
         setJobs(list);
-        // 从兼职页面进来时，默认选中那份兼职
         const initial = list.find((j) => j.id === params.jobId) ?? list[0];
         if (initial) {
           setJobId(initial.id);
@@ -66,13 +66,6 @@ export default function TaskEditScreen() {
           setDueDate(task.dueDate);
           setAmount(moneyToInput(task.amount, task.currency));
           setCurrency(task.currency);
-          setDelivered(task.deliveredDate !== null);
-          setDeliveredDate(task.deliveredDate ?? today());
-          setHours(
-            task.minutesSpent === null
-              ? ''
-              : String(Math.round((task.minutesSpent / 60) * 100) / 100)
-          );
           setNote(task.note);
           const job = (await repos.jobs.listWithDeleted()).find((j) => j.id === task.jobId);
           if (job) setJobs([job]);
@@ -84,36 +77,26 @@ export default function TaskEditScreen() {
 
   const job = jobs.find((j) => j.id === jobId);
   const amountValue = parseMoney(amount, currency);
-  const minutes = parseHoursInput(hours);
   const errors = {
     title: title.trim() ? null : t('errors.titleRequired'),
     dueDate: isValidLocalDate(dueDate) ? null : t('errors.dateInvalid'),
     amount: amountValue === null ? t('errors.wageInvalid') : null,
-    deliveredDate: !delivered || isValidLocalDate(deliveredDate) ? null : t('errors.dateInvalid'),
-    hours: minutes === undefined ? t('errors.hoursInvalid') : null,
   };
   const err = (k: keyof typeof errors) => (showErrors ? errors[k] : null);
 
   const save = async () => {
     setShowErrors(true);
     if (Object.values(errors).some(Boolean) || !job) return;
-    const data: Partial<Task> = {
+    const data = {
       title: title.trim(),
       dueDate,
       amount: amountValue!,
       currency,
-      deliveredDate: delivered ? deliveredDate : null,
-      minutesSpent: minutes ?? null,
       note: note.trim(),
     };
     try {
-      if (isNew) {
-        await repos.tasks.create(
-          buildTask(job, { ...data, title: data.title!, dueDate, amount: amountValue! })
-        );
-      } else {
-        await repos.tasks.update(params.id, data);
-      }
+      if (isNew) await repos.tasks.create(buildTask(job, data));
+      else await repos.tasks.update(params.id, data);
       router.back();
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
@@ -142,13 +125,22 @@ export default function TaskEditScreen() {
   if (!loaded) return null;
 
   if (isNew && jobs.length === 0) {
+    // 还没有客户：直接去新建客户（同一页可以填第一个项目）
     return (
       <FormScreen>
         <Stack.Screen options={{ title: t('task.newTitle') }} />
         <Section>
           <EmptyText>{t('task.noPieceJobs')}</EmptyText>
         </Section>
-        <Button title={t('day.goJobs')} onPress={() => router.push('/jobs')} />
+        <Button
+          title={t('task.addClient')}
+          onPress={() =>
+            router.replace({
+              pathname: '/jobs/[id]',
+              params: { id: 'new', payType: 'piece', ...(dueDate ? { due: dueDate } : {}) },
+            })
+          }
+        />
       </FormScreen>
     );
   }
@@ -175,13 +167,6 @@ export default function TaskEditScreen() {
         <Field label={t('task.title')} error={err('title')}>
           <Input value={title} onChangeText={setTitle} placeholder={t('task.titlePlaceholder')} />
         </Field>
-        <Field label={t('task.dueDate')} error={err('dueDate')}>
-          <DateInput
-            value={dueDate}
-            onChangeText={setDueDate}
-            placeholder={t('task.datePlaceholder')}
-          />
-        </Field>
         <Field label={t('task.amount')} error={err('amount')}>
           <Segmented
             options={CURRENCIES.map((c) => ({ value: c, label: c }))}
@@ -195,38 +180,12 @@ export default function TaskEditScreen() {
             placeholder={currency === 'JPY' ? '10000' : '800.00'}
           />
         </Field>
-      </Section>
-
-      <Section>
-        <Field label={t('task.status')}>
-          <Segmented
-            options={[
-              { value: 'open', label: t('task.open') },
-              { value: 'delivered', label: t('task.delivered') },
-            ]}
-            value={delivered ? 'delivered' : 'open'}
-            onChange={(v) => setDelivered(v === 'delivered')}
-          />
-        </Field>
-        {delivered && (
-          <Field
-            label={t('task.deliveredDate')}
-            error={err('deliveredDate')}
-            hint={t('task.deliveredHint')}>
-            <DateInput
-              value={deliveredDate}
-              onChangeText={setDeliveredDate}
-              placeholder={t('task.datePlaceholder')}
-            />
-          </Field>
-        )}
-        <Field label={t('task.hours')} error={err('hours')} hint={t('task.hoursHint')}>
-          <Input
-            value={hours}
-            onChangeText={setHours}
-            keyboardType="decimal-pad"
-            placeholder="2.5"
-            style={{ width: 96 }}
+        <Field label={t('task.dueDate')} error={err('dueDate')} hint={t('task.dueHint')}>
+          <DatePicker
+            value={dueDate}
+            onChange={setDueDate}
+            placeholder={t('task.datePlaceholder')}
+            accessibilityLabel={t('task.dueDate')}
           />
         </Field>
         <Field label={t('task.note')}>

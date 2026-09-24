@@ -28,6 +28,8 @@ interface Props {
   /** 批量排班时选中的日期；传入时格子显示选中状态 */
   selected?: Set<LocalDate>;
   onPressDay: (date: LocalDate) => void;
+  /** 长按某一天（用来开始批量排班） */
+  onLongPressDay?: (date: LocalDate) => void;
   onSwipe: (delta: 1 | -1) => void;
 }
 
@@ -42,6 +44,7 @@ export function MonthCalendar({
   bars,
   selected,
   onPressDay,
+  onLongPressDay,
   onSwipe,
 }: Props) {
   const { t } = useTranslation();
@@ -76,6 +79,7 @@ export function MonthCalendar({
                 bars={bars?.get(day.date) ?? []}
                 selected={selected?.has(day.date)}
                 onPress={onPressDay}
+                onLongPress={onLongPressDay}
               />
             ))}
           </View>
@@ -90,11 +94,13 @@ function DayCell({
   bars,
   selected,
   onPress,
+  onLongPress,
 }: {
   day: CalendarDay;
   bars: DayBar[];
   selected?: boolean;
   onPress: (date: LocalDate) => void;
+  onLongPress?: (date: LocalDate) => void;
 }) {
   const { t } = useTranslation();
   const [, month] = day.date.split('-').map(Number);
@@ -109,6 +115,7 @@ function DayCell({
         selected && styles.cellSelected,
       ]}
       onPress={() => onPress(day.date)}
+      onLongPress={onLongPress ? () => onLongPress(day.date) : undefined}
       accessibilityRole="button"
       accessibilityState={selected === undefined ? undefined : { selected }}
       accessibilityLabel={t('calendar.dayLabel', { month, day: day.day })}>

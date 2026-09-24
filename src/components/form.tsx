@@ -9,8 +9,6 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { formatDateInput } from '@/lib/date';
-import { formatTimeInput, normalizeTime } from '@/lib/time';
 import { colors, JOB_COLORS } from '@/theme/colors';
 
 /** 表单页面：可滚动，点输入框外不会收起按钮点击 */
@@ -77,54 +75,6 @@ export function Input(props: TextInputProps) {
       placeholderTextColor={colors.textFaint}
       {...props}
       style={[styles.input, props.multiline && styles.multiline, props.style]}
-    />
-  );
-}
-
-/** 时间输入：输入数字自动加冒号，离开输入框时规范成 HH:mm */
-export function TimeInput({
-  value,
-  onChangeText,
-  placeholder,
-}: {
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <Input
-      value={value}
-      onChangeText={(text) => onChangeText(formatTimeInput(text))}
-      onBlur={() => {
-        const normalized = normalizeTime(value);
-        if (normalized) onChangeText(normalized);
-      }}
-      placeholder={placeholder}
-      keyboardType="number-pad"
-      maxLength={5}
-      style={styles.timeInput}
-    />
-  );
-}
-
-/** 日期输入：输入数字自动加「-」，格式 YYYY-MM-DD */
-export function DateInput({
-  value,
-  onChangeText,
-  placeholder,
-}: {
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <Input
-      value={value}
-      onChangeText={(text) => onChangeText(formatDateInput(text))}
-      placeholder={placeholder}
-      keyboardType="number-pad"
-      maxLength={10}
-      style={styles.dateInput}
     />
   );
 }
@@ -282,8 +232,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   multiline: { minHeight: 72, textAlignVertical: 'top' },
-  timeInput: { width: 96, textAlign: 'center' },
-  dateInput: { width: 140 },
   segmented: {
     flexDirection: 'row',
     flexWrap: 'wrap',

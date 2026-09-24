@@ -16,7 +16,7 @@ import {
 import { ShiftTimeFields, useShiftTimeState } from '@/components/ShiftTimeFields';
 import { useData } from '@/data/DataProvider';
 import { buildPendingShift, buildShift } from '@/data/shifts';
-import { jobPayType, type Job, type Shift } from '@/data/types';
+import { isActiveJob, jobPayType, type Job, type Shift } from '@/data/types';
 import { formatMoney } from '@/lib/money';
 
 /**
@@ -44,7 +44,7 @@ export default function ShiftEditScreen() {
     (async () => {
       if (isNew) {
         const list = (await repos.jobs.list())
-          .filter((j) => jobPayType(j) === 'hourly')
+          .filter((j) => jobPayType(j) === 'hourly' && isActiveJob(j))
           .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
         setJobs(list);
         if (list[0]) {
@@ -136,7 +136,10 @@ export default function ShiftEditScreen() {
         <Section>
           <EmptyText>{t('day.noJobs')}</EmptyText>
         </Section>
-        <Button title={t('day.goJobs')} onPress={() => router.push('/jobs')} />
+        <Button
+          title={t('day.goJobs')}
+          onPress={() => router.replace({ pathname: '/jobs/[id]', params: { id: 'new' } })}
+        />
       </FormScreen>
     );
   }

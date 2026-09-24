@@ -1,12 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { confirmAsync, showMessage } from '@/components/confirm';
 import {
   Button,
   ColorPicker,
-  DateInput,
   EmptyText,
   Field,
   FormScreen,
@@ -15,30 +15,32 @@ import {
   Section,
   Segmented,
 } from '@/components/form';
+import { DatePicker, TimePicker } from '@/components/pickers/TimePicker';
 import { useData } from '@/data/DataProvider';
-import { buildTask, primaryTask } from '@/data/tasks';
-import {
-  CURRENCIES,
-  jobPayType,
-  type Currency,
-  type Job,
-  type PayType,
-  type Task,
-} from '@/data/types';
+import { buildTask } from '@/data/tasks';
+import { CURRENCIES, jobPayType, type Currency, type Job, type PayType } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { formatDuration } from '@/i18n/format';
 import { isValidLocalDate, today } from '@/lib/date';
 import { formatMoney, moneyToInput, parseMoney } from '@/lib/money';
-import { workedMinutes } from '@/lib/shift';
-import { parseHoursInput } from '@/lib/time';
-import { JOB_COLORS } from '@/theme/colors';
+import { validateShift, workedMinutes } from '@/lib/shift';
+import { colors, JOB_COLORS } from '@/theme/colors';
+
+/** 新建时薪兼职时，直接填的时间段（保存时变成班次模板） */
+interface SlotDraft {
+  key: number;
+  name: string;
+  startTime: string;
+  endTime: string;
+  breakMinutes: string;
+}
 
 /**
- * 新建 / 编辑兼职（id = "new" 表示新建）。
- * - 时薪制：填时薪等，下面管理班次模板
- * - 按项目结算：这份兼职就是一个项目，直接在这里填报酬、截止日、交付状态
+ * 新建 / 编辑工作（id = "new" 表示新建）。
+ * - 时薪：填时薪；新建时可以直接加时间段模板，编辑时管理模板
+ * - 按项目结算：这里是客户；新建时可以直接填第一个项目，编辑时管理项目
  *
- * 新建时可用参数：payType=piece（预选按项目结算）、due=YYYY-MM-DD（默认截止日）
+ * 新建时可用参数：payType=piece（预选按项目结算）、due=YYYY-MM-DD（第一个项目的默认 DDL）
  */
 export default function JobEditScreen() {
   const { t } = useTranslation();
@@ -49,6 +51,7 @@ export default function JobEditScreen() {
 
   const [loaded, setLoaded] = useState(isNew);
   const [missing, setMissing] = useState(false);
+  const [endedAt, setEndedAt] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [payType, setPayType] = useState<PayType>(
     isNew && params.payType === 'piece' ? 'piece' : 'hourly'
@@ -56,24 +59,24 @@ export default function JobEditScreen() {
   const [color, setColor] = useState<string>(JOB_COLORS[0]);
   const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
   const [wage, setWage] = useState('');
+  const [moreOpen, setMoreOpen] = useState(false);
   const [endOfMonth, setEndOfMonth] = useState(true);
   const [cutoff, setCutoff] = useState('');
   const [breakMinutes, setBreakMinutes] = useState('0');
   const [showErrors, setShowErrors] = useState(false);
 
-  // 按项目结算：这个项目的内容
-  const [project, setProject] = useState<Task | null>(null);
-  const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState(
-    params.due && isValidLocalDate(params.due) ? params.due : today()
+  // 新建时薪兼职：时间段
+  const [slots, setSlots] = useState<SlotDraft[]>([]);
+  // 新建客户：第一个项目
+  const [projectTitle, setProjectTitle] = useState('');
+  const [projectAmount, setProjectAmount] = useState('');
+  const [projectDue, setProjectDue] = useState(
+    params.due && isValidLocalDate(params.due) ? params.due : ''
   );
-  const [delivered, setDelivered] = useState(false);
-  const [deliveredDate, setDeliveredDate] = useState(today());
-  const [hours, setHours] = useState('');
 
   useEffect(() => {
     if (isNew) {
-      // 新兼职默认用还没被用过的颜色，方便在月历上区分
+      // 新工作默认用还没被用过的颜色，方便在月历上区分
       repos.jobs.list().then((jobs) => {
         const used = new Set(jobs.map((j) => j.color));
         const free = JOB_COLORS.find((c) => !used.has(c));
@@ -81,8 +84,7 @@ export default function JobEditScreen() {
       });
       return;
     }
-    (async () => {
-      const job = await repos.jobs.get(id);
+    repos.jobs.get(id).then((job) => {
       if (!job) {
         setMissing(true);
       } else {
@@ -94,45 +96,27 @@ export default function JobEditScreen() {
         setEndOfMonth(job.cutoffDay === null);
         setCutoff(job.cutoffDay === null ? '' : String(job.cutoffDay));
         setBreakMinutes(String(job.defaultBreakMinutes));
-        const task = primaryTask(await repos.tasks.list(), id);
-        if (task) {
-          setProject(task);
-          setAmount(moneyToInput(task.amount, task.currency));
-          setCurrency(task.currency);
-          setDueDate(task.dueDate);
-          setDelivered(task.deliveredDate !== null);
-          setDeliveredDate(task.deliveredDate ?? today());
-          setHours(
-            task.minutesSpent === null
-              ? ''
-              : String(Math.round((task.minutesSpent / 60) * 100) / 100)
-          );
-        }
+        setMoreOpen(job.cutoffDay !== null || job.defaultBreakMinutes > 0);
+        setEndedAt(job.endedAt ?? null);
       }
       setLoaded(true);
-    })();
+    });
   }, [id, isNew, repos]);
 
-  // 以前从当天页面额外加的项目（同一份兼职有多个项目时）
-  const { data: otherProjects } = useQuery(
+  const { data: related } = useQuery(
     async (r) => {
-      if (isNew) return [];
-      const all = (await r.tasks.list()).filter((task) => task.jobId === id);
-      const primary = primaryTask(all, id);
-      return all
-        .filter((task) => task.id !== primary?.id)
-        .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+      if (isNew) return { templates: [], projects: [] };
+      const [templates, tasks] = await Promise.all([r.shift_templates.list(), r.tasks.list()]);
+      return {
+        templates: templates
+          .filter((tpl) => tpl.jobId === id)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+        // DDL 新的在前
+        projects: tasks
+          .filter((task) => task.jobId === id)
+          .sort((a, b) => b.dueDate.localeCompare(a.dueDate)),
+      };
     },
-    [id, isNew]
-  );
-
-  const { data: templates } = useQuery(
-    async (r) =>
-      isNew
-        ? []
-        : (await r.shift_templates.list())
-            .filter((tpl) => tpl.jobId === id)
-            .sort((a, b) => a.startTime.localeCompare(b.startTime)),
     [id, isNew]
   );
 
@@ -140,23 +124,41 @@ export default function JobEditScreen() {
   const wageValue = isPiece ? 0 : parseMoney(wage, currency);
   const cutoffValue = endOfMonth ? null : Number(cutoff);
   const breakValue = Number(breakMinutes);
-  const amountValue = parseMoney(amount, currency);
-  const minutesSpent = parseHoursInput(hours);
+
+  // 第一个项目：全部空着就不建；填了一部分就要求填完整
+  const projectStarted =
+    isNew && isPiece && !!(projectTitle.trim() || projectAmount.trim() || projectDue);
+  const projectAmountValue = parseMoney(projectAmount, currency);
+
+  // 时间段：两个时间都空的忽略；只填了一部分就报错
+  const slotError = (s: SlotDraft) => {
+    if (!s.startTime && !s.endTime) return null;
+    if (!/^\d+$/.test(s.breakMinutes)) return t('errors.breakInvalid');
+    const code = validateShift({
+      startTime: s.startTime,
+      endTime: s.endTime,
+      breakMinutes: Number(s.breakMinutes),
+    });
+    if (code === 'breakTooLong') return t('errors.breakTooLong');
+    if (code) return t('errors.timeInvalid');
+    return null;
+  };
+
   const errors = {
     name: name.trim() ? null : t('errors.nameRequired'),
     wage: wageValue === null ? t('errors.wageInvalid') : null,
     cutoff:
-      isPiece || endOfMonth || (/^\d{1,2}$/.test(cutoff) && cutoffValue! >= 1 && cutoffValue! <= 31)
+      endOfMonth || (/^\d{1,2}$/.test(cutoff) && cutoffValue! >= 1 && cutoffValue! <= 31)
         ? null
         : t('errors.cutoffInvalid'),
     break: isPiece || /^\d+$/.test(breakMinutes) ? null : t('errors.breakInvalid'),
-    amount: !isPiece || amountValue !== null ? null : t('errors.wageInvalid'),
-    dueDate: !isPiece || isValidLocalDate(dueDate) ? null : t('errors.dateInvalid'),
-    deliveredDate:
-      !isPiece || !delivered || isValidLocalDate(deliveredDate) ? null : t('errors.dateInvalid'),
-    hours: !isPiece || minutesSpent !== undefined ? null : t('errors.hoursInvalid'),
+    slots: !isNew || isPiece || slots.every((s) => !slotError(s)) ? null : 'slot',
+    projectTitle: !projectStarted || projectTitle.trim() ? null : t('errors.titleRequired'),
+    projectAmount: !projectStarted || projectAmountValue !== null ? null : t('errors.wageInvalid'),
+    projectDue: !projectStarted || isValidLocalDate(projectDue) ? null : t('errors.dateInvalid'),
   };
   const hasErrors = Object.values(errors).some(Boolean);
+  const err = (key: keyof typeof errors) => (showErrors ? errors[key] : null);
 
   const save = async () => {
     setShowErrors(true);
@@ -167,50 +169,77 @@ export default function JobEditScreen() {
       color,
       currency,
       hourlyWage: wageValue!,
-      cutoffDay: isPiece ? null : cutoffValue,
+      cutoffDay: cutoffValue,
       defaultBreakMinutes: isPiece ? 0 : breakValue,
-    };
-    const projectData = {
-      title: name.trim(),
-      dueDate,
-      amount: amountValue ?? 0,
-      currency,
-      deliveredDate: delivered ? deliveredDate : null,
-      minutesSpent: minutesSpent ?? null,
+      endedAt,
     };
     try {
-      const job = isNew ? await repos.jobs.create(data) : await repos.jobs.update(id, data);
-      if (isPiece) {
-        if (project) await repos.tasks.update(project.id, projectData);
-        else await repos.tasks.create(buildTask(job, projectData));
-      }
-      if (isNew && !isPiece) {
-        // 时薪制：新建后留在编辑页，方便马上添加班次模板
-        router.replace({ pathname: '/jobs/[id]', params: { id: job.id } });
-      } else {
+      if (!isNew) {
+        await repos.jobs.update(id, data);
         router.back();
+        return;
       }
+      const job = await repos.jobs.create(data);
+      if (isPiece && projectStarted) {
+        await repos.tasks.create(
+          buildTask(job, {
+            title: projectTitle.trim(),
+            amount: projectAmountValue!,
+            dueDate: projectDue,
+          })
+        );
+      }
+      if (!isPiece) {
+        for (const s of slots) {
+          if (!s.startTime && !s.endTime) continue;
+          await repos.shift_templates.create({
+            jobId: job.id,
+            name: s.name.trim() || `${s.startTime}–${s.endTime}`,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            breakMinutes: Number(s.breakMinutes),
+          });
+        }
+      }
+      router.back();
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
     }
   };
 
+  const setEnded = async (ended: boolean) => {
+    if (ended) {
+      const ok = await confirmAsync({
+        title: t('jobs.endTitle'),
+        message: t('jobs.endMessage'),
+        confirmText: t('jobs.endAction'),
+        cancelText: t('common.cancel'),
+      });
+      if (!ok) return;
+    }
+    await repos.jobs.update(id, { endedAt: ended ? today() : null });
+    router.back();
+  };
+
   const remove = async () => {
     const ok = await confirmAsync({
-      title: t(isPiece ? 'jobs.deleteProjectTitle' : 'jobs.deleteTitle'),
-      message: t(isPiece ? 'jobs.deleteProjectMessage' : 'jobs.deleteMessage'),
+      title: t('jobs.deleteTitle'),
+      message: t('jobs.deleteMessage'),
       confirmText: t('common.delete'),
       cancelText: t('common.cancel'),
       destructive: true,
     });
     if (!ok) return;
-    for (const tpl of templates ?? []) await repos.shift_templates.remove(tpl.id);
-    if (isPiece) {
-      // 删除项目就不再计入统计
-      for (const task of (await repos.tasks.list()).filter((x) => x.jobId === id)) {
-        await repos.tasks.remove(task.id);
-      }
-    }
+    // 删除 = 加错了：它的所有记录都一起删掉（软删除），不再计入统计
+    const [shifts, tasks, templates] = await Promise.all([
+      repos.shifts.list(),
+      repos.tasks.list(),
+      repos.shift_templates.list(),
+    ]);
+    for (const x of shifts.filter((s) => s.jobId === id)) await repos.shifts.remove(x.id);
+    for (const x of tasks.filter((s) => s.jobId === id)) await repos.tasks.remove(x.id);
+    for (const x of templates.filter((s) => s.jobId === id))
+      await repos.shift_templates.remove(x.id);
     await repos.jobs.remove(id);
     router.back();
   };
@@ -224,11 +253,20 @@ export default function JobEditScreen() {
   }
   if (!loaded) return null;
 
-  const err = (key: keyof typeof errors) => (showErrors ? errors[key] : null);
+  const updateSlot = (key: number, patch: Partial<SlotDraft>) =>
+    setSlots((list) => list.map((s) => (s.key === key ? { ...s, ...patch } : s)));
 
   return (
     <FormScreen>
       <Stack.Screen options={{ title: t(isNew ? 'jobs.newTitle' : 'jobs.editTitle') }} />
+
+      {endedAt && (
+        <Section>
+          <EmptyText>{t('jobs.endedOn', { date: endedAt })}</EmptyText>
+          <Button variant="secondary" title={t('jobs.restore')} onPress={() => setEnded(false)} />
+        </Section>
+      )}
+
       <Section>
         <Field label={t('jobs.payType')} hint={isPiece ? t('jobs.pieceHint') : undefined}>
           <Segmented
@@ -240,11 +278,11 @@ export default function JobEditScreen() {
             onChange={setPayType}
           />
         </Field>
-        <Field label={t(isPiece ? 'task.title' : 'jobs.name')} error={err('name')}>
+        <Field label={t(isPiece ? 'jobs.clientName' : 'jobs.name')} error={err('name')}>
           <Input
             value={name}
             onChangeText={setName}
-            placeholder={t(isPiece ? 'task.titlePlaceholder' : 'jobs.namePlaceholder')}
+            placeholder={t(isPiece ? 'jobs.clientPlaceholder' : 'jobs.namePlaceholder')}
           />
         </Field>
         <Field label={t('jobs.color')}>
@@ -257,38 +295,31 @@ export default function JobEditScreen() {
             onChange={setCurrency}
           />
         </Field>
+        {!isPiece && (
+          <Field
+            label={t('jobs.hourlyWage')}
+            error={err('wage')}
+            hint={isNew ? undefined : t('jobs.wageNote')}>
+            <Input
+              value={wage}
+              onChangeText={setWage}
+              keyboardType={currency === 'JPY' ? 'number-pad' : 'decimal-pad'}
+              placeholder={currency === 'JPY' ? '1200' : '25.00'}
+            />
+          </Field>
+        )}
 
-        {isPiece ? (
+        <Pressable
+          onPress={() => setMoreOpen((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: moreOpen }}
+          style={styles.moreToggle}>
+          <Text style={styles.moreText}>
+            {moreOpen ? '▾' : '▸'} {t('jobs.more')}
+          </Text>
+        </Pressable>
+        {(moreOpen || !!err('cutoff') || !!err('break')) && (
           <>
-            <Field label={t('task.amount')} error={err('amount')}>
-              <Input
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType={currency === 'JPY' ? 'number-pad' : 'decimal-pad'}
-                placeholder={currency === 'JPY' ? '10000' : '800.00'}
-              />
-            </Field>
-            <Field label={t('task.dueDate')} error={err('dueDate')} hint={t('jobs.dueHint')}>
-              <DateInput
-                value={dueDate}
-                onChangeText={setDueDate}
-                placeholder={t('task.datePlaceholder')}
-              />
-            </Field>
-          </>
-        ) : (
-          <>
-            <Field
-              label={t('jobs.hourlyWage')}
-              error={err('wage')}
-              hint={isNew ? undefined : t('jobs.wageNote')}>
-              <Input
-                value={wage}
-                onChangeText={setWage}
-                keyboardType={currency === 'JPY' ? 'number-pad' : 'decimal-pad'}
-                placeholder={currency === 'JPY' ? '1200' : '25.00'}
-              />
-            </Field>
             <Field label={t('jobs.cutoffDay')} error={err('cutoff')} hint={t('jobs.cutoffHint')}>
               <Segmented
                 options={[
@@ -304,53 +335,117 @@ export default function JobEditScreen() {
                   onChangeText={(v) => setCutoff(v.replace(/\D/g, '').slice(0, 2))}
                   keyboardType="number-pad"
                   placeholder={t('jobs.cutoffPlaceholder')}
-                  style={{ width: 96 }}
+                  style={styles.narrow}
                 />
               )}
             </Field>
-            <Field label={t('jobs.defaultBreak')} error={err('break')}>
-              <Input
-                value={breakMinutes}
-                onChangeText={(v) => setBreakMinutes(v.replace(/\D/g, ''))}
-                keyboardType="number-pad"
-                style={{ width: 96 }}
-              />
-            </Field>
+            {!isPiece && (
+              <Field label={t('jobs.defaultBreak')} error={err('break')}>
+                <Input
+                  value={breakMinutes}
+                  onChangeText={(v) => setBreakMinutes(v.replace(/\D/g, ''))}
+                  keyboardType="number-pad"
+                  style={styles.narrow}
+                />
+              </Field>
+            )}
           </>
         )}
       </Section>
 
-      {isPiece && (
-        <Section>
-          <Field label={t('task.status')}>
-            <Segmented
-              options={[
-                { value: 'open', label: t('task.open') },
-                { value: 'delivered', label: t('task.delivered') },
-              ]}
-              value={delivered ? 'delivered' : 'open'}
-              onChange={(v) => setDelivered(v === 'delivered')}
+      {/* 新建时薪兼职：直接加时间段 */}
+      {isNew && !isPiece && (
+        <Section title={t('jobs.templates')}>
+          <EmptyText>{t('jobs.templatesHint')}</EmptyText>
+          {slots.map((s) => {
+            const e = showErrors ? slotError(s) : null;
+            return (
+              <View key={s.key} style={styles.slot}>
+                <View style={styles.slotHeader}>
+                  <Input
+                    value={s.name}
+                    onChangeText={(v) => updateSlot(s.key, { name: v })}
+                    placeholder={t('templates.namePlaceholder')}
+                    style={styles.slotName}
+                  />
+                  <Pressable
+                    onPress={() => setSlots((list) => list.filter((x) => x.key !== s.key))}
+                    accessibilityRole="button"
+                    hitSlop={8}>
+                    <Text style={styles.remove}>{t('jobs.removeSlot')}</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.slotRow}>
+                  <TimePicker
+                    value={s.startTime}
+                    onChange={(v) => updateSlot(s.key, { startTime: v })}
+                    placeholder={t('shift.startTime')}
+                    accessibilityLabel={t('shift.startTime')}
+                  />
+                  <Text style={styles.dash}>–</Text>
+                  <TimePicker
+                    value={s.endTime}
+                    onChange={(v) => updateSlot(s.key, { endTime: v })}
+                    placeholder={t('shift.endTime')}
+                    accessibilityLabel={t('shift.endTime')}
+                  />
+                  <Input
+                    value={s.breakMinutes}
+                    onChangeText={(v) => updateSlot(s.key, { breakMinutes: v.replace(/\D/g, '') })}
+                    keyboardType="number-pad"
+                    style={styles.slotBreak}
+                    accessibilityLabel={t('shift.breakMinutes')}
+                  />
+                  <Text style={styles.unit}>{t('shift.breakMinutes')}</Text>
+                </View>
+                {e && <Text style={styles.error}>{e}</Text>}
+              </View>
+            );
+          })}
+          <Button
+            variant="secondary"
+            title={t('jobs.addSlot')}
+            onPress={() =>
+              setSlots((list) => [
+                ...list,
+                {
+                  key: Date.now(),
+                  name: '',
+                  startTime: '',
+                  endTime: '',
+                  breakMinutes: breakMinutes || '0',
+                },
+              ])
+            }
+          />
+        </Section>
+      )}
+
+      {/* 新建客户：直接填第一个项目 */}
+      {isNew && isPiece && (
+        <Section title={t('jobs.firstProject')}>
+          <EmptyText>{t('jobs.firstProjectHint')}</EmptyText>
+          <Field label={t('task.title')} error={err('projectTitle')}>
+            <Input
+              value={projectTitle}
+              onChangeText={setProjectTitle}
+              placeholder={t('task.titlePlaceholder')}
             />
           </Field>
-          {delivered && (
-            <Field
-              label={t('task.deliveredDate')}
-              error={err('deliveredDate')}
-              hint={t('task.deliveredHint')}>
-              <DateInput
-                value={deliveredDate}
-                onChangeText={setDeliveredDate}
-                placeholder={t('task.datePlaceholder')}
-              />
-            </Field>
-          )}
-          <Field label={t('task.hours')} error={err('hours')} hint={t('task.hoursHint')}>
+          <Field label={t('task.amount')} error={err('projectAmount')}>
             <Input
-              value={hours}
-              onChangeText={setHours}
-              keyboardType="decimal-pad"
-              placeholder="2.5"
-              style={{ width: 96 }}
+              value={projectAmount}
+              onChangeText={setProjectAmount}
+              keyboardType={currency === 'JPY' ? 'number-pad' : 'decimal-pad'}
+              placeholder={currency === 'JPY' ? '10000' : '800.00'}
+            />
+          </Field>
+          <Field label={t('task.dueDate')} error={err('projectDue')} hint={t('task.dueHint')}>
+            <DatePicker
+              value={projectDue}
+              onChange={setProjectDue}
+              placeholder={t('task.datePlaceholder')}
+              accessibilityLabel={t('task.dueDate')}
             />
           </Field>
         </Section>
@@ -358,46 +453,54 @@ export default function JobEditScreen() {
 
       <Button title={t('common.save')} onPress={save} />
 
-      {!isPiece && (
+      {/* 编辑：模板 / 项目列表 */}
+      {!isNew && !isPiece && (
         <Section
           title={t('jobs.templates')}
           right={
-            isNew ? undefined : (
-              <Button
-                variant="secondary"
-                title={t('jobs.addTemplate')}
-                onPress={() =>
-                  router.push({ pathname: '/templates/[id]', params: { id: 'new', jobId: id } })
-                }
-              />
-            )
+            <Button
+              variant="secondary"
+              title={t('jobs.addTemplate')}
+              onPress={() =>
+                router.push({ pathname: '/templates/[id]', params: { id: 'new', jobId: id } })
+              }
+            />
           }>
-          {isNew ? (
-            <EmptyText>{t('jobs.saveFirst')}</EmptyText>
-          ) : templates && templates.length === 0 ? (
-            <EmptyText>{t('jobs.noTemplates')}</EmptyText>
-          ) : (
-            templates?.map((tpl) => (
-              <ListRow
-                key={tpl.id}
-                color={color}
-                title={tpl.name}
-                subtitle={`${tpl.startTime} – ${tpl.endTime}`}
-                right={formatDuration(t, workedMinutes(tpl))}
-                onPress={() => router.push({ pathname: '/templates/[id]', params: { id: tpl.id } })}
-              />
-            ))
+          {related && related.templates.length === 0 && (
+            <EmptyText>{t('jobs.templatesHint')}</EmptyText>
           )}
+          {related?.templates.map((tpl) => (
+            <ListRow
+              key={tpl.id}
+              color={color}
+              title={tpl.name}
+              subtitle={`${tpl.startTime} – ${tpl.endTime}`}
+              right={formatDuration(t, workedMinutes(tpl))}
+              onPress={() => router.push({ pathname: '/templates/[id]', params: { id: tpl.id } })}
+            />
+          ))}
         </Section>
       )}
-
-      {isPiece && otherProjects && otherProjects.length > 0 && (
-        <Section title={t('jobs.otherProjects')}>
-          {otherProjects.map((task) => (
+      {!isNew && isPiece && (
+        <Section
+          title={t('jobs.projects')}
+          right={
+            <Button
+              variant="secondary"
+              title={t('task.newTitle')}
+              onPress={() =>
+                router.push({ pathname: '/task/[id]', params: { id: 'new', jobId: id } })
+              }
+            />
+          }>
+          {related && related.projects.length === 0 && (
+            <EmptyText>{t('jobs.noProjects')}</EmptyText>
+          )}
+          {related?.projects.map((task) => (
             <ListRow
               key={task.id}
               color={color}
-              title={`${task.deliveredDate ? '✓ ' : ''}${task.title}`}
+              title={task.title}
               subtitle={`${t('day.taskDue')} ${task.dueDate}`}
               right={formatMoney(task.amount, task.currency)}
               onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
@@ -406,7 +509,31 @@ export default function JobEditScreen() {
         </Section>
       )}
 
+      {!isNew && !endedAt && (
+        <Button variant="secondary" title={t('jobs.end')} onPress={() => setEnded(true)} />
+      )}
       {!isNew && <Button variant="danger" title={t('common.delete')} onPress={remove} />}
     </FormScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  moreToggle: { paddingVertical: 4 },
+  moreText: { color: colors.primary, fontSize: 14 },
+  narrow: { width: 96 },
+  slot: {
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  slotHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  slotName: { flex: 1 },
+  slotRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  slotBreak: { width: 56, textAlign: 'center' },
+  dash: { color: colors.textMuted },
+  unit: { fontSize: 12, color: colors.textMuted },
+  remove: { color: colors.danger, fontSize: 14 },
+  error: { fontSize: 12, color: colors.danger },
+});
