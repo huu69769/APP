@@ -74,7 +74,6 @@
     "pendingChip": "{{job}} · 時間未定",
     "tasks": "案件",
     "addTask": "案件を追加",
-    "noTasks": "この日が締切・納品日の案件はありません",
     "taskDue": "締切",
     "taskDeliveredOn": "{{date}} 納品"
   },
@@ -106,11 +105,12 @@
     "payType": "報酬の形式",
     "payHourly": "時給",
     "payPiece": "案件ごと",
-    "pieceHint": "案件ごと：時給やシフトはなく、案件ごとに報酬（締切＋報酬）を記録します。翻訳やデザインなど。収入は納品日で計算します。",
+    "pieceHint": "案件ごと：この1件が1つの案件です（翻訳1本、デザイン1件など）。報酬と締切日を入力して保存すると、カレンダーの締切日に表示されます。収入は納品日で計算します。",
     "pieceSubtitle": "案件ごと",
-    "pieceCurrencyHint": "新しい案件を作るときの標準の通貨です。",
-    "saveFirstProject": "バイトを保存すると、ここから案件を追加できます。",
-    "noProjects": "案件がまだありません。「案件を追加」から案件名・締切日・報酬を入力すると、カレンダーの締切日に表示されます。"
+    "dueHint": "カレンダーのこの日に表示されます。",
+    "otherProjects": "このバイトのほかの案件",
+    "deleteProjectTitle": "この案件を削除しますか？",
+    "deleteProjectMessage": "削除すると集計に含まれなくなります。"
   },
   "templates": {
     "newTitle": "シフトテンプレートを新規作成",

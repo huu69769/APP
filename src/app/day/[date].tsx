@@ -7,7 +7,7 @@ import { showMessage } from '@/components/confirm';
 import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/form';
 import { useData } from '@/data/DataProvider';
 import { buildPendingShift, buildShiftFromTemplate, sortShifts } from '@/data/shifts';
-import { tasksOnDate } from '@/data/tasks';
+import { primaryTask, tasksOnDate } from '@/data/tasks';
 import { isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { formatDuration } from '@/i18n/format';
@@ -41,6 +41,10 @@ export default function DayScreen() {
         .filter((j) => !j.deletedAt)
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
       const tasks = tasksOnDate(allTasks, date).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+      // 每份「按项目结算」兼职的主项目：点它时打开兼职页面编辑
+      const primaryIds = new Set(
+        tasks.map((task) => primaryTask(allTasks, task.jobId)?.id).filter(Boolean)
+      );
       return {
         shifts: sortShifts(shifts),
         jobsById,
@@ -49,6 +53,7 @@ export default function DayScreen() {
         activeJobs,
         templates,
         tasks,
+        primaryIds,
       };
     },
     [date, valid]
@@ -125,44 +130,45 @@ export default function DayScreen() {
             </Section>
           )}
 
-          {(data.pieceJobs.length > 0 || data.tasks.length > 0) && (
-            <Section
-              title={t('day.tasks')}
-              right={
-                data.pieceJobs.length > 0 ? (
-                  <Button
-                    variant="secondary"
-                    title={t('day.addTask')}
-                    onPress={() =>
-                      router.push({ pathname: '/task/[id]', params: { id: 'new', date } })
-                    }
-                  />
-                ) : undefined
-              }>
-              {data.tasks.length === 0 && <EmptyText>{t('day.noTasks')}</EmptyText>}
-              {data.tasks.map((task) => {
-                const job = data.jobsById.get(task.jobId);
-                return (
-                  <ListRow
-                    key={task.id}
-                    color={job?.color}
-                    title={`${task.deliveredDate ? '✓ ' : ''}${task.title}`}
-                    subtitle={[
-                      job?.name,
-                      task.dueDate === date ? t('day.taskDue') : null,
-                      task.deliveredDate
-                        ? t('day.taskDeliveredOn', { date: task.deliveredDate })
-                        : t('task.open'),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                    right={formatMoney(task.amount, task.currency)}
-                    onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
-                  />
-                );
-              })}
-            </Section>
-          )}
+          <Section
+            title={t('day.tasks')}
+            right={
+              <Button
+                variant="secondary"
+                title={t('day.addTask')}
+                onPress={() =>
+                  router.push({
+                    pathname: '/jobs/[id]',
+                    params: { id: 'new', payType: 'piece', due: date },
+                  })
+                }
+              />
+            }>
+            {data.tasks.map((task) => {
+              const job = data.jobsById.get(task.jobId);
+              return (
+                <ListRow
+                  key={task.id}
+                  color={job?.color}
+                  title={`${task.deliveredDate ? '✓ ' : ''}${task.title}`}
+                  subtitle={[
+                    task.dueDate === date ? t('day.taskDue') : null,
+                    task.deliveredDate
+                      ? t('day.taskDeliveredOn', { date: task.deliveredDate })
+                      : t('task.open'),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  right={formatMoney(task.amount, task.currency)}
+                  onPress={() =>
+                    data.primaryIds.has(task.id)
+                      ? router.push({ pathname: '/jobs/[id]', params: { id: task.jobId } })
+                      : router.push({ pathname: '/task/[id]', params: { id: task.id } })
+                  }
+                />
+              );
+            })}
+          </Section>
 
           {data.activeJobs.length === 0 ? (
             <Section>

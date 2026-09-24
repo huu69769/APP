@@ -28,3 +28,16 @@ export function tasksOnDate<T extends Pick<Task, 'dueDate' | 'deliveredDate'>>(
 ): T[] {
   return tasks.filter((t) => t.dueDate === date || t.deliveredDate === date);
 }
+
+/**
+ * 「按项目结算」的兼职本身就是一个项目：兼职页面直接编辑它的报酬、截止日等。
+ * 这里取这份兼职最早建立的那条任务作为「这个项目」。
+ */
+export function primaryTask<T extends Pick<Task, 'jobId' | 'createdAt'>>(
+  tasks: T[],
+  jobId: string
+): T | undefined {
+  return tasks
+    .filter((t) => t.jobId === jobId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+}
