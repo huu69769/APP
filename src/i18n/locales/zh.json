@@ -72,9 +72,9 @@
     "goJobs": "去添加兼职",
     "noTemplates": "给兼职添加班次模板后，就可以在这里一键添加。",
     "pendingChip": "{{job}} · 时间待定",
-    "tasks": "任务",
-    "addTask": "添加任务",
-    "noTasks": "这一天没有截止或交付的任务",
+    "tasks": "项目",
+    "addTask": "添加项目",
+    "noTasks": "这一天没有截止或交付的项目",
     "taskDue": "截止",
     "taskDeliveredOn": "{{date}} 交付"
   },
@@ -105,10 +105,10 @@
     "deleteMessage": "它的班次模板也会删除；已有的班次记录会保留。",
     "payType": "计酬方式",
     "payHourly": "时薪",
-    "payPiece": "按件计酬",
-    "pieceHint": "按件计酬：没有时薪和班次，而是记录一个个任务（截止日 + 报酬）。收入按交付日计算。",
-    "pieceSubtitle": "按件计酬",
-    "pieceCurrencyHint": "新建任务时默认使用这个币种。"
+    "payPiece": "按项目结算",
+    "pieceHint": "按项目结算：没有时薪和班次，每个项目记一笔报酬（截止日 + 报酬），比如翻译、设计。收入按交付日计算。",
+    "pieceSubtitle": "按项目结算",
+    "pieceCurrencyHint": "新建项目时默认使用这个币种。"
   },
   "templates": {
     "newTitle": "新建班次模板",
@@ -148,7 +148,7 @@
     "breakTooLong": "休息时间不能大于或等于班次时长",
     "jobRequired": "请选择兼职",
     "notFound": "找不到这条记录，可能已被删除",
-    "titleRequired": "请输入任务名称",
+    "titleRequired": "请输入项目名称",
     "dateInvalid": "请输入正确的日期，例如 2026-09-30",
     "hoursInvalid": "用时请输入数字，例如 2.5"
   },
@@ -184,13 +184,13 @@
     "monthLabel": "{{month}}月",
     "pendingNote": "另有 {{count}} 个班次时间待定，没有算进时长和工钱",
     "pendingShort": "待定 {{count}} 个",
-    "tasksSummary": "完成 {{done}} 件 · 进行中 {{open}} 件"
+    "tasksSummary": "完成 {{done}} 个项目 · 进行中 {{open}} 个"
   },
   "task": {
-    "newTitle": "添加任务",
-    "editTitle": "编辑任务",
+    "newTitle": "添加项目",
+    "editTitle": "编辑项目",
     "job": "兼职",
-    "title": "任务名称",
+    "title": "项目名称",
     "titlePlaceholder": "例如：说明书翻译",
     "dueDate": "截止日（DDL）",
     "datePlaceholder": "2026-09-30",
@@ -203,7 +203,7 @@
     "hours": "用时（小时，可不填）",
     "hoursHint": "只给自己参考，不算进打工时长。",
     "note": "备注",
-    "deleteTitle": "删除这个任务？",
-    "noPieceJobs": "还没有按件计酬的兼职。添加兼职时把「计酬方式」选成「按件计酬」。"
+    "deleteTitle": "删除这个项目？",
+    "noPieceJobs": "还没有按项目结算的兼职。添加兼职时把「计酬方式」选成「按项目结算」。"
   }
 }
