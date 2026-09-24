@@ -69,7 +69,8 @@
     "manualAdd": "シフトを手動で追加",
     "noJobs": "バイトがまだありません。シフトを記録するには、まずバイトを追加してください。",
     "goJobs": "バイトを追加",
-    "noTemplates": "バイトにシフトテンプレートを追加すると、ここからワンタップで追加できます。"
+    "noTemplates": "バイトにシフトテンプレートを追加すると、ここからワンタップで追加できます。",
+    "pendingChip": "{{job}} · 時間未定"
   },
   "jobs": {
     "title": "バイト",
@@ -119,7 +120,12 @@
     "overnight": "日またぎ：翌日 {{time}} 終了",
     "summary": "実働 {{duration}} · 給料 {{amount}}",
     "wageSnapshot": "記録時の時給：{{amount}}",
-    "deleteTitle": "このシフトを削除しますか？"
+    "deleteTitle": "このシフトを削除しますか？",
+    "timeMode": "時間",
+    "timed": "時間を指定",
+    "pending": "時間未定",
+    "pendingHint": "出勤日は決まっているけれど、時間がまだ分からないときに使います。時間が決まったら、このシフトを開いて入力してください。",
+    "pendingTitle": "{{job}}  時間未定"
   },
   "errors": {
     "nameRequired": "名前を入力してください",
@@ -160,6 +166,8 @@
     "freeNote": "働いていない時間はすべて空き時間です。休憩時間は勤務中として扱います。",
     "year": "{{year}}年の累計収入",
     "yearTotal": "年間合計",
-    "monthLabel": "{{month}}月"
+    "monthLabel": "{{month}}月",
+    "pendingNote": "ほかに時間未定のシフトが {{count}} 件あります（勤務時間・給料には含まれません）",
+    "pendingShort": "未定 {{count}} 件"
   }
 }

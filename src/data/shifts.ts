@@ -30,6 +30,22 @@ export function buildShift(job: Job, input: NewShiftInput): NewEntity<Shift> {
   };
 }
 
+/** 「时间待定」的班次：知道这天要上班，但还不知道几点 */
+export function buildPendingShift(job: Job, date: LocalDate, note = ''): NewEntity<Shift> {
+  return {
+    jobId: job.id,
+    date,
+    startTime: null,
+    endTime: null,
+    breakMinutes: job.defaultBreakMinutes,
+    wageSnapshot: job.hourlyWage,
+    currencySnapshot: job.currency,
+    note,
+    reminderMinutesBefore: null,
+    premiumRules: null,
+  };
+}
+
 export function buildShiftFromTemplate(
   job: Job,
   template: ShiftTemplate,
@@ -58,9 +74,24 @@ export async function applyTemplateToDates(
   return created;
 }
 
-/** 按开始时间排序 */
-export function sortShifts<T extends { date: string; startTime: string }>(shifts: T[]): T[] {
+/** 批量标记「时间待定」：给多个日期加上某份兼职的待定班次 */
+export async function applyPendingToDates(
+  repos: Repositories,
+  job: Job,
+  dates: LocalDate[]
+): Promise<Shift[]> {
+  const created: Shift[] = [];
+  for (const date of [...dates].sort()) {
+    created.push(await repos.shifts.create(buildPendingShift(job, date)));
+  }
+  return created;
+}
+
+/** 按日期、开始时间排序；同一天里「时间待定」排在最前 */
+export function sortShifts<T extends { date: string; startTime: string | null }>(shifts: T[]): T[] {
   return [...shifts].sort((a, b) =>
-    a.date === b.date ? a.startTime.localeCompare(b.startTime) : a.date.localeCompare(b.date)
+    a.date === b.date
+      ? (a.startTime ?? '').localeCompare(b.startTime ?? '')
+      : a.date.localeCompare(b.date)
   );
 }

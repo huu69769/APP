@@ -68,6 +68,9 @@ export function StatsBar({
         />
         <Cell label={t('stats.freeHours')} value={stats ? hours(stats.freeMinutes) : '–'} />
       </View>
+      {stats && stats.pending > 0 && (
+        <Text style={styles.pending}>{t('stats.pendingNote', { count: stats.pending })}</Text>
+      )}
     </Pressable>
   );
 }
@@ -101,4 +104,5 @@ const styles = StyleSheet.create({
   value: { fontSize: 15, fontWeight: '600', color: colors.text },
   small: { fontSize: 12, fontWeight: '600', color: colors.text },
   muted: { color: colors.textMuted },
+  pending: { fontSize: 11, color: colors.textMuted },
 });

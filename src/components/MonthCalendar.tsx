@@ -14,6 +14,8 @@ export interface DayBar {
   id: string;
   color: string;
   label: string;
+  /** 时间待定：颜色浅一些，前面加「?」 */
+  pending?: boolean;
 }
 
 interface Props {
@@ -109,9 +111,9 @@ function DayCell({
       </View>
       <View style={[styles.bars, !day.inMonth && styles.barsOutOfMonth]}>
         {shown.map((bar) => (
-          <View key={bar.id} style={[styles.bar, { backgroundColor: bar.color }]}>
+          <View key={bar.id} style={[styles.bar, { backgroundColor: bar.color }, bar.pending && styles.barPending]}>
             <Text style={styles.barText} numberOfLines={1}>
-              {bar.label}
+              {bar.pending ? `? ${bar.label}` : bar.label}
             </Text>
           </View>
         ))}
@@ -162,6 +164,7 @@ const styles = StyleSheet.create({
   bars: { alignSelf: 'stretch', gap: 2, marginTop: 2, paddingHorizontal: 2 },
   barsOutOfMonth: { opacity: 0.4 },
   bar: { borderRadius: 3, paddingHorizontal: 2, paddingVertical: 1 },
+  barPending: { opacity: 0.45 },
   barText: { fontSize: 10, color: '#FFFFFF', fontWeight: '600' },
   more: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
   check: {

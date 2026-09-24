@@ -9,19 +9,25 @@ import { isOvernight, shiftWage, validateShift, workedMinutes, type ShiftTimes }
 import { normalizeTime } from '@/lib/time';
 import { colors } from '@/theme/colors';
 
-import { Field, Input, TimeInput } from './form';
+import { EmptyText, Field, Input, Segmented, TimeInput } from './form';
 
 /** 开始 / 结束 / 休息 三个输入框的状态，以及校验结果 */
 export function useShiftTimeState() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [breakMinutes, setBreakMinutes] = useState('0');
+  /** 「时间待定」（只用于班次，模板没有这个选项） */
+  const [pending, setPending] = useState(false);
 
-  const setAll = useCallback((v: { startTime: string; endTime: string; breakMinutes: number }) => {
-    setStartTime(v.startTime);
-    setEndTime(v.endTime);
-    setBreakMinutes(String(v.breakMinutes));
-  }, []);
+  const setAll = useCallback(
+    (v: { startTime: string | null; endTime: string | null; breakMinutes: number }) => {
+      setStartTime(v.startTime ?? '');
+      setEndTime(v.endTime ?? '');
+      setBreakMinutes(String(v.breakMinutes));
+      setPending(v.startTime === null || v.endTime === null);
+    },
+    []
+  );
 
   const start = normalizeTime(startTime);
   const end = normalizeTime(endTime);
@@ -45,6 +51,8 @@ export function useShiftTimeState() {
     setStartTime,
     setEndTime,
     setBreakMinutes,
+    pending,
+    setPending,
     setAll,
     error,
     validated,
@@ -57,10 +65,49 @@ export function ShiftTimeFields({
   state,
   showErrors,
   wage,
+  allowPending,
 }: {
   state: ShiftTimeState;
   showErrors: boolean;
+  /** 显示「已定时间 / 时间待定」切换（班次用，模板不用） */
+  allowPending?: boolean;
   /** 传入时显示工钱预览 */
+  wage?: { amount: MinorUnits; currency: Currency };
+}) {
+  const { t } = useTranslation();
+  const v = state.validated;
+  const pending = allowPending && state.pending;
+
+  return (
+    <>
+      {allowPending && (
+        <Field label={t('shift.timeMode')}>
+          <Segmented
+            options={[
+              { value: 'timed', label: t('shift.timed') },
+              { value: 'pending', label: t('shift.pending') },
+            ]}
+            value={state.pending ? 'pending' : 'timed'}
+            onChange={(x) => state.setPending(x === 'pending')}
+          />
+        </Field>
+      )}
+      {pending ? (
+        <EmptyText>{t('shift.pendingHint')}</EmptyText>
+      ) : (
+        <TimeFields state={state} showErrors={showErrors} wage={wage} />
+      )}
+    </>
+  );
+}
+
+function TimeFields({
+  state,
+  showErrors,
+  wage,
+}: {
+  state: ShiftTimeState;
+  showErrors: boolean;
   wage?: { amount: MinorUnits; currency: Currency };
 }) {
   const { t } = useTranslation();

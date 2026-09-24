@@ -6,8 +6,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { showMessage } from '@/components/confirm';
 import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/form';
 import { useData } from '@/data/DataProvider';
-import { buildShiftFromTemplate, sortShifts } from '@/data/shifts';
-import type { Job, ShiftTemplate } from '@/data/types';
+import { buildPendingShift, buildShiftFromTemplate, sortShifts } from '@/data/shifts';
+import { isTimed, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { formatDuration } from '@/i18n/format';
 import { isValidLocalDate, parseLocalDate } from '@/lib/date';
@@ -55,11 +55,13 @@ export default function DayScreen() {
   const weekdays = t('day.weekdays', { returnObjects: true }) as string[];
   const title = t('day.title', { month: d.month() + 1, day: d.date(), weekday: weekdays[d.day()] });
 
-  const addFromTemplate = async (job: Job, template: ShiftTemplate) => {
+  const addFromTemplate = async (job: Job, template: ShiftTemplate | null) => {
     if (adding) return;
     setAdding(true);
     try {
-      await repos.shifts.create(buildShiftFromTemplate(job, template, date));
+      await repos.shifts.create(
+        template ? buildShiftFromTemplate(job, template, date) : buildPendingShift(job, date)
+      );
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
     } finally {
@@ -76,6 +78,18 @@ export default function DayScreen() {
             {data.shifts.length === 0 && <EmptyText>{t('day.empty')}</EmptyText>}
             {data.shifts.map((s) => {
               const job = data.jobsById.get(s.jobId);
+              if (!isTimed(s)) {
+                return (
+                  <ListRow
+                    key={s.id}
+                    color={job?.color}
+                    title={t('shift.pendingTitle', { job: job?.name ?? '' })}
+                    subtitle={s.note || undefined}
+                    right="—"
+                    onPress={() => router.push({ pathname: '/shift/[id]', params: { id: s.id } })}
+                  />
+                );
+              }
               const overnight = isOvernight(s.startTime, s.endTime);
               return (
                 <ListRow
@@ -104,10 +118,9 @@ export default function DayScreen() {
           ) : (
             <>
               <Section title={t('day.quickAdd')}>
-                {data.templates.length === 0 && <EmptyText>{t('day.noTemplates')}</EmptyText>}
                 <View style={styles.chips}>
-                  {data.activeJobs.flatMap((job) =>
-                    data.templates
+                  {data.activeJobs.flatMap((job) => [
+                    ...data.templates
                       .filter((tpl) => tpl.jobId === job.id)
                       .sort((a, b) => a.startTime.localeCompare(b.startTime))
                       .map((tpl) => (
@@ -129,9 +142,24 @@ export default function DayScreen() {
                             {tpl.startTime}–{tpl.endTime}
                           </Text>
                         </Pressable>
-                      ))
-                  )}
+                      )),
+                    <Pressable
+                      key={`pending-${job.id}`}
+                      onPress={() => addFromTemplate(job, null)}
+                      disabled={adding}
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.chip,
+                        styles.chipPending,
+                        { borderColor: job.color },
+                        pressed && styles.chipPressed,
+                      ]}>
+                      <View style={[styles.chipDot, { backgroundColor: job.color }]} />
+                      <Text style={styles.chipText}>{t('day.pendingChip', { job: job.name })}</Text>
+                    </Pressable>,
+                  ])}
                 </View>
+                {data.templates.length === 0 && <EmptyText>{t('day.noTemplates')}</EmptyText>}
               </Section>
               <Button
                 variant="secondary"
@@ -159,6 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   chipPressed: { opacity: 0.5 },
+  chipPending: { borderStyle: 'dashed' },
   chipDot: { width: 8, height: 8, borderRadius: 4 },
   chipText: { fontSize: 14, color: colors.text },
   chipTime: { fontSize: 12, color: colors.textMuted },

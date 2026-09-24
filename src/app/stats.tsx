@@ -89,12 +89,15 @@ export default function StatsScreen() {
                 <Text style={styles.wage}>{formatMoneyMulti(stats.wage.total, currency)}</Text>
               )}
             </View>
+            {stats.pending > 0 && (
+              <EmptyText>{t('stats.pendingNote', { count: stats.pending })}</EmptyText>
+            )}
           </Section>
 
           <Section title={t('stats.byJob')}>
-            {stats.jobs.every((j) => j.minutes === 0) && <EmptyText>{t('stats.noShifts')}</EmptyText>}
+            {stats.jobs.every((j) => j.days === 0) && <EmptyText>{t('stats.noShifts')}</EmptyText>}
             {stats.jobs
-              .filter((j) => j.minutes > 0 || !data?.jobsById.get(j.jobId)?.deletedAt)
+              .filter((j) => j.days > 0 || !data?.jobsById.get(j.jobId)?.deletedAt)
               .map((j) => {
                 const job = data?.jobsById.get(j.jobId);
                 return (
@@ -105,6 +108,7 @@ export default function StatsScreen() {
                     subtitle={[
                       hours(j.minutes),
                       t('stats.attendance', { count: j.days }),
+                      j.pending > 0 ? t('stats.pendingShort', { count: j.pending }) : null,
                       settings.statsPeriod === 'payPeriod' ? range(j.range) : null,
                     ]
                       .filter(Boolean)

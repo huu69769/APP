@@ -17,16 +17,18 @@ export function TemplatePicker({
   visible: boolean;
   jobs: Job[];
   templates: ShiftTemplate[];
-  onSelect: (template: ShiftTemplate) => void;
+  /** template 为 null 表示「时间待定」 */
+  onSelect: (job: Job, template: ShiftTemplate | null) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const rows = jobs.flatMap((job) =>
-    templates
+  const rows = jobs.flatMap((job) => [
+    ...templates
       .filter((tpl) => tpl.jobId === job.id)
       .sort((a, b) => a.startTime.localeCompare(b.startTime))
-      .map((tpl) => ({ job, tpl }))
-  );
+      .map((tpl) => ({ job, tpl: tpl as ShiftTemplate | null })),
+    { job, tpl: null },
+  ]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -34,16 +36,25 @@ export function TemplatePicker({
       <View style={styles.sheet}>
         <Text style={styles.title}>{t('batch.chooseTemplate')}</Text>
         <ScrollView style={styles.list}>
-          {rows.length === 0 && <EmptyText>{t('batch.noTemplates')}</EmptyText>}
-          {rows.map(({ job, tpl }) => (
-            <ListRow
-              key={tpl.id}
-              color={job.color}
-              title={`${job.name} · ${tpl.name}`}
-              subtitle={`${tpl.startTime} – ${tpl.endTime}`}
-              onPress={() => onSelect(tpl)}
-            />
-          ))}
+          {jobs.length === 0 && <EmptyText>{t('day.noJobs')}</EmptyText>}
+          {rows.map(({ job, tpl }) =>
+            tpl ? (
+              <ListRow
+                key={tpl.id}
+                color={job.color}
+                title={`${job.name} · ${tpl.name}`}
+                subtitle={`${tpl.startTime} – ${tpl.endTime}`}
+                onPress={() => onSelect(job, tpl)}
+              />
+            ) : (
+              <ListRow
+                key={`pending-${job.id}`}
+                color={job.color}
+                title={t('day.pendingChip', { job: job.name })}
+                onPress={() => onSelect(job, null)}
+              />
+            )
+          )}
         </ScrollView>
         <Pressable onPress={onClose} style={styles.cancel} accessibilityRole="button">
           <Text style={styles.cancelText}>{t('common.cancel')}</Text>

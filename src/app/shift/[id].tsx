@@ -6,7 +6,7 @@ import { confirmAsync, showMessage } from '@/components/confirm';
 import { Button, EmptyText, Field, FormScreen, Input, ListRow, Section, Segmented } from '@/components/form';
 import { ShiftTimeFields, useShiftTimeState } from '@/components/ShiftTimeFields';
 import { useData } from '@/data/DataProvider';
-import { buildShift } from '@/data/shifts';
+import { buildPendingShift, buildShift } from '@/data/shifts';
 import type { Job, Shift } from '@/data/types';
 import { formatMoney } from '@/lib/money';
 
@@ -73,13 +73,23 @@ export default function ShiftEditScreen() {
   const save = async () => {
     setShowErrors(true);
     const value = times.validated;
-    if (!value) return;
+    const pending = times.pending;
+    if (!pending && !value) return;
     try {
       if (isNew) {
         if (!job) return;
-        await repos.shifts.create(buildShift(job, { ...value, date, note: note.trim() }));
+        await repos.shifts.create(
+          pending
+            ? buildPendingShift(job, date, note.trim())
+            : buildShift(job, { ...value!, date, note: note.trim() })
+        );
       } else {
-        await repos.shifts.update(params.id, { ...value, note: note.trim() });
+        await repos.shifts.update(
+          params.id,
+          pending
+            ? { startTime: null, endTime: null, note: note.trim() }
+            : { ...value!, note: note.trim() }
+        );
       }
       router.back();
     } catch (e) {
@@ -138,7 +148,7 @@ export default function ShiftEditScreen() {
         <Field label={t('shift.date')}>
           <ListRow title={date} />
         </Field>
-        <ShiftTimeFields state={times} showErrors={showErrors} wage={wage} />
+        <ShiftTimeFields state={times} showErrors={showErrors} wage={wage} allowPending />
         {wage && (
           <EmptyText>{t('shift.wageSnapshot', { amount: formatMoney(wage.amount, wage.currency) })}</EmptyText>
         )}

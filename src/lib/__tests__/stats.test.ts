@@ -190,3 +190,45 @@ describe('sumMoney', () => {
     expect(sumMoney({ CNY: 100 }, { CNY: 50, USD: 5 }, {})).toEqual({ CNY: 150, USD: 5 });
   });
 });
+
+describe('pending shifts in stats', () => {
+  const pending = (date: string, jobId = 'a') => ({
+    jobId,
+    date,
+    startTime: null,
+    endTime: null,
+    breakMinutes: 0,
+    wageSnapshot: 1000,
+    currencySnapshot: 'CNY' as const,
+  });
+
+  it('are excluded from hours and wages but make the day not free', () => {
+    const jobs = [{ id: 'a', cutoffDay: null }];
+    const s = periodStats({
+      shifts: [shift('2026-09-01', '09:00', '10:00'), pending('2026-09-02'), pending('2026-09-03')],
+      jobs,
+      activeJobs: jobs,
+      mode: 'calendarMonth',
+      month: '2026-09',
+      now: { date: '2026-09-30', time: '23:00' },
+    });
+    expect(s.totalMinutes).toBe(60);
+    expect(s.wage.total).toEqual({ CNY: 1000 });
+    expect(s.pending).toBe(2);
+    expect(s.jobs[0]).toMatchObject({ minutes: 60, days: 3, pending: 2 });
+    expect(s.freeDays).toBe(27);
+    // 空闲时间只扣已定时间的 1 小时
+    expect(s.freeMinutes).toBe(30 * 1440 - 60);
+  });
+
+  it('are ignored by yearly income and occupied time', () => {
+    const r = yearIncome({
+      shifts: [pending('2026-01-05')],
+      jobs: [{ id: 'a', cutoffDay: null }],
+      mode: 'calendarMonth',
+      year: 2026,
+    });
+    expect(r.total).toEqual({});
+    expect(occupiedMinutesByDay([pending('2026-01-05')]).size).toBe(0);
+  });
+});

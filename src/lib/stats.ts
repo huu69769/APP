@@ -1,4 +1,4 @@
-import type { Currency, Job, MinorUnits, Shift } from '@/data/types';
+import { isTimed, type Currency, type Job, type MinorUnits, type Shift, type TimedShift } from '@/data/types';
 
 import { addDays, type LocalDate, type YearMonth } from './date';
 import { calendarMonthRange, eachDay, inRange, periodRange, type DateRange, type PeriodMode } from './period';
@@ -13,6 +13,7 @@ type StatShift = Pick<
   'jobId' | 'date' | 'startTime' | 'endTime' | 'breakMinutes' | 'wageSnapshot' | 'currencySnapshot'
 >;
 type StatJob = Pick<Job, 'id' | 'cutoffDay'>;
+type TimedStatShift = TimedShift<StatShift>;
 
 /** 现在的本地时间，用于区分「已完成」和「预计」 */
 export interface LocalNow {
@@ -34,14 +35,17 @@ export function sumMoney(...items: MoneyByCurrency[]): MoneyByCurrency {
 }
 
 /** 班次结束的本地时间 "YYYY-MM-DD HH:mm"（跨夜班在第二天） */
-export function shiftEnd(shift: Pick<Shift, 'date' | 'startTime' | 'endTime'>): string {
+export function shiftEnd(shift: TimedShift<Pick<Shift, 'date' | 'startTime' | 'endTime'>>): string {
   const end = timeToMinutes(shift.startTime) + spanMinutes(shift.startTime, shift.endTime);
   const date = end >= MINUTES_PER_DAY ? addDays(shift.date, Math.floor(end / MINUTES_PER_DAY)) : shift.date;
   return `${date} ${minutesToTime(end)}`;
 }
 
 /** 班次结束时间早于现在，算「已完成」；其余算「预计」 */
-export function isCompleted(shift: Pick<Shift, 'date' | 'startTime' | 'endTime'>, now: LocalNow): boolean {
+export function isCompleted(
+  shift: TimedShift<Pick<Shift, 'date' | 'startTime' | 'endTime'>>,
+  now: LocalNow
+): boolean {
   return shiftEnd(shift) < `${now.date} ${now.time}`;
 }
 
@@ -50,6 +54,7 @@ export function isCompleted(shift: Pick<Shift, 'date' | 'startTime' | 'endTime'>
  * - 按开始到结束计算，包括休息
  * - 同一天的班次先合并重叠部分
  * - 跨夜班超过 24 点的部分算进第二天
+ * - 时间待定的班次不占用时间
  */
 export function occupiedMinutesByDay(shifts: StatShift[]): Map<LocalDate, number> {
   const intervals = new Map<LocalDate, [number, number][]>();
@@ -58,7 +63,7 @@ export function occupiedMinutesByDay(shifts: StatShift[]): Map<LocalDate, number
     list.push([start, end]);
     intervals.set(date, list);
   };
-  for (const s of shifts) {
+  for (const s of shifts.filter(isTimed)) {
     let start = timeToMinutes(s.startTime);
     let end = start + spanMinutes(s.startTime, s.endTime);
     let date = s.date;
@@ -89,7 +94,7 @@ export function occupiedMinutesByDay(shifts: StatShift[]): Map<LocalDate, number
 
 /**
  * 空闲时间（PRD 5.4 / 5.5）
- * - 空闲天数：范围内没有任何班次的天数
+ * - 空闲天数：范围内没有任何班次的天数（时间待定的班次也算有班次）
  * - 空闲分钟：每天 24 小时 − 打工占用，合计
  * shifts 需要包括范围开始前一天的班次（它的跨夜部分会占用第一天）
  */
@@ -111,6 +116,8 @@ export interface JobStats {
   minutes: number;
   wage: MoneyByCurrency;
   days: number;
+  /** 时间待定、还没算进时长和工钱的班次数 */
+  pending: number;
 }
 
 export interface PeriodStats {
@@ -120,6 +127,8 @@ export interface PeriodStats {
   wage: { total: MoneyByCurrency; completed: MoneyByCurrency; expected: MoneyByCurrency };
   freeDays: number;
   freeMinutes: number;
+  /** 时间待定的班次数（不计入时长和工钱） */
+  pending: number;
   jobs: JobStats[];
 }
 
@@ -164,10 +173,18 @@ export function periodStats(params: {
   const completed: MoneyByCurrency = {};
   const expected: MoneyByCurrency = {};
   let totalMinutes = 0;
+  let pending = 0;
+  const newEntry = (jobId: string, range: DateRange) => ({
+    jobId,
+    range,
+    minutes: 0,
+    wage: {},
+    days: 0,
+    pending: 0,
+    dates: new Set<LocalDate>(),
+  });
 
-  for (const job of activeJobs) {
-    perJob.set(job.id, { jobId: job.id, range: jobRange(mode, month, job), minutes: 0, wage: {}, days: 0, dates: new Set() });
-  }
+  for (const job of activeJobs) perJob.set(job.id, newEntry(job.id, jobRange(mode, month, job)));
 
   for (const s of shifts) {
     const job = jobsById.get(s.jobId);
@@ -175,13 +192,18 @@ export function periodStats(params: {
     if (!inRange(s.date, range)) continue;
     let entry = perJob.get(s.jobId);
     if (!entry) {
-      entry = { jobId: s.jobId, range, minutes: 0, wage: {}, days: 0, dates: new Set() };
+      entry = newEntry(s.jobId, range);
       perJob.set(s.jobId, entry);
+    }
+    entry.dates.add(s.date);
+    if (!isTimed(s)) {
+      entry.pending++;
+      pending++;
+      continue;
     }
     const minutes = workedMinutes(s);
     const wage = shiftWage(s);
     entry.minutes += minutes;
-    entry.dates.add(s.date);
     addMoney(entry.wage, s.currencySnapshot, wage);
     totalMinutes += minutes;
     addMoney(total, s.currencySnapshot, wage);
@@ -201,6 +223,7 @@ export function periodStats(params: {
     wage: { total, completed, expected },
     freeDays,
     freeMinutes,
+    pending,
     jobs: [...perJob.values()].map(({ dates, ...rest }) => ({ ...rest, days: dates.size })),
   };
 }
@@ -220,7 +243,7 @@ export function yearIncome(params: {
     month: `${year}-${String(i + 1).padStart(2, '0')}`,
     wage: {} as MoneyByCurrency,
   }));
-  for (const s of shifts) {
+  for (const s of shifts.filter(isTimed)) {
     const job = jobsById.get(s.jobId);
     // 班次属于哪个月：检查它落在哪个月的周期内（前后月也要检查，因为工资周期会跨月）
     const [y, m] = s.date.split('-').map(Number);

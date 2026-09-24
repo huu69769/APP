@@ -9,8 +9,8 @@ import { MonthCalendar, type DayBar } from '@/components/MonthCalendar';
 import { StatsBar } from '@/components/StatsBar';
 import { TemplatePicker } from '@/components/TemplatePicker';
 import { useData } from '@/data/DataProvider';
-import { applyTemplateToDates, sortShifts } from '@/data/shifts';
-import type { ShiftTemplate } from '@/data/types';
+import { applyPendingToDates, applyTemplateToDates, sortShifts } from '@/data/shifts';
+import { isTimed, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { monthGridRange } from '@/lib/calendar';
@@ -45,7 +45,12 @@ export default function HomeScreen() {
       for (const s of sortShifts(shifts)) {
         const job = jobsById.get(s.jobId);
         const list = bars.get(s.date) ?? [];
-        list.push({ id: s.id, color: job?.color ?? colors.textMuted, label: job?.name ?? '' });
+        list.push({
+          id: s.id,
+          color: job?.color ?? colors.textMuted,
+          label: job?.name ?? '',
+          pending: !isTimed(s),
+        });
         bars.set(s.date, list);
       }
       const activeJobs = jobs
@@ -77,10 +82,14 @@ export default function HomeScreen() {
     setPickerOpen(false);
   };
 
-  const applyTemplate = async (template: ShiftTemplate) => {
+  /** 套用模板；template 为 null 时标记「时间待定」 */
+  const applyTemplate = async (job: Job, template: ShiftTemplate | null) => {
     setPickerOpen(false);
     try {
-      const created = await applyTemplateToDates(repos, template, [...selected]);
+      const dates = [...selected];
+      const created = template
+        ? await applyTemplateToDates(repos, template, dates)
+        : await applyPendingToDates(repos, job, dates);
       exitBatch();
       showMessage(t('batch.done', { count: created.length }));
     } catch (e) {

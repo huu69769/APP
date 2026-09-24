@@ -52,8 +52,9 @@ export interface Shift extends BaseEntity {
   jobId: string;
   /** 班次开始那天的本地日期（跨夜班也算在开始那天） */
   date: LocalDate;
-  startTime: TimeOfDay;
-  endTime: TimeOfDay;
+  /** 开始、结束时间；两者都是 null 表示「时间待定」（知道要上班，但还不知道几点） */
+  startTime: TimeOfDay | null;
+  endTime: TimeOfDay | null;
   breakMinutes: number;
   /** 创建班次时兼职的时薪快照 */
   wageSnapshot: MinorUnits;
@@ -61,6 +62,17 @@ export interface Shift extends BaseEntity {
   note: string;
   reminderMinutesBefore: number | null;
   premiumRules?: PremiumRules | null;
+}
+
+/** 已经定好时间的班次 */
+export type TimedShift<T extends Pick<Shift, 'startTime' | 'endTime'> = Shift> = T & {
+  startTime: TimeOfDay;
+  endTime: TimeOfDay;
+};
+
+/** 是否已经定好时间（不是「时间待定」） */
+export function isTimed<T extends Pick<Shift, 'startTime' | 'endTime'>>(shift: T): shift is TimedShift<T> {
+  return shift.startTime !== null && shift.endTime !== null;
 }
 
 export interface CalendarEvent extends BaseEntity {

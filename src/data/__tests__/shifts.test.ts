@@ -1,7 +1,8 @@
 import { ShiftValidationError } from '@/lib/shift';
 
 import { createRepositories } from '../repository';
-import { applyTemplateToDates, buildShift, sortShifts } from '../shifts';
+import { applyPendingToDates, applyTemplateToDates, buildShift, sortShifts } from '../shifts';
+import { isTimed } from '../types';
 import { MemoryDriver } from '../storage/memoryDriver';
 
 function setup() {
@@ -76,5 +77,24 @@ describe('repository change notifications', () => {
     expect(changes).toEqual(['jobs', 'jobs', 'jobs']);
     expect(await repos.jobs.list()).toHaveLength(0);
     expect(await repos.jobs.listWithDeleted()).toHaveLength(1);
+  });
+});
+
+describe('pending shifts', () => {
+  it('creates shifts without times and sorts them first', async () => {
+    const repos = setup();
+    const job = await repos.jobs.create({ ...jobInput, defaultBreakMinutes: 15 });
+    await repos.shifts.create(
+      buildShift(job, { date: '2026-09-01', startTime: '09:00', endTime: '14:00', breakMinutes: 0 })
+    );
+    await applyPendingToDates(repos, job, ['2026-09-02', '2026-09-01']);
+    const shifts = sortShifts(await repos.shifts.list());
+    expect(shifts.map((s) => [s.date, s.startTime])).toEqual([
+      ['2026-09-01', null],
+      ['2026-09-01', '09:00'],
+      ['2026-09-02', null],
+    ]);
+    expect(shifts[0]).toMatchObject({ endTime: null, breakMinutes: 15, wageSnapshot: 2500 });
+    expect(shifts.filter(isTimed)).toHaveLength(1);
   });
 });

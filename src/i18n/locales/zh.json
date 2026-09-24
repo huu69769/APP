@@ -69,7 +69,8 @@
     "manualAdd": "手动添加班次",
     "noJobs": "还没有兼职。先添加一份兼职，才能记录班次。",
     "goJobs": "去添加兼职",
-    "noTemplates": "给兼职添加班次模板后，就可以在这里一键添加。"
+    "noTemplates": "给兼职添加班次模板后，就可以在这里一键添加。",
+    "pendingChip": "{{job}} · 时间待定"
   },
   "jobs": {
     "title": "兼职",
@@ -119,7 +120,12 @@
     "overnight": "跨夜班：第二天 {{time}} 结束",
     "summary": "实际 {{duration}} · 工钱 {{amount}}",
     "wageSnapshot": "记录时的时薪：{{amount}}",
-    "deleteTitle": "删除这个班次？"
+    "deleteTitle": "删除这个班次？",
+    "timeMode": "时间",
+    "timed": "已定时间",
+    "pending": "时间待定",
+    "pendingHint": "知道这天要上班、但还不知道几点时用。知道时间后，点这个班次补上时间就行。",
+    "pendingTitle": "{{job}}  时间待定"
   },
   "errors": {
     "nameRequired": "请输入名称",
@@ -160,6 +166,8 @@
     "freeNote": "不在打工的时间都算空闲；休息时间也算打工占用。",
     "year": "{{year}}年累计收入",
     "yearTotal": "全年合计",
-    "monthLabel": "{{month}}月"
+    "monthLabel": "{{month}}月",
+    "pendingNote": "另有 {{count}} 个班次时间待定，没有算进时长和工钱",
+    "pendingShort": "待定 {{count}} 个"
   }
 }
