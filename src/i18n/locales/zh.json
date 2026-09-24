@@ -1,0 +1,23 @@
+{
+  "app": {
+    "name": "打工日历"
+  },
+  "common": {
+    "loading": "加载中…",
+    "loadFailed": "数据加载失败：{{message}}"
+  },
+  "calendar": {
+    "monthTitle": "{{year}}年{{month}}月",
+    "today": "今天",
+    "prevMonth": "上个月",
+    "nextMonth": "下个月",
+    "weekdaysShort": ["日", "一", "二", "三", "四", "五", "六"],
+    "dayLabel": "{{month}}月{{day}}日"
+  },
+  "day": {
+    "title": "{{month}}月{{day}}日（{{weekday}}）",
+    "weekdays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+    "empty": "这一天还没有安排",
+    "invalidDate": "日期无效"
+  }
+}

@@ -1,0 +1,25 @@
+# 检查：在 main 以外的分支和 Pull Request 上运行类型检查、单元测试和网页版构建。
+# 不发布任何东西。
+name: CI
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test -- --ci
+      - name: Build web (smoke test)
+        run: npx expo export -p web
+        env:
+          EXPO_BASE_URL: /${{ github.event.repository.name }}
