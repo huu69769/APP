@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyText, Field, FormScreen, ListRow, Section, Segmented } from '@/components/form';
 import { useData } from '@/data/DataProvider';
+import { jobPayType } from '@/data/types';
 import { useMonthStats, useYearIncome } from '@/data/useStats';
 import { addMonths, currentMonth, type YearMonth } from '@/lib/date';
 import { formatMoneyMulti } from '@/lib/money';
@@ -37,9 +38,17 @@ export default function StatsScreen() {
       <Stack.Screen options={{ title: t('stats.title') }} />
 
       <View style={styles.monthNav}>
-        <NavButton label="‹" a11y={t('calendar.prevMonth')} onPress={() => setMonth((x) => addMonths(x, -1))} />
+        <NavButton
+          label="‹"
+          a11y={t('calendar.prevMonth')}
+          onPress={() => setMonth((x) => addMonths(x, -1))}
+        />
         <Text style={styles.monthTitle}>{t('calendar.monthTitle', { year: y, month: m })}</Text>
-        <NavButton label="›" a11y={t('calendar.nextMonth')} onPress={() => setMonth((x) => addMonths(x, 1))} />
+        <NavButton
+          label="›"
+          a11y={t('calendar.nextMonth')}
+          onPress={() => setMonth((x) => addMonths(x, 1))}
+        />
       </View>
 
       <Section>
@@ -71,7 +80,10 @@ export default function StatsScreen() {
           <Section>
             <View style={styles.summary}>
               <Big label={t('stats.hours')} value={hours(stats.totalMinutes)} />
-              <Big label={t('stats.freeDays')} value={t('stats.freeDaysValue', { count: stats.freeDays })} />
+              <Big
+                label={t('stats.freeDays')}
+                value={t('stats.freeDaysValue', { count: stats.freeDays })}
+              />
               <Big label={t('stats.freeHours')} value={hours(stats.freeMinutes)} />
             </View>
             <View style={styles.wageBlock}>
@@ -95,11 +107,34 @@ export default function StatsScreen() {
           </Section>
 
           <Section title={t('stats.byJob')}>
-            {stats.jobs.every((j) => j.days === 0) && <EmptyText>{t('stats.noShifts')}</EmptyText>}
+            {stats.jobs.every((j) => j.days === 0 && j.tasksDone + j.tasksOpen === 0) && (
+              <EmptyText>{t('stats.noShifts')}</EmptyText>
+            )}
             {stats.jobs
-              .filter((j) => j.days > 0 || !data?.jobsById.get(j.jobId)?.deletedAt)
+              .filter(
+                (j) =>
+                  j.days > 0 ||
+                  j.tasksDone + j.tasksOpen > 0 ||
+                  !data?.jobsById.get(j.jobId)?.deletedAt
+              )
               .map((j) => {
                 const job = data?.jobsById.get(j.jobId);
+                if (job && jobPayType(job) === 'piece') {
+                  return (
+                    <ListRow
+                      key={j.jobId}
+                      color={job.color}
+                      title={job.name}
+                      subtitle={[
+                        t('stats.tasksSummary', { done: j.tasksDone, open: j.tasksOpen }),
+                        settings.statsPeriod === 'payPeriod' ? range(j.range) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                      right={formatMoneyMulti(j.wage, job.currency)}
+                    />
+                  );
+                }
                 return (
                   <ListRow
                     key={j.jobId}
@@ -120,9 +155,14 @@ export default function StatsScreen() {
           </Section>
 
           <Section title={t('stats.freeTime')}>
-            <ListRow title={t('stats.freeDays')} right={t('stats.freeDaysValue', { count: stats.freeDays })} />
+            <ListRow
+              title={t('stats.freeDays')}
+              right={t('stats.freeDaysValue', { count: stats.freeDays })}
+            />
             <ListRow title={t('stats.freeHours')} right={hours(stats.freeMinutes)} />
-            <EmptyText>{t('stats.freeRange', { from: stats.freeRange.from, to: stats.freeRange.to })}</EmptyText>
+            <EmptyText>
+              {t('stats.freeRange', { from: stats.freeRange.from, to: stats.freeRange.to })}
+            </EmptyText>
             <EmptyText>{t('stats.freeNote')}</EmptyText>
           </Section>
         </>
@@ -130,19 +170,22 @@ export default function StatsScreen() {
 
       {yearData && (
         <Section title={t('stats.year', { year })}>
-          <ListRow title={t('stats.yearTotal')} right={formatMoneyMulti(yearData.total, currency)} />
+          <ListRow
+            title={t('stats.yearTotal')}
+            right={formatMoneyMulti(yearData.total, currency)}
+          />
           <View style={styles.divider} />
           {yearData.months.map((row) => (
-            <Pressable key={row.month} onPress={() => setMonth(row.month)} accessibilityRole="button">
+            <Pressable
+              key={row.month}
+              onPress={() => setMonth(row.month)}
+              accessibilityRole="button">
               <View style={[styles.monthRow, row.month === month && styles.monthRowActive]}>
                 <Text style={styles.monthLabel}>
                   {t('stats.monthLabel', { month: Number(row.month.slice(5, 7)) })}
                 </Text>
                 <Text
-                  style={[
-                    styles.monthValue,
-                    Object.keys(row.wage).length === 0 && styles.muted,
-                  ]}>
+                  style={[styles.monthValue, Object.keys(row.wage).length === 0 && styles.muted]}>
                   {formatMoneyMulti(row.wage, currency)}
                 </Text>
               </View>
@@ -156,7 +199,11 @@ export default function StatsScreen() {
 
 function NavButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={styles.navButton} accessibilityRole="button" accessibilityLabel={a11y}>
+    <Pressable
+      onPress={onPress}
+      style={styles.navButton}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}>
       <Text style={styles.navText}>{label}</Text>
     </Pressable>
   );

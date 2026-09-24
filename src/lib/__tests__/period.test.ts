@@ -1,4 +1,10 @@
-import { calendarMonthRange, eachDay, effectiveCutoff, payPeriodRange, periodRange } from '../period';
+import {
+  calendarMonthRange,
+  eachDay,
+  effectiveCutoff,
+  payPeriodRange,
+  periodRange,
+} from '../period';
 
 describe('calendarMonthRange', () => {
   it('covers the 1st to the last day', () => {

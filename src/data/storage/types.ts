@@ -32,4 +32,5 @@ export interface StorageDriver {
   importAll(dump: DataDump): Promise<void>;
 }
 
-export const SCHEMA_VERSION = 1;
+/** 1: 初版　2: 新增 tasks 表 */
+export const SCHEMA_VERSION = 2;

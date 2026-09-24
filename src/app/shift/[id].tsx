@@ -3,11 +3,20 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { confirmAsync, showMessage } from '@/components/confirm';
-import { Button, EmptyText, Field, FormScreen, Input, ListRow, Section, Segmented } from '@/components/form';
+import {
+  Button,
+  EmptyText,
+  Field,
+  FormScreen,
+  Input,
+  ListRow,
+  Section,
+  Segmented,
+} from '@/components/form';
 import { ShiftTimeFields, useShiftTimeState } from '@/components/ShiftTimeFields';
 import { useData } from '@/data/DataProvider';
 import { buildPendingShift, buildShift } from '@/data/shifts';
-import type { Job, Shift } from '@/data/types';
+import { jobPayType, type Job, type Shift } from '@/data/types';
 import { formatMoney } from '@/lib/money';
 
 /**
@@ -34,7 +43,9 @@ export default function ShiftEditScreen() {
   useEffect(() => {
     (async () => {
       if (isNew) {
-        const list = (await repos.jobs.list()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        const list = (await repos.jobs.list())
+          .filter((j) => jobPayType(j) === 'hourly')
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
         setJobs(list);
         if (list[0]) {
           setJobId(list[0].id);
@@ -150,10 +161,17 @@ export default function ShiftEditScreen() {
         </Field>
         <ShiftTimeFields state={times} showErrors={showErrors} wage={wage} allowPending />
         {wage && (
-          <EmptyText>{t('shift.wageSnapshot', { amount: formatMoney(wage.amount, wage.currency) })}</EmptyText>
+          <EmptyText>
+            {t('shift.wageSnapshot', { amount: formatMoney(wage.amount, wage.currency) })}
+          </EmptyText>
         )}
         <Field label={t('shift.note')}>
-          <Input value={note} onChangeText={setNote} placeholder={t('shift.notePlaceholder')} multiline />
+          <Input
+            value={note}
+            onChangeText={setNote}
+            placeholder={t('shift.notePlaceholder')}
+            multiline
+          />
         </Field>
       </Section>
       <Button title={t('common.save')} onPress={save} />

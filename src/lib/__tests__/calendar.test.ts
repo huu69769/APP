@@ -1,5 +1,5 @@
 import { buildMonthGrid, monthGridRange, orderedWeekdays } from '../calendar';
-import { addDays, addMonths, isValidLocalDate, today } from '../date';
+import { addDays, addMonths, formatDateInput, isValidLocalDate, today } from '../date';
 
 describe('buildMonthGrid', () => {
   it('always has 6 weeks of 7 days', () => {
@@ -79,5 +79,14 @@ describe('monthGridRange', () => {
   it('covers the visible 6 weeks', () => {
     expect(monthGridRange('2026-09', 0)).toEqual({ from: '2026-08-30', to: '2026-10-10' });
     expect(monthGridRange('2026-09', 1)).toEqual({ from: '2026-08-31', to: '2026-10-11' });
+  });
+});
+
+describe('formatDateInput', () => {
+  it('inserts dashes while typing', () => {
+    expect(formatDateInput('2026')).toBe('2026');
+    expect(formatDateInput('20260')).toBe('2026-0');
+    expect(formatDateInput('20260930')).toBe('2026-09-30');
+    expect(formatDateInput('2026-09-301')).toBe('2026-09-30');
   });
 });

@@ -27,14 +27,29 @@ export type TimeOfDay = string;
  */
 export type MinorUnits = number;
 
+/**
+ * 计酬方式：
+ * - hourly：时薪制（班次 × 时薪）
+ * - piece：按件计酬（记录任务，每个任务一个报酬金额），比如居家翻译
+ */
+export type PayType = 'hourly' | 'piece';
+
 export interface Job extends BaseEntity {
   name: string;
+  /** 旧数据没有这个字段，视为 hourly。用 jobPayType() 读取 */
+  payType?: PayType;
   color: string;
+  /** 时薪；按件计酬的兼职为 0 */
   hourlyWage: MinorUnits;
+  /** 币种（按件计酬时是新任务的默认币种） */
   currency: Currency;
   /** 截止日 1–31；null = 月末 */
   cutoffDay: number | null;
   defaultBreakMinutes: number;
+}
+
+export function jobPayType(job: Pick<Job, 'payType'>): PayType {
+  return job.payType ?? 'hourly';
 }
 
 export interface ShiftTemplate extends BaseEntity {
@@ -71,8 +86,30 @@ export type TimedShift<T extends Pick<Shift, 'startTime' | 'endTime'> = Shift> =
 };
 
 /** 是否已经定好时间（不是「时间待定」） */
-export function isTimed<T extends Pick<Shift, 'startTime' | 'endTime'>>(shift: T): shift is TimedShift<T> {
+export function isTimed<T extends Pick<Shift, 'startTime' | 'endTime'>>(
+  shift: T
+): shift is TimedShift<T> {
   return shift.startTime !== null && shift.endTime !== null;
+}
+
+/**
+ * 按件计酬兼职的一个任务（工作单）。
+ * 收入按交付日计入「已完成」；未交付的按截止日计入「预计」。
+ */
+export interface Task extends BaseEntity {
+  jobId: string;
+  title: string;
+  /** 截止日（DDL） */
+  dueDate: LocalDate;
+  /** 报酬（最小单位整数） */
+  amount: MinorUnits;
+  currency: Currency;
+  /** 交付日；null = 进行中 */
+  deliveredDate: LocalDate | null;
+  /** 实际用时（分钟），可不填，只作参考，不计入打工时长 */
+  minutesSpent: number | null;
+  note: string;
+  reminderMinutesBefore: number | null;
 }
 
 export interface CalendarEvent extends BaseEntity {
@@ -104,6 +141,7 @@ export interface EntityTables {
   jobs: Job;
   shift_templates: ShiftTemplate;
   shifts: Shift;
+  tasks: Task;
   events: CalendarEvent;
   day_notes: DayNote;
   holidays_cache: HolidayCache;
@@ -115,6 +153,7 @@ export const TABLE_NAMES: TableName[] = [
   'jobs',
   'shift_templates',
   'shifts',
+  'tasks',
   'events',
   'day_notes',
   'holidays_cache',

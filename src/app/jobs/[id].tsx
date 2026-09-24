@@ -15,7 +15,7 @@ import {
   Segmented,
 } from '@/components/form';
 import { useData } from '@/data/DataProvider';
-import { CURRENCIES, type Currency, type Job } from '@/data/types';
+import { CURRENCIES, jobPayType, type Currency, type Job, type PayType } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { formatDuration } from '@/i18n/format';
 import { moneyToInput, parseMoney } from '@/lib/money';
@@ -32,6 +32,7 @@ export default function JobEditScreen() {
   const [loaded, setLoaded] = useState(isNew);
   const [missing, setMissing] = useState(false);
   const [name, setName] = useState('');
+  const [payType, setPayType] = useState<PayType>('hourly');
   const [color, setColor] = useState<string>(JOB_COLORS[0]);
   const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
   const [wage, setWage] = useState('');
@@ -41,12 +42,21 @@ export default function JobEditScreen() {
   const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
-    if (isNew) return;
+    if (isNew) {
+      // 新兼职默认用还没被用过的颜色，方便在月历上区分
+      repos.jobs.list().then((jobs) => {
+        const used = new Set(jobs.map((j) => j.color));
+        const free = JOB_COLORS.find((c) => !used.has(c));
+        if (free) setColor(free);
+      });
+      return;
+    }
     repos.jobs.get(id).then((job) => {
       if (!job) {
         setMissing(true);
       } else {
         setName(job.name);
+        setPayType(jobPayType(job));
         setColor(job.color);
         setCurrency(job.currency);
         setWage(moneyToInput(job.hourlyWage, job.currency));
@@ -68,7 +78,8 @@ export default function JobEditScreen() {
     [id, isNew]
   );
 
-  const wageValue = parseMoney(wage, currency);
+  const isPiece = payType === 'piece';
+  const wageValue = isPiece ? 0 : parseMoney(wage, currency);
   const cutoffValue = endOfMonth ? null : Number(cutoff);
   const breakValue = Number(breakMinutes);
   const errors = {
@@ -78,7 +89,7 @@ export default function JobEditScreen() {
       endOfMonth || (/^\d{1,2}$/.test(cutoff) && cutoffValue! >= 1 && cutoffValue! <= 31)
         ? null
         : t('errors.cutoffInvalid'),
-    break: /^\d+$/.test(breakMinutes) ? null : t('errors.breakInvalid'),
+    break: isPiece || /^\d+$/.test(breakMinutes) ? null : t('errors.breakInvalid'),
   };
   const hasErrors = Object.values(errors).some(Boolean);
 
@@ -87,11 +98,12 @@ export default function JobEditScreen() {
     if (hasErrors) return;
     const data: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'> = {
       name: name.trim(),
+      payType,
       color,
       currency,
       hourlyWage: wageValue!,
       cutoffDay: cutoffValue,
-      defaultBreakMinutes: breakValue,
+      defaultBreakMinutes: isPiece ? 0 : breakValue,
     };
     try {
       if (isNew) {
@@ -139,24 +151,39 @@ export default function JobEditScreen() {
         <Field label={t('jobs.name')} error={err('name')}>
           <Input value={name} onChangeText={setName} placeholder={t('jobs.namePlaceholder')} />
         </Field>
+        <Field label={t('jobs.payType')} hint={isPiece ? t('jobs.pieceHint') : undefined}>
+          <Segmented
+            options={[
+              { value: 'hourly', label: t('jobs.payHourly') },
+              { value: 'piece', label: t('jobs.payPiece') },
+            ]}
+            value={payType}
+            onChange={setPayType}
+          />
+        </Field>
         <Field label={t('jobs.color')}>
           <ColorPicker value={color} onChange={setColor} />
         </Field>
-        <Field label={t('jobs.currency')}>
+        <Field label={t('jobs.currency')} hint={isPiece ? t('jobs.pieceCurrencyHint') : undefined}>
           <Segmented
             options={CURRENCIES.map((c) => ({ value: c, label: `${t(`currency.${c}`)} ${c}` }))}
             value={currency}
             onChange={setCurrency}
           />
         </Field>
-        <Field label={t('jobs.hourlyWage')} error={err('wage')} hint={isNew ? undefined : t('jobs.wageNote')}>
-          <Input
-            value={wage}
-            onChangeText={setWage}
-            keyboardType={currency === 'JPY' ? 'number-pad' : 'decimal-pad'}
-            placeholder={currency === 'JPY' ? '1200' : '25.00'}
-          />
-        </Field>
+        {!isPiece && (
+          <Field
+            label={t('jobs.hourlyWage')}
+            error={err('wage')}
+            hint={isNew ? undefined : t('jobs.wageNote')}>
+            <Input
+              value={wage}
+              onChangeText={setWage}
+              keyboardType={currency === 'JPY' ? 'number-pad' : 'decimal-pad'}
+              placeholder={currency === 'JPY' ? '1200' : '25.00'}
+            />
+          </Field>
+        )}
         <Field label={t('jobs.cutoffDay')} error={err('cutoff')} hint={t('jobs.cutoffHint')}>
           <Segmented
             options={[
@@ -176,48 +203,52 @@ export default function JobEditScreen() {
             />
           )}
         </Field>
-        <Field label={t('jobs.defaultBreak')} error={err('break')}>
-          <Input
-            value={breakMinutes}
-            onChangeText={(v) => setBreakMinutes(v.replace(/\D/g, ''))}
-            keyboardType="number-pad"
-            style={{ width: 96 }}
-          />
-        </Field>
+        {!isPiece && (
+          <Field label={t('jobs.defaultBreak')} error={err('break')}>
+            <Input
+              value={breakMinutes}
+              onChangeText={(v) => setBreakMinutes(v.replace(/\D/g, ''))}
+              keyboardType="number-pad"
+              style={{ width: 96 }}
+            />
+          </Field>
+        )}
       </Section>
 
       <Button title={t('common.save')} onPress={save} />
 
-      <Section
-        title={t('jobs.templates')}
-        right={
-          isNew ? undefined : (
-            <Button
-              variant="secondary"
-              title={t('jobs.addTemplate')}
-              onPress={() =>
-                router.push({ pathname: '/templates/[id]', params: { id: 'new', jobId: id } })
-              }
-            />
-          )
-        }>
-        {isNew ? (
-          <EmptyText>{t('jobs.saveFirst')}</EmptyText>
-        ) : templates && templates.length === 0 ? (
-          <EmptyText>{t('jobs.noTemplates')}</EmptyText>
-        ) : (
-          templates?.map((tpl) => (
-            <ListRow
-              key={tpl.id}
-              color={color}
-              title={tpl.name}
-              subtitle={`${tpl.startTime} – ${tpl.endTime}`}
-              right={formatDuration(t, workedMinutes(tpl))}
-              onPress={() => router.push({ pathname: '/templates/[id]', params: { id: tpl.id } })}
-            />
-          ))
-        )}
-      </Section>
+      {!isPiece && (
+        <Section
+          title={t('jobs.templates')}
+          right={
+            isNew ? undefined : (
+              <Button
+                variant="secondary"
+                title={t('jobs.addTemplate')}
+                onPress={() =>
+                  router.push({ pathname: '/templates/[id]', params: { id: 'new', jobId: id } })
+                }
+              />
+            )
+          }>
+          {isNew ? (
+            <EmptyText>{t('jobs.saveFirst')}</EmptyText>
+          ) : templates && templates.length === 0 ? (
+            <EmptyText>{t('jobs.noTemplates')}</EmptyText>
+          ) : (
+            templates?.map((tpl) => (
+              <ListRow
+                key={tpl.id}
+                color={color}
+                title={tpl.name}
+                subtitle={`${tpl.startTime} – ${tpl.endTime}`}
+                right={formatDuration(t, workedMinutes(tpl))}
+                onPress={() => router.push({ pathname: '/templates/[id]', params: { id: tpl.id } })}
+              />
+            ))
+          )}
+        </Section>
+      )}
 
       {!isNew && <Button variant="danger" title={t('common.delete')} onPress={remove} />}
     </FormScreen>

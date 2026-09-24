@@ -9,4 +9,5 @@
 - 日期一律用本地 `YYYY-MM-DD` 字符串；金额用最小单位整数。
 - 计算函数放在 `src/lib/`，必须写 Jest 测试。
 - 本环境访问不了 Expo API，运行 `expo install` / `expo prebuild` / `expo export` 时加 `EXPO_OFFLINE=1`。
-- 提交前运行：`npm run typecheck && npm test`
+- 提交前运行：`npm run format && npm run typecheck && npm test`
+- 改数据库结构（新增表等）时，在 `src/data/storage/types.ts` 增加 `SCHEMA_VERSION`，并在 `sqliteDriver.ts` 的 `migrate()` 里处理升级。

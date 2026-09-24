@@ -35,7 +35,12 @@ describe('buildShift', () => {
     const repos = setup();
     const job = await repos.jobs.create(jobInput);
     expect(() =>
-      buildShift(job, { date: '2026-09-01', startTime: '09:00', endTime: '10:00', breakMinutes: 60 })
+      buildShift(job, {
+        date: '2026-09-01',
+        startTime: '09:00',
+        endTime: '10:00',
+        breakMinutes: 60,
+      })
     ).toThrow(ShiftValidationError);
   });
 });

@@ -34,28 +34,27 @@ export class SqliteDriver implements StorageDriver {
     const current = result?.user_version ?? 0;
     if (current >= SCHEMA_VERSION) return;
 
-    // 版本 0 → 1：建表
-    if (current < 1) {
-      const statements = ['PRAGMA journal_mode = WAL;'];
-      for (const t of TABLE_NAMES) {
-        statements.push(`CREATE TABLE IF NOT EXISTS ${t} (
-          id TEXT PRIMARY KEY NOT NULL,
-          date TEXT,
-          createdAt TEXT NOT NULL,
-          updatedAt TEXT NOT NULL,
-          deletedAt TEXT,
-          data TEXT NOT NULL
-        );`);
-        if (DATED_TABLES.includes(t)) {
-          statements.push(`CREATE INDEX IF NOT EXISTS idx_${t}_date ON ${t}(date);`);
-        }
+    // 每个版本只是新增表，所以统一用 CREATE TABLE IF NOT EXISTS 补齐缺少的表：
+    // 0 → 1：建立所有表　1 → 2：新增 tasks 表
+    // 以后如果要改已有表的结构，在这里按版本号追加迁移步骤：if (current < 3) { ... }
+    const statements = current === 0 ? ['PRAGMA journal_mode = WAL;'] : [];
+    for (const t of TABLE_NAMES) {
+      statements.push(`CREATE TABLE IF NOT EXISTS ${t} (
+        id TEXT PRIMARY KEY NOT NULL,
+        date TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        deletedAt TEXT,
+        data TEXT NOT NULL
+      );`);
+      if (DATED_TABLES.includes(t)) {
+        statements.push(`CREATE INDEX IF NOT EXISTS idx_${t}_date ON ${t}(date);`);
       }
-      statements.push(
-        'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);'
-      );
-      await this.conn.execAsync(statements.join('\n'));
     }
-    // 以后的版本在这里继续加：if (current < 2) { ... }
+    statements.push(
+      'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);'
+    );
+    await this.conn.execAsync(statements.join('\n'));
 
     await this.conn.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   }

@@ -1,7 +1,22 @@
-import { isTimed, type Currency, type Job, type MinorUnits, type Shift, type TimedShift } from '@/data/types';
+import {
+  isTimed,
+  type Currency,
+  type Job,
+  type MinorUnits,
+  type Shift,
+  type Task,
+  type TimedShift,
+} from '@/data/types';
 
 import { addDays, type LocalDate, type YearMonth } from './date';
-import { calendarMonthRange, eachDay, inRange, periodRange, type DateRange, type PeriodMode } from './period';
+import {
+  calendarMonthRange,
+  eachDay,
+  inRange,
+  periodRange,
+  type DateRange,
+  type PeriodMode,
+} from './period';
 import { spanMinutes, shiftWage, workedMinutes } from './shift';
 import { MINUTES_PER_DAY, minutesToTime, timeToMinutes } from './time';
 
@@ -13,7 +28,14 @@ type StatShift = Pick<
   'jobId' | 'date' | 'startTime' | 'endTime' | 'breakMinutes' | 'wageSnapshot' | 'currencySnapshot'
 >;
 type StatJob = Pick<Job, 'id' | 'cutoffDay'>;
-type TimedStatShift = TimedShift<StatShift>;
+type StatTask = Pick<Task, 'jobId' | 'dueDate' | 'deliveredDate' | 'amount' | 'currency'>;
+
+/**
+ * 任务的收入算在哪一天：已交付 → 交付日；未交付 → 截止日。
+ */
+export function taskIncomeDate(task: Pick<Task, 'dueDate' | 'deliveredDate'>): LocalDate {
+  return task.deliveredDate ?? task.dueDate;
+}
 
 /** 现在的本地时间，用于区分「已完成」和「预计」 */
 export interface LocalNow {
@@ -37,7 +59,8 @@ export function sumMoney(...items: MoneyByCurrency[]): MoneyByCurrency {
 /** 班次结束的本地时间 "YYYY-MM-DD HH:mm"（跨夜班在第二天） */
 export function shiftEnd(shift: TimedShift<Pick<Shift, 'date' | 'startTime' | 'endTime'>>): string {
   const end = timeToMinutes(shift.startTime) + spanMinutes(shift.startTime, shift.endTime);
-  const date = end >= MINUTES_PER_DAY ? addDays(shift.date, Math.floor(end / MINUTES_PER_DAY)) : shift.date;
+  const date =
+    end >= MINUTES_PER_DAY ? addDays(shift.date, Math.floor(end / MINUTES_PER_DAY)) : shift.date;
   return `${date} ${minutesToTime(end)}`;
 }
 
@@ -98,7 +121,10 @@ export function occupiedMinutesByDay(shifts: StatShift[]): Map<LocalDate, number
  * - 空闲分钟：每天 24 小时 − 打工占用，合计
  * shifts 需要包括范围开始前一天的班次（它的跨夜部分会占用第一天）
  */
-export function freeTime(shifts: StatShift[], range: DateRange): { freeDays: number; freeMinutes: number } {
+export function freeTime(
+  shifts: StatShift[],
+  range: DateRange
+): { freeDays: number; freeMinutes: number } {
   const shiftDates = new Set(shifts.map((s) => s.date));
   const occupied = occupiedMinutesByDay(shifts);
   let freeDays = 0;
@@ -118,6 +144,10 @@ export interface JobStats {
   days: number;
   /** 时间待定、还没算进时长和工钱的班次数 */
   pending: number;
+  /** 按件计酬：本周期已交付的任务数 */
+  tasksDone: number;
+  /** 按件计酬：截止日在本周期、还没交付的任务数 */
+  tasksOpen: number;
 }
 
 export interface PeriodStats {
@@ -160,13 +190,15 @@ export function freeTimeRange(mode: PeriodMode, month: YearMonth, jobs: StatJob[
  */
 export function periodStats(params: {
   shifts: StatShift[];
+  /** 按件计酬的任务（未删除），不传则当作没有 */
+  tasks?: StatTask[];
   jobs: StatJob[];
   activeJobs: StatJob[];
   mode: PeriodMode;
   month: YearMonth;
   now: LocalNow;
 }): PeriodStats {
-  const { shifts, jobs, activeJobs, mode, month, now } = params;
+  const { shifts, tasks = [], jobs, activeJobs, mode, month, now } = params;
   const jobsById = new Map(jobs.map((j) => [j.id, j]));
   const perJob = new Map<string, JobStats & { dates: Set<LocalDate> }>();
   const total: MoneyByCurrency = {};
@@ -181,6 +213,8 @@ export function periodStats(params: {
     wage: {},
     days: 0,
     pending: 0,
+    tasksDone: 0,
+    tasksOpen: 0,
     dates: new Set<LocalDate>(),
   });
 
@@ -210,6 +244,27 @@ export function periodStats(params: {
     addMoney(isCompleted(s, now) ? completed : expected, s.currencySnapshot, wage);
   }
 
+  // 按件计酬的任务：只算钱，不算时长，也不影响空闲时间
+  for (const task of tasks) {
+    const job = jobsById.get(task.jobId);
+    const range = jobRange(mode, month, job);
+    if (!inRange(taskIncomeDate(task), range)) continue;
+    let entry = perJob.get(task.jobId);
+    if (!entry) {
+      entry = newEntry(task.jobId, range);
+      perJob.set(task.jobId, entry);
+    }
+    addMoney(entry.wage, task.currency, task.amount);
+    addMoney(total, task.currency, task.amount);
+    if (task.deliveredDate) {
+      entry.tasksDone++;
+      addMoney(completed, task.currency, task.amount);
+    } else {
+      entry.tasksOpen++;
+      addMoney(expected, task.currency, task.amount);
+    }
+  }
+
   const freeRange = freeTimeRange(mode, month, activeJobs);
   const extended = { from: addDays(freeRange.from, -1), to: freeRange.to };
   const { freeDays, freeMinutes } = freeTime(
@@ -233,30 +288,34 @@ export function periodStats(params: {
  */
 export function yearIncome(params: {
   shifts: StatShift[];
+  tasks?: StatTask[];
   jobs: StatJob[];
   mode: PeriodMode;
   year: number;
 }): { months: { month: YearMonth; wage: MoneyByCurrency }[]; total: MoneyByCurrency } {
-  const { shifts, jobs, mode, year } = params;
+  const { shifts, tasks = [], jobs, mode, year } = params;
   const jobsById = new Map(jobs.map((j) => [j.id, j]));
   const months = Array.from({ length: 12 }, (_, i) => ({
     month: `${year}-${String(i + 1).padStart(2, '0')}`,
     wage: {} as MoneyByCurrency,
   }));
-  for (const s of shifts.filter(isTimed)) {
-    const job = jobsById.get(s.jobId);
-    // 班次属于哪个月：检查它落在哪个月的周期内（前后月也要检查，因为工资周期会跨月）
-    const [y, m] = s.date.split('-').map(Number);
+  // 一笔收入（日期 + 金额）属于哪个月：检查它落在哪个月的周期内
+  // （工资周期会跨月，所以当月和下个月都要检查）
+  const place = (jobId: string, date: LocalDate, currency: Currency, amount: MinorUnits) => {
+    const job = jobsById.get(jobId);
+    const [y, m] = date.split('-').map(Number);
     for (const offset of [0, 1]) {
       const d = new Date(y, m - 1 + offset, 1);
       if (d.getFullYear() !== year) continue;
       const month = `${year}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (inRange(s.date, jobRange(mode, month, job))) {
-        addMoney(months[d.getMonth()].wage, s.currencySnapshot, shiftWage(s));
-        break;
+      if (inRange(date, jobRange(mode, month, job))) {
+        addMoney(months[d.getMonth()].wage, currency, amount);
+        return;
       }
     }
-  }
+  };
+  for (const s of shifts.filter(isTimed)) place(s.jobId, s.date, s.currencySnapshot, shiftWage(s));
+  for (const t of tasks) place(t.jobId, taskIncomeDate(t), t.currency, t.amount);
   return { months, total: sumMoney(...months.map((m) => m.wage)) };
 }
 

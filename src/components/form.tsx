@@ -9,6 +9,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
+import { formatDateInput } from '@/lib/date';
 import { formatTimeInput, normalizeTime } from '@/lib/time';
 import { colors, JOB_COLORS } from '@/theme/colors';
 
@@ -24,7 +25,15 @@ export function FormScreen({ children }: { children: ReactNode }) {
   );
 }
 
-export function Section({ title, children, right }: { title?: string; children: ReactNode; right?: ReactNode }) {
+export function Section({
+  title,
+  children,
+  right,
+}: {
+  title?: string;
+  children: ReactNode;
+  right?: ReactNode;
+}) {
   return (
     <View style={styles.section}>
       {(title || right) && (
@@ -53,7 +62,11 @@ export function Field({
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       {children}
-      {error ? <Text style={styles.error}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : hint ? (
+        <Text style={styles.hint}>{hint}</Text>
+      ) : null}
     </View>
   );
 }
@@ -94,6 +107,28 @@ export function TimeInput({
   );
 }
 
+/** 日期输入：输入数字自动加「-」，格式 YYYY-MM-DD */
+export function DateInput({
+  value,
+  onChangeText,
+  placeholder,
+}: {
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <Input
+      value={value}
+      onChangeText={(text) => onChangeText(formatDateInput(text))}
+      placeholder={placeholder}
+      keyboardType="number-pad"
+      maxLength={10}
+      style={styles.dateInput}
+    />
+  );
+}
+
 export function Segmented<T extends string | number>({
   options,
   value,
@@ -122,7 +157,13 @@ export function Segmented<T extends string | number>({
   );
 }
 
-export function ColorPicker({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+export function ColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+}) {
   return (
     <View style={styles.colors}>
       {JOB_COLORS.map((c) => (
@@ -242,6 +283,7 @@ const styles = StyleSheet.create({
   },
   multiline: { minHeight: 72, textAlignVertical: 'top' },
   timeInput: { width: 96, textAlign: 'center' },
+  dateInput: { width: 140 },
   segmented: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -267,7 +309,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonPrimary: { backgroundColor: colors.primary },
-  buttonSecondary: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.primary },
+  buttonSecondary: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
   buttonDanger: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.danger },
   buttonPressed: { opacity: 0.6 },
   buttonText: { fontSize: 16, fontWeight: '600' },

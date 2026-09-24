@@ -39,7 +39,10 @@ export function StatsBar({
       accessibilityLabel={t('stats.open')}
       style={({ pressed }) => [styles.bar, pressed && styles.pressed]}>
       <Text style={styles.period}>
-        {t(mode === 'payPeriod' ? 'stats.barPayPeriod' : 'stats.barCalendarMonth', { month: monthNumber })} ›
+        {t(mode === 'payPeriod' ? 'stats.barPayPeriod' : 'stats.barCalendarMonth', {
+          month: monthNumber,
+        })}{' '}
+        ›
       </Text>
       <View style={styles.cells}>
         <Cell label={t('stats.hours')} value={stats ? hours(stats.totalMinutes) : '–'} />

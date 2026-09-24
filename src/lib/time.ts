@@ -55,3 +55,11 @@ export function formatHours(minutes: number): string {
   const tenths = Math.round((minutes / 60) * 10);
   return tenths % 10 === 0 ? String(tenths / 10) : (tenths / 10).toFixed(1);
 }
+
+/** "2.5" 小时 → 150 分钟；空字符串 → null；非法 → undefined */
+export function parseHoursInput(text: string): number | null | undefined {
+  const t = text.trim();
+  if (t === '') return null;
+  if (!/^\d+(\.\d{0,2})?$/.test(t)) return undefined;
+  return Math.round(Number(t) * 60);
+}

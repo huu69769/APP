@@ -37,7 +37,8 @@
       "六"
     ],
     "dayLabel": "{{month}}月{{day}}日",
-    "more": "+{{count}}"
+    "more": "+{{count}}",
+    "ddl": "DDL"
   },
   "home": {
     "jobs": "兼职",
@@ -70,7 +71,12 @@
     "noJobs": "还没有兼职。先添加一份兼职，才能记录班次。",
     "goJobs": "去添加兼职",
     "noTemplates": "给兼职添加班次模板后，就可以在这里一键添加。",
-    "pendingChip": "{{job}} · 时间待定"
+    "pendingChip": "{{job}} · 时间待定",
+    "tasks": "任务",
+    "addTask": "添加任务",
+    "noTasks": "这一天没有截止或交付的任务",
+    "taskDue": "截止",
+    "taskDeliveredOn": "{{date}} 交付"
   },
   "jobs": {
     "title": "兼职",
@@ -96,7 +102,13 @@
     "addTemplate": "添加模板",
     "saveFirst": "先保存兼职，才能添加模板。",
     "deleteTitle": "删除这份兼职？",
-    "deleteMessage": "它的班次模板也会删除；已有的班次记录会保留。"
+    "deleteMessage": "它的班次模板也会删除；已有的班次记录会保留。",
+    "payType": "计酬方式",
+    "payHourly": "时薪",
+    "payPiece": "按件计酬",
+    "pieceHint": "按件计酬：没有时薪和班次，而是记录一个个任务（截止日 + 报酬）。收入按交付日计算。",
+    "pieceSubtitle": "按件计酬",
+    "pieceCurrencyHint": "新建任务时默认使用这个币种。"
   },
   "templates": {
     "newTitle": "新建班次模板",
@@ -135,7 +147,10 @@
     "timeInvalid": "请输入正确的时间，例如 09:00",
     "breakTooLong": "休息时间不能大于或等于班次时长",
     "jobRequired": "请选择兼职",
-    "notFound": "找不到这条记录，可能已被删除"
+    "notFound": "找不到这条记录，可能已被删除",
+    "titleRequired": "请输入任务名称",
+    "dateInvalid": "请输入正确的日期，例如 2026-09-30",
+    "hoursInvalid": "用时请输入数字，例如 2.5"
   },
   "stats": {
     "title": "统计",
@@ -168,6 +183,27 @@
     "yearTotal": "全年合计",
     "monthLabel": "{{month}}月",
     "pendingNote": "另有 {{count}} 个班次时间待定，没有算进时长和工钱",
-    "pendingShort": "待定 {{count}} 个"
+    "pendingShort": "待定 {{count}} 个",
+    "tasksSummary": "完成 {{done}} 件 · 进行中 {{open}} 件"
+  },
+  "task": {
+    "newTitle": "添加任务",
+    "editTitle": "编辑任务",
+    "job": "兼职",
+    "title": "任务名称",
+    "titlePlaceholder": "例如：说明书翻译",
+    "dueDate": "截止日（DDL）",
+    "datePlaceholder": "2026-09-30",
+    "amount": "报酬",
+    "status": "状态",
+    "open": "进行中",
+    "delivered": "已交付",
+    "deliveredDate": "交付日",
+    "deliveredHint": "收入按交付日算进统计。",
+    "hours": "用时（小时，可不填）",
+    "hoursHint": "只给自己参考，不算进打工时长。",
+    "note": "备注",
+    "deleteTitle": "删除这个任务？",
+    "noPieceJobs": "还没有按件计酬的兼职。添加兼职时把「计酬方式」选成「按件计酬」。"
   }
 }

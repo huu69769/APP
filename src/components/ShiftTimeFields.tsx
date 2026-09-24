@@ -38,7 +38,9 @@ export function useShiftTimeState() {
   else if (brk === null) error = 'breakInvalid';
   else {
     const code = validateShift({ startTime: start, endTime: end, breakMinutes: brk });
-    if (code) error = code === 'invalidBreak' ? 'breakInvalid' : code === 'invalidTime' ? 'timeInvalid' : code;
+    if (code)
+      error =
+        code === 'invalidBreak' ? 'breakInvalid' : code === 'invalidTime' ? 'timeInvalid' : code;
   }
 
   const validated: ShiftTimes | null =
@@ -152,7 +154,10 @@ function TimeFields({
             {wage
               ? t('shift.summary', {
                   duration: formatDuration(t, workedMinutes(v)),
-                  amount: formatMoney(shiftWage({ ...v, wageSnapshot: wage.amount }), wage.currency),
+                  amount: formatMoney(
+                    shiftWage({ ...v, wageSnapshot: wage.amount }),
+                    wage.currency
+                  ),
                 })
               : formatDuration(t, workedMinutes(v))}
           </Text>

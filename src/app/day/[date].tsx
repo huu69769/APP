@@ -7,7 +7,8 @@ import { showMessage } from '@/components/confirm';
 import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/form';
 import { useData } from '@/data/DataProvider';
 import { buildPendingShift, buildShiftFromTemplate, sortShifts } from '@/data/shifts';
-import { isTimed, type Job, type ShiftTemplate } from '@/data/types';
+import { tasksOnDate } from '@/data/tasks';
+import { isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { formatDuration } from '@/i18n/format';
 import { isValidLocalDate, parseLocalDate } from '@/lib/date';
@@ -29,16 +30,26 @@ export default function DayScreen() {
   const { data } = useQuery(
     async (r) => {
       if (!valid) return null;
-      const [shifts, allJobs, templates] = await Promise.all([
+      const [shifts, allJobs, templates, allTasks] = await Promise.all([
         r.shifts.listByDateRange(date, date),
         r.jobs.listWithDeleted(),
         r.shift_templates.list(),
+        r.tasks.list(),
       ]);
       const jobsById = new Map(allJobs.map((j) => [j.id, j]));
       const activeJobs = allJobs
         .filter((j) => !j.deletedAt)
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-      return { shifts: sortShifts(shifts), jobsById, activeJobs, templates };
+      const tasks = tasksOnDate(allTasks, date).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+      return {
+        shifts: sortShifts(shifts),
+        jobsById,
+        hourlyJobs: activeJobs.filter((j) => jobPayType(j) === 'hourly'),
+        pieceJobs: activeJobs.filter((j) => jobPayType(j) === 'piece'),
+        activeJobs,
+        templates,
+        tasks,
+      };
     },
     [date, valid]
   );
@@ -74,52 +85,95 @@ export default function DayScreen() {
       <Stack.Screen options={{ title }} />
       {data && (
         <>
-          <Section title={t('day.shifts')}>
-            {data.shifts.length === 0 && <EmptyText>{t('day.empty')}</EmptyText>}
-            {data.shifts.map((s) => {
-              const job = data.jobsById.get(s.jobId);
-              if (!isTimed(s)) {
+          {(data.shifts.length > 0 ||
+            data.pieceJobs.length === 0 ||
+            data.hourlyJobs.length > 0) && (
+            <Section title={t('day.shifts')}>
+              {data.shifts.length === 0 && <EmptyText>{t('day.empty')}</EmptyText>}
+              {data.shifts.map((s) => {
+                const job = data.jobsById.get(s.jobId);
+                if (!isTimed(s)) {
+                  return (
+                    <ListRow
+                      key={s.id}
+                      color={job?.color}
+                      title={t('shift.pendingTitle', { job: job?.name ?? '' })}
+                      subtitle={s.note || undefined}
+                      right="—"
+                      onPress={() => router.push({ pathname: '/shift/[id]', params: { id: s.id } })}
+                    />
+                  );
+                }
+                const overnight = isOvernight(s.startTime, s.endTime);
                 return (
                   <ListRow
                     key={s.id}
                     color={job?.color}
-                    title={t('shift.pendingTitle', { job: job?.name ?? '' })}
-                    subtitle={s.note || undefined}
-                    right="—"
+                    title={`${job?.name ?? ''}  ${s.startTime} – ${overnight ? '+1 ' : ''}${s.endTime}`}
+                    subtitle={[
+                      formatDuration(t, workedMinutes(s)),
+                      s.breakMinutes > 0 ? `☕ ${formatDuration(t, s.breakMinutes)}` : null,
+                      s.note || null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                    right={formatMoney(shiftWage(s), s.currencySnapshot)}
                     onPress={() => router.push({ pathname: '/shift/[id]', params: { id: s.id } })}
                   />
                 );
-              }
-              const overnight = isOvernight(s.startTime, s.endTime);
-              return (
-                <ListRow
-                  key={s.id}
-                  color={job?.color}
-                  title={`${job?.name ?? ''}  ${s.startTime} – ${overnight ? '+1 ' : ''}${s.endTime}`}
-                  subtitle={[
-                    formatDuration(t, workedMinutes(s)),
-                    s.breakMinutes > 0 ? `☕ ${formatDuration(t, s.breakMinutes)}` : null,
-                    s.note || null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                  right={formatMoney(shiftWage(s), s.currencySnapshot)}
-                  onPress={() => router.push({ pathname: '/shift/[id]', params: { id: s.id } })}
-                />
-              );
-            })}
-          </Section>
+              })}
+            </Section>
+          )}
+
+          {(data.pieceJobs.length > 0 || data.tasks.length > 0) && (
+            <Section
+              title={t('day.tasks')}
+              right={
+                data.pieceJobs.length > 0 ? (
+                  <Button
+                    variant="secondary"
+                    title={t('day.addTask')}
+                    onPress={() =>
+                      router.push({ pathname: '/task/[id]', params: { id: 'new', date } })
+                    }
+                  />
+                ) : undefined
+              }>
+              {data.tasks.length === 0 && <EmptyText>{t('day.noTasks')}</EmptyText>}
+              {data.tasks.map((task) => {
+                const job = data.jobsById.get(task.jobId);
+                return (
+                  <ListRow
+                    key={task.id}
+                    color={job?.color}
+                    title={`${task.deliveredDate ? '✓ ' : ''}${task.title}`}
+                    subtitle={[
+                      job?.name,
+                      task.dueDate === date ? t('day.taskDue') : null,
+                      task.deliveredDate
+                        ? t('day.taskDeliveredOn', { date: task.deliveredDate })
+                        : t('task.open'),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                    right={formatMoney(task.amount, task.currency)}
+                    onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
+                  />
+                );
+              })}
+            </Section>
+          )}
 
           {data.activeJobs.length === 0 ? (
             <Section>
               <EmptyText>{t('day.noJobs')}</EmptyText>
               <Button title={t('day.goJobs')} onPress={() => router.push('/jobs')} />
             </Section>
-          ) : (
+          ) : data.hourlyJobs.length === 0 ? null : (
             <>
               <Section title={t('day.quickAdd')}>
                 <View style={styles.chips}>
-                  {data.activeJobs.flatMap((job) => [
+                  {data.hourlyJobs.flatMap((job) => [
                     ...data.templates
                       .filter((tpl) => tpl.jobId === job.id)
                       .sort((a, b) => a.startTime.localeCompare(b.startTime))
@@ -164,7 +218,9 @@ export default function DayScreen() {
               <Button
                 variant="secondary"
                 title={t('day.manualAdd')}
-                onPress={() => router.push({ pathname: '/shift/[id]', params: { id: 'new', date } })}
+                onPress={() =>
+                  router.push({ pathname: '/shift/[id]', params: { id: 'new', date } })
+                }
               />
             </>
           )}

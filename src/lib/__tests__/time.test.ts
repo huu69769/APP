@@ -1,5 +1,6 @@
 import {
   formatHours,
+  parseHoursInput,
   formatTimeInput,
   isValidTime,
   minutesToTime,
@@ -52,5 +53,16 @@ describe('formatHours', () => {
     expect(formatHours(750)).toBe('12.5');
     expect(formatHours(20)).toBe('0.3');
     expect(formatHours(59)).toBe('1');
+  });
+});
+
+describe('parseHoursInput', () => {
+  it('parses decimal hours into minutes', () => {
+    expect(parseHoursInput('2.5')).toBe(150);
+    expect(parseHoursInput('3')).toBe(180);
+    expect(parseHoursInput('0.25')).toBe(15);
+    expect(parseHoursInput('')).toBeNull();
+    expect(parseHoursInput('abc')).toBeUndefined();
+    expect(parseHoursInput('-1')).toBeUndefined();
   });
 });

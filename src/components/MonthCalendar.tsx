@@ -16,6 +16,8 @@ export interface DayBar {
   label: string;
   /** 时间待定：颜色浅一些，前面加「?」 */
   pending?: boolean;
+  /** 按件计酬的任务（截止日）：只画边框，和班次区分开 */
+  task?: boolean;
 }
 
 interface Props {
@@ -33,7 +35,15 @@ interface Props {
  * 月历：6 行 × 7 列。左右滑动切换月份。
  * 每个班次用兼职的颜色显示成一条色块。M5 起还会显示农历和节假日。
  */
-export function MonthCalendar({ month, weekStart, today, bars, selected, onPressDay, onSwipe }: Props) {
+export function MonthCalendar({
+  month,
+  weekStart,
+  today,
+  bars,
+  selected,
+  onPressDay,
+  onSwipe,
+}: Props) {
   const { t } = useTranslation();
   const weekdayNames = t('calendar.weekdaysShort', { returnObjects: true }) as string[];
   const weeks = buildMonthGrid(month, weekStart, today);
@@ -93,7 +103,11 @@ function DayCell({
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.cell, pressed && styles.cellPressed, selected && styles.cellSelected]}
+      style={({ pressed }) => [
+        styles.cell,
+        pressed && styles.cellPressed,
+        selected && styles.cellSelected,
+      ]}
       onPress={() => onPress(day.date)}
       accessibilityRole="button"
       accessibilityState={selected === undefined ? undefined : { selected }}
@@ -111,8 +125,16 @@ function DayCell({
       </View>
       <View style={[styles.bars, !day.inMonth && styles.barsOutOfMonth]}>
         {shown.map((bar) => (
-          <View key={bar.id} style={[styles.bar, { backgroundColor: bar.color }, bar.pending && styles.barPending]}>
-            <Text style={styles.barText} numberOfLines={1}>
+          <View
+            key={bar.id}
+            style={[
+              styles.bar,
+              bar.task
+                ? [styles.barTask, { borderColor: bar.color }]
+                : { backgroundColor: bar.color },
+              bar.pending && styles.barPending,
+            ]}>
+            <Text style={[styles.barText, bar.task && { color: bar.color }]} numberOfLines={1}>
               {bar.pending ? `? ${bar.label}` : bar.label}
             </Text>
           </View>
@@ -165,6 +187,7 @@ const styles = StyleSheet.create({
   barsOutOfMonth: { opacity: 0.4 },
   bar: { borderRadius: 3, paddingHorizontal: 2, paddingVertical: 1 },
   barPending: { opacity: 0.45 },
+  barTask: { borderWidth: 1, paddingVertical: 0, backgroundColor: colors.background },
   barText: { fontSize: 10, color: '#FFFFFF', fontWeight: '600' },
   more: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
   check: {

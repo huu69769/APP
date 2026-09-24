@@ -87,6 +87,7 @@ export function createRepositories(driver: StorageDriver, deps: RepositoryDeps):
     jobs: new Repository(driver, 'jobs', deps),
     shift_templates: new Repository(driver, 'shift_templates', deps),
     shifts: new Repository(driver, 'shifts', deps),
+    tasks: new Repository(driver, 'tasks', deps),
     events: new Repository(driver, 'events', deps),
     day_notes: new Repository(driver, 'day_notes', deps),
     holidays_cache: new Repository(driver, 'holidays_cache', deps),

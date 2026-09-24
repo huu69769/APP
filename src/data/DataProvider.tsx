@@ -52,7 +52,10 @@ export function DataProvider({
       if (!cancelled) setState({ status: 'ready', driver, repos, settings });
     })().catch((error: unknown) => {
       if (!cancelled) {
-        setState({ status: 'error', error: error instanceof Error ? error : new Error(String(error)) });
+        setState({
+          status: 'error',
+          error: error instanceof Error ? error : new Error(String(error)),
+        });
       }
     });
     return () => {

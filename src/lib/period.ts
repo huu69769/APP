@@ -41,7 +41,11 @@ export function payPeriodRange(month: YearMonth, cutoffDay: number | null): Date
   };
 }
 
-export function periodRange(mode: PeriodMode, month: YearMonth, cutoffDay: number | null): DateRange {
+export function periodRange(
+  mode: PeriodMode,
+  month: YearMonth,
+  cutoffDay: number | null
+): DateRange {
   return mode === 'calendarMonth' ? calendarMonthRange(month) : payPeriodRange(month, cutoffDay);
 }
 

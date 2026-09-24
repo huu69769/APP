@@ -10,7 +10,7 @@ import { StatsBar } from '@/components/StatsBar';
 import { TemplatePicker } from '@/components/TemplatePicker';
 import { useData } from '@/data/DataProvider';
 import { applyPendingToDates, applyTemplateToDates, sortShifts } from '@/data/shifts';
-import { isTimed, type Job, type ShiftTemplate } from '@/data/types';
+import { isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { monthGridRange } from '@/lib/calendar';
@@ -35,10 +35,11 @@ export default function HomeScreen() {
   const { data } = useQuery(
     async (r) => {
       const { from, to } = monthGridRange(month, settings.weekStart);
-      const [shifts, jobs, templates] = await Promise.all([
+      const [shifts, jobs, templates, tasks] = await Promise.all([
         r.shifts.listByDateRange(from, to),
         r.jobs.listWithDeleted(),
         r.shift_templates.list(),
+        r.tasks.list(),
       ]);
       const jobsById = new Map(jobs.map((j) => [j.id, j]));
       const bars = new Map<LocalDate, DayBar[]>();
@@ -53,12 +54,25 @@ export default function HomeScreen() {
         });
         bars.set(s.date, list);
       }
+      // 按件计酬的任务显示在截止日
+      for (const task of tasks) {
+        if (task.dueDate < from || task.dueDate > to) continue;
+        const job = jobsById.get(task.jobId);
+        const list = bars.get(task.dueDate) ?? [];
+        list.push({
+          id: task.id,
+          color: job?.color ?? colors.textMuted,
+          label: `${task.deliveredDate ? '✓' : t('calendar.ddl')} ${task.title}`,
+          task: true,
+        });
+        bars.set(task.dueDate, list);
+      }
       const activeJobs = jobs
-        .filter((j) => !j.deletedAt)
+        .filter((j) => !j.deletedAt && jobPayType(j) === 'hourly')
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
       return { bars, activeJobs, templates };
     },
-    [month, settings.weekStart]
+    [month, settings.weekStart, t]
   );
 
   const { data: statsData } = useMonthStats(month);

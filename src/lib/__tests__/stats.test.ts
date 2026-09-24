@@ -12,7 +12,12 @@ const shift = (
   date: string,
   startTime: string,
   endTime: string,
-  extra: Partial<{ jobId: string; breakMinutes: number; wageSnapshot: number; currencySnapshot: 'CNY' | 'JPY' | 'USD' }> = {}
+  extra: Partial<{
+    jobId: string;
+    breakMinutes: number;
+    wageSnapshot: number;
+    currencySnapshot: 'CNY' | 'JPY' | 'USD';
+  }> = {}
 ) => ({
   jobId: 'a',
   date,
@@ -93,14 +98,26 @@ describe('periodStats', () => {
   it('sums hours, wages by currency and free time in a calendar month', () => {
     const shifts = [
       shift('2026-09-01', '09:00', '14:00', { wageSnapshot: 2500 }), // 5h ¥125
-      shift('2026-09-20', '18:00', '22:00', { jobId: 'b', wageSnapshot: 1200, currencySnapshot: 'JPY', breakMinutes: 60 }), // 3h 3600円
+      shift('2026-09-20', '18:00', '22:00', {
+        jobId: 'b',
+        wageSnapshot: 1200,
+        currencySnapshot: 'JPY',
+        breakMinutes: 60,
+      }), // 3h 3600円
       shift('2026-08-31', '09:00', '10:00'), // 不在本月
     ];
     const jobs = [
       { id: 'a', cutoffDay: null },
       { id: 'b', cutoffDay: null },
     ];
-    const s = periodStats({ shifts, jobs, activeJobs: jobs, mode: 'calendarMonth', month: '2026-09', now });
+    const s = periodStats({
+      shifts,
+      jobs,
+      activeJobs: jobs,
+      mode: 'calendarMonth',
+      month: '2026-09',
+      now,
+    });
     expect(s.totalMinutes).toBe(8 * 60);
     expect(s.wage.total).toEqual({ CNY: 12500, JPY: 3600 });
     expect(s.wage.completed).toEqual({ CNY: 12500 });
@@ -122,7 +139,14 @@ describe('periodStats', () => {
       { id: 'a', cutoffDay: 25 },
       { id: 'b', cutoffDay: null },
     ];
-    const s = periodStats({ shifts, jobs, activeJobs: jobs, mode: 'payPeriod', month: '2026-09', now });
+    const s = periodStats({
+      shifts,
+      jobs,
+      activeJobs: jobs,
+      mode: 'payPeriod',
+      month: '2026-09',
+      now,
+    });
     expect(s.jobs.find((j) => j.jobId === 'a')).toMatchObject({
       range: { from: '2026-08-26', to: '2026-09-25' },
       minutes: 60,
@@ -138,7 +162,14 @@ describe('periodStats', () => {
 
   it('uses the shared pay period for free time when all cutoffs match', () => {
     const jobs = [{ id: 'a', cutoffDay: 25 }];
-    const s = periodStats({ shifts: [], jobs, activeJobs: jobs, mode: 'payPeriod', month: '2026-09', now });
+    const s = periodStats({
+      shifts: [],
+      jobs,
+      activeJobs: jobs,
+      mode: 'payPeriod',
+      month: '2026-09',
+      now,
+    });
     expect(s.freeRange).toEqual({ from: '2026-08-26', to: '2026-09-25' });
     expect(s.freeDays).toBe(31);
   });
@@ -165,7 +196,12 @@ describe('yearIncome', () => {
       shift('2026-03-05', '09:00', '10:00', { wageSnapshot: 1500, currencySnapshot: 'USD' }),
       shift('2025-12-31', '09:00', '10:00'), // 去年
     ];
-    const r = yearIncome({ shifts, jobs: [{ id: 'a', cutoffDay: null }], mode: 'calendarMonth', year: 2026 });
+    const r = yearIncome({
+      shifts,
+      jobs: [{ id: 'a', cutoffDay: null }],
+      mode: 'calendarMonth',
+      year: 2026,
+    });
     expect(r.months[0].wage).toEqual({ CNY: 3000 });
     expect(r.months[2].wage).toEqual({ USD: 1500 });
     expect(r.months[1].wage).toEqual({});
@@ -178,7 +214,12 @@ describe('yearIncome', () => {
       shift('2026-12-28', '09:00', '10:00'), // 2027 年 1 月期，不计入 2026
       shift('2026-02-26', '09:00', '10:00'), // 3 月期
     ];
-    const r = yearIncome({ shifts, jobs: [{ id: 'a', cutoffDay: 25 }], mode: 'payPeriod', year: 2026 });
+    const r = yearIncome({
+      shifts,
+      jobs: [{ id: 'a', cutoffDay: 25 }],
+      mode: 'payPeriod',
+      year: 2026,
+    });
     expect(r.months[0].wage).toEqual({ CNY: 1000 });
     expect(r.months[2].wage).toEqual({ CNY: 1000 });
     expect(r.total).toEqual({ CNY: 2000 });
@@ -230,5 +271,82 @@ describe('pending shifts in stats', () => {
     });
     expect(r.total).toEqual({});
     expect(occupiedMinutesByDay([pending('2026-01-05')]).size).toBe(0);
+  });
+});
+
+describe('piece-rate tasks in stats', () => {
+  const task = (
+    dueDate: string,
+    deliveredDate: string | null,
+    amount = 80000,
+    currency: 'CNY' | 'JPY' | 'USD' = 'CNY'
+  ) => ({
+    jobId: 't',
+    dueDate,
+    deliveredDate,
+    amount,
+    currency,
+  });
+  const jobs = [
+    { id: 'a', cutoffDay: null },
+    { id: 't', cutoffDay: null },
+  ];
+  const now = { date: '2026-09-15', time: '12:00' };
+
+  it('counts delivered tasks by delivery date as completed, open tasks by due date as expected', () => {
+    const s = periodStats({
+      shifts: [shift('2026-09-01', '09:00', '10:00')],
+      tasks: [
+        task('2026-10-05', '2026-09-28'), // 提前在 9 月交付 → 9 月已完成
+        task('2026-09-30', null, 50000), // 9 月截止未交付 → 9 月预计
+        task('2026-09-10', '2026-10-02'), // 10 月才交付 → 不算 9 月
+        task('2026-09-20', '2026-09-20', 3000, 'USD'),
+      ],
+      jobs,
+      activeJobs: jobs,
+      mode: 'calendarMonth',
+      month: '2026-09',
+      now,
+    });
+    expect(s.wage.completed).toEqual({ CNY: 1000 + 80000, USD: 3000 });
+    expect(s.wage.expected).toEqual({ CNY: 50000 });
+    expect(s.wage.total).toEqual({ CNY: 131000, USD: 3000 });
+    // 任务不计入打工时长，也不影响空闲
+    expect(s.totalMinutes).toBe(60);
+    expect(s.freeDays).toBe(29);
+    expect(s.jobs.find((j) => j.jobId === 't')).toMatchObject({
+      minutes: 0,
+      days: 0,
+      tasksDone: 2,
+      tasksOpen: 1,
+      wage: { CNY: 130000, USD: 3000 },
+    });
+  });
+
+  it('uses the job cutoff for tasks in pay period mode', () => {
+    const cutJobs = [{ id: 't', cutoffDay: 25 }];
+    const s = periodStats({
+      shifts: [],
+      tasks: [task('2026-09-30', '2026-09-26'), task('2026-09-30', '2026-09-25', 100)],
+      jobs: cutJobs,
+      activeJobs: cutJobs,
+      mode: 'payPeriod',
+      month: '2026-09',
+      now,
+    });
+    expect(s.wage.total).toEqual({ CNY: 100 });
+  });
+
+  it('adds task income to the yearly totals by income date', () => {
+    const r = yearIncome({
+      shifts: [],
+      tasks: [task('2026-03-31', '2026-04-01'), task('2026-05-10', null, 500)],
+      jobs,
+      mode: 'calendarMonth',
+      year: 2026,
+    });
+    expect(r.months[3].wage).toEqual({ CNY: 80000 });
+    expect(r.months[4].wage).toEqual({ CNY: 500 });
+    expect(r.total).toEqual({ CNY: 80500 });
   });
 });

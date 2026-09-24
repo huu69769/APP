@@ -1,4 +1,11 @@
-import { addDays, DATE_FORMAT, type LocalDate, parseYearMonth, today, type YearMonth } from './date';
+import {
+  addDays,
+  DATE_FORMAT,
+  type LocalDate,
+  parseYearMonth,
+  today,
+  type YearMonth,
+} from './date';
 
 /** 0 = 周日开始，1 = 周一开始 */
 export type WeekStart = 0 | 1;
@@ -51,7 +58,10 @@ export function orderedWeekdays(weekStart: WeekStart): number[] {
 }
 
 /** 月历网格覆盖的日期范围（含上下月补位的日期），用于一次读出要显示的班次 */
-export function monthGridRange(month: YearMonth, weekStart: WeekStart): { from: LocalDate; to: LocalDate } {
+export function monthGridRange(
+  month: YearMonth,
+  weekStart: WeekStart
+): { from: LocalDate; to: LocalDate } {
   const weeks = buildMonthGrid(month, weekStart);
   return { from: weeks[0][0].date, to: weeks[5][6].date };
 }

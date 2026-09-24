@@ -37,7 +37,8 @@
       "土"
     ],
     "dayLabel": "{{month}}月{{day}}日",
-    "more": "+{{count}}"
+    "more": "+{{count}}",
+    "ddl": "締切"
   },
   "home": {
     "jobs": "バイト",
@@ -70,7 +71,12 @@
     "noJobs": "バイトがまだありません。シフトを記録するには、まずバイトを追加してください。",
     "goJobs": "バイトを追加",
     "noTemplates": "バイトにシフトテンプレートを追加すると、ここからワンタップで追加できます。",
-    "pendingChip": "{{job}} · 時間未定"
+    "pendingChip": "{{job}} · 時間未定",
+    "tasks": "案件",
+    "addTask": "案件を追加",
+    "noTasks": "この日が締切・納品日の案件はありません",
+    "taskDue": "締切",
+    "taskDeliveredOn": "{{date}} 納品"
   },
   "jobs": {
     "title": "バイト",
@@ -96,7 +102,13 @@
     "addTemplate": "テンプレートを追加",
     "saveFirst": "テンプレートを追加するには、先にバイトを保存してください。",
     "deleteTitle": "このバイトを削除しますか？",
-    "deleteMessage": "シフトテンプレートも削除されます。登録済みのシフトは残ります。"
+    "deleteMessage": "シフトテンプレートも削除されます。登録済みのシフトは残ります。",
+    "payType": "報酬の形式",
+    "payHourly": "時給",
+    "payPiece": "出来高（案件ごと）",
+    "pieceHint": "出来高：時給やシフトはなく、案件（締切＋報酬）を記録します。収入は納品日で計算します。",
+    "pieceSubtitle": "出来高",
+    "pieceCurrencyHint": "新しい案件を作るときの標準の通貨です。"
   },
   "templates": {
     "newTitle": "シフトテンプレートを新規作成",
@@ -135,7 +147,10 @@
     "timeInvalid": "正しい時刻を入力してください（例：09:00）",
     "breakTooLong": "休憩時間がシフトの長さ以上になっています",
     "jobRequired": "バイトを選択してください",
-    "notFound": "データが見つかりません。削除された可能性があります"
+    "notFound": "データが見つかりません。削除された可能性があります",
+    "titleRequired": "案件名を入力してください",
+    "dateInvalid": "正しい日付を入力してください（例：2026-09-30）",
+    "hoursInvalid": "作業時間は数字で入力してください（例：2.5）"
   },
   "stats": {
     "title": "集計",
@@ -168,6 +183,27 @@
     "yearTotal": "年間合計",
     "monthLabel": "{{month}}月",
     "pendingNote": "ほかに時間未定のシフトが {{count}} 件あります（勤務時間・給料には含まれません）",
-    "pendingShort": "未定 {{count}} 件"
+    "pendingShort": "未定 {{count}} 件",
+    "tasksSummary": "納品 {{done}} 件 · 進行中 {{open}} 件"
+  },
+  "task": {
+    "newTitle": "案件を追加",
+    "editTitle": "案件を編集",
+    "job": "バイト",
+    "title": "案件名",
+    "titlePlaceholder": "例：説明書の翻訳",
+    "dueDate": "締切日",
+    "datePlaceholder": "2026-09-30",
+    "amount": "報酬",
+    "status": "状態",
+    "open": "進行中",
+    "delivered": "納品済み",
+    "deliveredDate": "納品日",
+    "deliveredHint": "収入は納品日で集計されます。",
+    "hours": "作業時間（時間・任意）",
+    "hoursHint": "自分用の参考です。勤務時間には含まれません。",
+    "note": "メモ",
+    "deleteTitle": "この案件を削除しますか？",
+    "noPieceJobs": "出来高のバイトがありません。バイトを追加するときに「報酬の形式」を「出来高」にしてください。"
   }
 }

@@ -11,12 +11,13 @@ export function useMonthStats(month: YearMonth) {
   return useQuery(
     async (r) => {
       const range = statsLoadRange(month);
-      const [shifts, jobs] = await Promise.all([
+      const [shifts, jobs, tasks] = await Promise.all([
         r.shifts.listByDateRange(range.from, range.to),
         r.jobs.listWithDeleted(),
+        r.tasks.list(),
       ]);
       const activeJobs = jobs.filter((j) => !j.deletedAt);
-      const stats = periodStats({ shifts, jobs, activeJobs, mode, month, now: localNow() });
+      const stats = periodStats({ shifts, tasks, jobs, activeJobs, mode, month, now: localNow() });
       return { stats, jobsById: new Map(jobs.map((j) => [j.id, j])) };
     },
     [month, mode]
@@ -30,11 +31,12 @@ export function useYearIncome(year: number) {
   return useQuery(
     async (r) => {
       // 工资周期会跨年，所以多读前后一个月
-      const [shifts, jobs] = await Promise.all([
+      const [shifts, jobs, tasks] = await Promise.all([
         r.shifts.listByDateRange(`${year - 1}-12-01`, `${year}-12-31`),
         r.jobs.listWithDeleted(),
+        r.tasks.list(),
       ]);
-      return yearIncome({ shifts, jobs, mode, year });
+      return yearIncome({ shifts, tasks, jobs, mode, year });
     },
     [year, mode]
   );

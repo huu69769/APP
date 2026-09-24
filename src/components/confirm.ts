@@ -9,14 +9,19 @@ export function confirmAsync(options: {
   destructive?: boolean;
 }): Promise<boolean> {
   return new Promise((resolve) => {
-    Alert.alert(options.title, options.message, [
-      { text: options.cancelText, style: 'cancel', onPress: () => resolve(false) },
-      {
-        text: options.confirmText,
-        style: options.destructive ? 'destructive' : 'default',
-        onPress: () => resolve(true),
-      },
-    ], { cancelable: true, onDismiss: () => resolve(false) });
+    Alert.alert(
+      options.title,
+      options.message,
+      [
+        { text: options.cancelText, style: 'cancel', onPress: () => resolve(false) },
+        {
+          text: options.confirmText,
+          style: options.destructive ? 'destructive' : 'default',
+          onPress: () => resolve(true),
+        },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) }
+    );
   });
 }
 

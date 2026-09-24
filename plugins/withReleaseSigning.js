@@ -29,7 +29,8 @@ function applySigning(gradle) {
   let result = gradle.replace(/signingConfigs\s*\{/, (m) => `${m}${RELEASE_SIGNING_CONFIG}`);
 
   // 把 buildTypes.release 里的 "signingConfig signingConfigs.debug" 换掉
-  const releaseBlock = /(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?)signingConfig\s+signingConfigs\.debug/;
+  const releaseBlock =
+    /(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?)signingConfig\s+signingConfigs\.debug/;
   if (!releaseBlock.test(result)) {
     throw new Error('withReleaseSigning: 在 buildTypes.release 里找不到 signingConfig');
   }
