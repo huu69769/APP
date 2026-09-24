@@ -108,7 +108,9 @@
     "payPiece": "按项目结算",
     "pieceHint": "按项目结算：没有时薪和班次，每个项目记一笔报酬（截止日 + 报酬），比如翻译、设计。收入按交付日计算。",
     "pieceSubtitle": "按项目结算",
-    "pieceCurrencyHint": "新建项目时默认使用这个币种。"
+    "pieceCurrencyHint": "新建项目时默认使用这个币种。",
+    "saveFirstProject": "先保存兼职，然后就可以在这里添加项目。",
+    "noProjects": "还没有项目。点「添加项目」，填上项目名称、截止日和报酬，就会显示在月历的截止日上。"
   },
   "templates": {
     "newTitle": "新建班次模板",

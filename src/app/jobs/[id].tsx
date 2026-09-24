@@ -18,7 +18,7 @@ import { useData } from '@/data/DataProvider';
 import { CURRENCIES, jobPayType, type Currency, type Job, type PayType } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { formatDuration } from '@/i18n/format';
-import { moneyToInput, parseMoney } from '@/lib/money';
+import { formatMoney, moneyToInput, parseMoney } from '@/lib/money';
 import { workedMinutes } from '@/lib/shift';
 import { JOB_COLORS } from '@/theme/colors';
 
@@ -67,6 +67,25 @@ export default function JobEditScreen() {
       setLoaded(true);
     });
   }, [id, isNew, repos]);
+
+  const { data: projects } = useQuery(
+    async (r) =>
+      isNew
+        ? []
+        : (await r.tasks.list())
+            .filter((task) => task.jobId === id)
+            // 进行中的在前（按截止日），已交付的在后（最近交付的在前）
+            .sort((a, b) =>
+              !a.deliveredDate !== !b.deliveredDate
+                ? a.deliveredDate
+                  ? 1
+                  : -1
+                : a.deliveredDate
+                  ? b.deliveredDate!.localeCompare(a.deliveredDate)
+                  : a.dueDate.localeCompare(b.dueDate)
+            ),
+    [id, isNew]
+  );
 
   const { data: templates } = useQuery(
     async (r) =>
@@ -244,6 +263,44 @@ export default function JobEditScreen() {
                 subtitle={`${tpl.startTime} – ${tpl.endTime}`}
                 right={formatDuration(t, workedMinutes(tpl))}
                 onPress={() => router.push({ pathname: '/templates/[id]', params: { id: tpl.id } })}
+              />
+            ))
+          )}
+        </Section>
+      )}
+
+      {isPiece && (
+        <Section
+          title={t('day.tasks')}
+          right={
+            isNew ? undefined : (
+              <Button
+                variant="secondary"
+                title={t('day.addTask')}
+                onPress={() =>
+                  router.push({ pathname: '/task/[id]', params: { id: 'new', jobId: id } })
+                }
+              />
+            )
+          }>
+          {isNew ? (
+            <EmptyText>{t('jobs.saveFirstProject')}</EmptyText>
+          ) : projects && projects.length === 0 ? (
+            <EmptyText>{t('jobs.noProjects')}</EmptyText>
+          ) : (
+            projects?.map((task) => (
+              <ListRow
+                key={task.id}
+                color={color}
+                title={`${task.deliveredDate ? '✓ ' : ''}${task.title}`}
+                subtitle={[
+                  `${t('day.taskDue')} ${task.dueDate}`,
+                  task.deliveredDate
+                    ? t('day.taskDeliveredOn', { date: task.deliveredDate })
+                    : t('task.open'),
+                ].join(' · ')}
+                right={formatMoney(task.amount, task.currency)}
+                onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
               />
             ))
           )}

@@ -26,7 +26,7 @@ import { parseHoursInput } from '@/lib/time';
  */
 export default function TaskEditScreen() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ id: string; date?: string }>();
+  const params = useLocalSearchParams<{ id: string; date?: string; jobId?: string }>();
   const isNew = params.id === 'new';
   const { repos } = useData();
 
@@ -51,9 +51,11 @@ export default function TaskEditScreen() {
           .filter((j) => jobPayType(j) === 'piece')
           .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
         setJobs(list);
-        if (list[0]) {
-          setJobId(list[0].id);
-          setCurrency(list[0].currency);
+        // 从兼职页面进来时，默认选中那份兼职
+        const initial = list.find((j) => j.id === params.jobId) ?? list[0];
+        if (initial) {
+          setJobId(initial.id);
+          setCurrency(initial.currency);
         }
       } else {
         const task = await repos.tasks.get(params.id);
@@ -78,7 +80,7 @@ export default function TaskEditScreen() {
       }
       setLoaded(true);
     })();
-  }, [isNew, params.id, repos]);
+  }, [isNew, params.id, params.jobId, repos]);
 
   const job = jobs.find((j) => j.id === jobId);
   const amountValue = parseMoney(amount, currency);
