@@ -64,7 +64,9 @@
     "slotDdl": "DDL",
     "backupReminder": "已经超过 30 天没有备份了。换手机或重装前，记得导出一份备份。",
     "backupNow": "去备份",
-    "dismiss": "知道了"
+    "dismiss": "知道了",
+    "slotAnniv": "纪念",
+    "anniversaries": "纪念日"
   },
   "batch": {
     "hint": "点选日期：可以批量排班，也可以批量删除",
@@ -296,7 +298,13 @@
     "startsAt": "{{date}} {{time}} 开始",
     "allDayBody": "{{date}}（全天）",
     "taskTitle": "DDL：{{title}}",
-    "taskBody": "截止日 {{date}}"
+    "taskBody": "截止日 {{date}}",
+    "annivToday": "就是今天",
+    "annivBody": "{{date}}，还有 {{days}} 天",
+    "annivDay": "当天",
+    "annivD1": "1 天前",
+    "annivD3": "3 天前",
+    "annivD7": "7 天前"
   },
   "settings": {
     "title": "设置",
@@ -370,5 +378,35 @@
   "bulk": {
     "deleteTitle": "删除选中的 {{count}} 项？",
     "deleteMessage": "删除后可以在底部提示里点「撤销」恢复。"
+  },
+  "anniv": {
+    "title": "纪念日",
+    "newTitle": "添加纪念日",
+    "editTitle": "编辑纪念日",
+    "add": "添加纪念日",
+    "empty": "还没有纪念日。生日、开始打工的日子、考试…都可以记下来，会显示在日历上。",
+    "name": "名称",
+    "namePlaceholder": "比如：妈妈生日",
+    "date": "日期",
+    "repeat": "重复",
+    "repeatSolar": "每年",
+    "repeatLunar": "每年（农历）",
+    "repeatNone": "不重复",
+    "lunarHint": "按农历 {{date}} 每年重复",
+    "color": "颜色",
+    "pin": "显示在首页",
+    "pinOn": "显示",
+    "pinOff": "不显示",
+    "pinHint": "在首页日历上方显示一行「还有 N 天」",
+    "note": "备注",
+    "deleteTitle": "删除这个纪念日？",
+    "today": "就是今天",
+    "until": "还有 {{count}} 天",
+    "since": "已经 {{count}} 天",
+    "years": "{{count}} 周年",
+    "totalDays": "已经 {{count}} 天",
+    "passedSection": "已经过去的",
+    "everyYear": "每年 {{date}}",
+    "everyYearLunar": "每年农历 {{date}}"
   }
 }

@@ -1,11 +1,16 @@
 import type { Repositories } from './repository';
 
 export interface ItemRef {
-  kind: 'shift' | 'event' | 'task';
+  kind: 'shift' | 'event' | 'task' | 'anniversary';
   id: string;
 }
 
-const TABLE = { shift: 'shifts', event: 'events', task: 'tasks' } as const;
+const TABLE = {
+  shift: 'shifts',
+  event: 'events',
+  task: 'tasks',
+  anniversary: 'anniversaries',
+} as const;
 
 /**
  * 一次删除多条（班次、日程、项目）。返回撤销用的函数（把删掉的恢复回来）。

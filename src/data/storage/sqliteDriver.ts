@@ -35,7 +35,7 @@ export class SqliteDriver implements StorageDriver {
     if (current >= SCHEMA_VERSION) return;
 
     // 每个版本只是新增表，所以统一用 CREATE TABLE IF NOT EXISTS 补齐缺少的表：
-    // 0 → 1：建立所有表　1 → 2：新增 tasks 表
+    // 0 → 1：建立所有表　1 → 2：新增 tasks 表　2 → 3：新增 anniversaries 表
     // 以后如果要改已有表的结构，在这里按版本号追加迁移步骤：if (current < 3) { ... }
     const statements = current === 0 ? ['PRAGMA journal_mode = WAL;'] : [];
     for (const t of TABLE_NAMES) {

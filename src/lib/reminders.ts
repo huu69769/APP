@@ -1,11 +1,14 @@
-import type { CalendarEvent, Shift, Task } from '@/data/types';
+import type { Anniversary, CalendarEvent, Shift, Task } from '@/data/types';
 
-import { dayjs, type LocalDate } from './date';
+import { occurrencesInRange } from './anniversary';
+import { addDays, dayjs, type LocalDate } from './date';
 
 /** 班次、日程可选的「提前多久提醒」（分钟）；null = 不提醒 */
 export const TIMED_REMINDER_OPTIONS = [null, 0, 30, 60, 1440] as const;
 /** 项目（DDL）可选的提醒：当天、前一天、3 天前（都在 9:00） */
 export const TASK_REMINDER_OPTIONS = [null, 0, 1440, 4320] as const;
+/** 纪念日可选的提醒：当天、1 天前、3 天前、7 天前（都在 9:00） */
+export const ANNIVERSARY_REMINDER_OPTIONS = [null, 0, 1, 3, 7] as const;
 
 /** 全天日程和项目 DDL 的提醒基准时间 */
 export const ALL_DAY_BASE_TIME = '09:00';
@@ -17,7 +20,7 @@ export const MAX_REMINDERS = 300;
 export interface Reminder {
   /** 通知的唯一 ID，比如 "shift:<id>" */
   id: string;
-  kind: 'shift' | 'event' | 'task';
+  kind: 'shift' | 'event' | 'task' | 'anniversary';
   /** 提醒的时间 */
   at: Date;
   /** 事情开始的日期、时间（全天日程 / 项目的时间为 null） */
@@ -46,6 +49,10 @@ export function computeReminders(params: {
     'id' | 'date' | 'title' | 'allDay' | 'startTime' | 'endTime' | 'reminderMinutesBefore'
   >[];
   tasks: Pick<Task, 'id' | 'title' | 'dueDate' | 'reminderMinutesBefore'>[];
+  anniversaries?: Pick<
+    Anniversary,
+    'id' | 'title' | 'date' | 'repeat' | 'lunar' | 'reminderDaysBefore'
+  >[];
   jobNames: Map<string, string>;
   now: Date;
   horizonDays?: number;
@@ -106,6 +113,27 @@ export function computeReminders(params: {
       localDateTime(t.dueDate, ALL_DAY_BASE_TIME),
       t.reminderMinutesBefore
     );
+  }
+
+  const nowDate = dayjs(now).format('YYYY-MM-DD');
+  const lastDate = dayjs(until).add(7, 'day').format('YYYY-MM-DD');
+  for (const a of params.anniversaries ?? []) {
+    if (a.reminderDaysBefore === null) continue;
+    for (const o of occurrencesInRange(a, addDays(nowDate, -1), lastDate)) {
+      add(
+        // 重复的纪念日每年一条，ID 里带上日期
+        {
+          id: `anniversary:${a.id}:${o.date}`,
+          kind: 'anniversary',
+          date: o.date,
+          time: null,
+          endTime: null,
+          title: a.title,
+        },
+        localDateTime(o.date, ALL_DAY_BASE_TIME),
+        a.reminderDaysBefore * 1440
+      );
+    }
   }
 
   return result

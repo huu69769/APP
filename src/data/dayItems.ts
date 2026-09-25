@@ -6,10 +6,15 @@ import type { LocalDate } from '@/lib/date';
 /** 首页下方列表里的一行：班次、日程或项目 */
 export interface DayItem {
   key: string;
-  kind: 'shift' | 'event' | 'task';
+  kind: 'shift' | 'event' | 'task' | 'anniversary';
   id: string;
-  /** 左边的时间栏：'allDay' / 'pending' / 'ddl'，或者开始、结束时间 */
-  slot: 'allDay' | 'pending' | 'ddl' | { start: string; end: string | null; overnight: boolean };
+  /** 左边的时间栏：'allDay' / 'pending' / 'ddl' / 'anniv'（纪念日），或者开始、结束时间 */
+  slot:
+    | 'allDay'
+    | 'pending'
+    | 'ddl'
+    | 'anniv'
+    | { start: string; end: string | null; overnight: boolean };
   color: string;
   title: string;
   subtitle: string | null;
@@ -17,6 +22,18 @@ export interface DayItem {
   done?: boolean;
   /** 日程：设了提醒 */
   reminder?: boolean;
+  /** 纪念日：第几周年（0 = 最初那天） */
+  years?: number;
+}
+
+/** 某一天出现的纪念日（重复的已经算好了那一年的日期） */
+export interface AnniversaryOccurrence {
+  id: string;
+  title: string;
+  color: string;
+  date: LocalDate;
+  years: number;
+  note: string;
 }
 
 const FALLBACK_COLOR = '#8A919C';
@@ -30,10 +47,24 @@ export function buildDayItems(params: {
   shifts: Shift[];
   events: CalendarEvent[];
   tasks: Task[];
+  anniversaries?: AnniversaryOccurrence[];
   jobsById: Map<string, Pick<Job, 'name' | 'color'>>;
 }): DayItem[] {
   const { date, shifts, events, tasks, jobsById } = params;
   const untimed: DayItem[] = [];
+
+  for (const a of (params.anniversaries ?? []).filter((x) => x.date === date)) {
+    untimed.push({
+      key: `anniversary:${a.id}`,
+      kind: 'anniversary',
+      id: a.id,
+      slot: 'anniv',
+      color: a.color,
+      title: a.title,
+      subtitle: a.note || null,
+      years: a.years,
+    });
+  }
   const timed: (DayItem & { sort: string })[] = [];
 
   for (const e of events.filter((x) => x.date === date)) {
@@ -90,7 +121,7 @@ export function buildDayItems(params: {
     });
   }
 
-  const order = { allDay: 0, pending: 1, ddl: 2 } as Record<string, number>;
+  const order = { anniv: 0, allDay: 1, pending: 2, ddl: 3 } as Record<string, number>;
   untimed.sort((a, b) => order[a.slot as string] - order[b.slot as string]);
   timed.sort((a, b) => a.sort.localeCompare(b.sort));
   return [...untimed, ...timed.map(({ sort: _sort, ...item }) => item)];

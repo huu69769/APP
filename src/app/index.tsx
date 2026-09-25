@@ -10,11 +10,12 @@ import { confirmAsync, showMessage } from '@/components/confirm';
 import { DayPanel } from '@/components/DayPanel';
 import { MonthCalendar, type DayBar } from '@/components/MonthCalendar';
 import { Segmented } from '@/components/form';
+import { anniversaryStatusText } from '@/components/anniversaryText';
 import { StatsBar } from '@/components/StatsBar';
 import { TemplatePicker } from '@/components/TemplatePicker';
 import { useToast } from '@/components/Toast';
 import { useData } from '@/data/DataProvider';
-import { buildDayItems, type DayItem } from '@/data/dayItems';
+import { buildDayItems, type AnniversaryOccurrence, type DayItem } from '@/data/dayItems';
 import { deleteItems } from '@/data/bulk';
 import {
   applyPendingToDates,
@@ -29,6 +30,7 @@ import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { useDayLabels } from '@/holidays/useHolidays';
+import { anniversaryStatus, occurrencesInRange } from '@/lib/anniversary';
 import { shouldRemindBackup } from '@/lib/backup';
 import { HOME_ROW_HEIGHT, monthGridRange } from '@/lib/calendar';
 import {
@@ -86,14 +88,34 @@ export default function HomeScreen() {
   const { data } = useQuery(
     async (r) => {
       const { from, to } = monthGridRange(month, settings.weekStart);
-      const [shifts, jobs, templates, allTasks, events, notes] = await Promise.all([
+      const [shifts, jobs, templates, allTasks, events, notes, anniversaries] = await Promise.all([
         r.shifts.listByDateRange(from, to),
         r.jobs.listWithDeleted(),
         r.shift_templates.list(),
         r.tasks.list(),
         r.events.listByDateRange(from, to),
         r.day_notes.listByDateRange(from, to),
+        r.anniversaries.list(),
       ]);
+      const anniversaryDays: AnniversaryOccurrence[] = anniversaries.flatMap((a) =>
+        occurrencesInRange(a, from, to).map((o) => ({
+          id: a.id,
+          title: a.title,
+          color: a.color,
+          note: a.note,
+          ...o,
+        }))
+      );
+      // 首页顶部显示的纪念日（设了「显示在首页」、还没过去的），近的在前
+      const pinned = anniversaries
+        .filter((a) => a.pinned)
+        .map((a) => ({ a, status: anniversaryStatus(a, today) }))
+        .filter((x) => x.status.kind !== 'since')
+        .sort(
+          (x, y) =>
+            (x.status.kind === 'until' ? x.status.days : 0) -
+            (y.status.kind === 'until' ? y.status.days : 0)
+        );
       const tasks = allTasks.filter((x) => x.dueDate >= from && x.dueDate <= to);
       const jobsById = new Map(jobs.map((j) => [j.id, j]));
       const bars = new Map<LocalDate, DayBar[]>();
@@ -132,6 +154,11 @@ export default function HomeScreen() {
         }
         for (const e of sortedEvents) dot(e.date, e.color);
       }
+      // 纪念日：日程视图里是色块，打工视图里是小圆点（不占打工的位置）
+      for (const o of anniversaryDays) {
+        if (view === 'schedule') bar(o.date, { id: o.id, color: o.color, label: `★${o.title}` });
+        else dot(o.date, o.color);
+      }
       // 项目在两种视图里都显示在 DDL 那天：没到 ⏰，已过 ✓
       for (const task of tasks) {
         bar(task.dueDate, {
@@ -152,6 +179,8 @@ export default function HomeScreen() {
         shifts,
         events,
         tasks,
+        anniversaryDays,
+        pinned,
         jobsById,
         hourlyJobs,
         templates,
@@ -174,6 +203,7 @@ export default function HomeScreen() {
         shifts: data.shifts,
         events: data.events,
         tasks: data.tasks,
+        anniversaries: data.anniversaryDays,
         jobsById: data.jobsById,
       })
     : undefined;
@@ -218,6 +248,8 @@ export default function HomeScreen() {
     if (item.kind === 'shift') router.push({ pathname: '/shift/[id]', params: { id: item.id } });
     else if (item.kind === 'event')
       router.push({ pathname: '/event/[id]', params: { id: item.id } });
+    else if (item.kind === 'anniversary')
+      router.push({ pathname: '/anniversaries/[id]', params: { id: item.id } });
     else router.push({ pathname: '/task/[id]', params: { id: item.id } });
   };
 
@@ -476,6 +508,31 @@ export default function HomeScreen() {
                   </View>
                 </View>
               )}
+            {data && data.pinned.length > 0 && (
+              // 只占一行：显示最近的一个，其余的点进去在纪念日列表里看
+              <Pressable
+                onPress={() =>
+                  data.pinned.length > 1
+                    ? router.push('/anniversaries')
+                    : router.push({
+                        pathname: '/anniversaries/[id]',
+                        params: { id: data.pinned[0].a.id },
+                      })
+                }
+                accessibilityRole="button"
+                style={styles.pinned}>
+                <View style={[styles.pinnedDot, { backgroundColor: data.pinned[0].a.color }]} />
+                <Text style={styles.pinnedTitle} numberOfLines={1}>
+                  {data.pinned[0].a.title}
+                </Text>
+                <Text style={styles.pinnedStatus}>
+                  {anniversaryStatusText(t, data.pinned[0].status)}
+                </Text>
+                {data.pinned.length > 1 && (
+                  <Text style={styles.pinnedMore}>+{data.pinned.length - 1}</Text>
+                )}
+              </Pressable>
+            )}
             {data && !data.hasJobs && (
               <View style={styles.onboarding}>
                 <View style={styles.onboardingText}>
@@ -601,6 +658,7 @@ export default function HomeScreen() {
         actions={[
           { label: t('home.jobs'), onPress: () => router.push('/jobs') },
           { label: t('home.batch'), onPress: () => startBatch() },
+          { label: t('home.anniversaries'), onPress: () => router.push('/anniversaries') },
           {
             label: t('home.stats'),
             onPress: () => router.push({ pathname: '/stats', params: { month } }),
@@ -669,6 +727,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.infoBg,
   },
   onboardingText: { flex: 1, gap: 2 },
+  pinned: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 8,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+  },
+  pinnedDot: { width: 8, height: 8, borderRadius: 4 },
+  pinnedTitle: { flex: 1, fontSize: 13, color: colors.text },
+  pinnedStatus: { fontSize: 13, color: colors.textMuted },
+  pinnedMore: { fontSize: 12, color: colors.primary },
   backupCard: {
     marginHorizontal: 8,
     marginBottom: 6,

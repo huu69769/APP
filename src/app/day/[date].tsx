@@ -21,6 +21,7 @@ import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '
 import { useQuery } from '@/data/useQuery';
 import { useDayLabels } from '@/holidays/useHolidays';
 import { formatDuration } from '@/i18n/format';
+import { occurrencesInRange } from '@/lib/anniversary';
 import { isValidLocalDate, parseLocalDate } from '@/lib/date';
 import { formatMoney } from '@/lib/money';
 import type { HolidayMark } from '@/lib/holidays';
@@ -51,12 +52,13 @@ export default function DayScreen() {
   const { data } = useQuery(
     async (r) => {
       if (!valid) return null;
-      const [shifts, allJobs, templates, allTasks, events] = await Promise.all([
+      const [shifts, allJobs, templates, allTasks, events, anniversaries] = await Promise.all([
         r.shifts.listByDateRange(date, date),
         r.jobs.listWithDeleted(),
         r.shift_templates.list(),
         r.tasks.list(),
         r.events.listByDateRange(date, date),
+        r.anniversaries.list(),
       ]);
       const activeJobs = allJobs
         .filter(isActiveJob)
@@ -64,6 +66,9 @@ export default function DayScreen() {
       return {
         shifts: sortShifts(shifts),
         tasks: tasksOnDate(allTasks, date),
+        anniversaries: anniversaries.flatMap((a) =>
+          occurrencesInRange(a, date, date).map((o) => ({ a, years: o.years }))
+        ),
         // 全天的在前，其余按开始时间
         events: events.sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? '')),
         jobsById: new Map(allJobs.map((j) => [j.id, j])),
@@ -146,7 +151,11 @@ export default function DayScreen() {
   };
 
   const nothing =
-    data && data.shifts.length === 0 && data.tasks.length === 0 && data.events.length === 0;
+    data &&
+    data.shifts.length === 0 &&
+    data.tasks.length === 0 &&
+    data.events.length === 0 &&
+    data.anniversaries.length === 0;
 
   return (
     <FormScreen>
@@ -274,6 +283,25 @@ export default function DayScreen() {
                   })}
                 </Section>
               )}
+              {data.anniversaries.length > 0 && (
+                <Section title={t('anniv.title')}>
+                  {data.anniversaries.map(({ a, years }) => (
+                    <ListRow
+                      key={a.id}
+                      color={a.color}
+                      title={`★ ${a.title}`}
+                      subtitle={
+                        [years > 0 ? t('anniv.years', { count: years }) : null, a.note || null]
+                          .filter(Boolean)
+                          .join(' · ') || undefined
+                      }
+                      {...rowProps('anniversary', a.id, () =>
+                        router.push({ pathname: '/anniversaries/[id]', params: { id: a.id } })
+                      )}
+                    />
+                  ))}
+                </Section>
+              )}
             </>
           )}
 
@@ -329,6 +357,11 @@ export default function DayScreen() {
               {
                 label: t('day.addProject'),
                 onPress: () => router.push({ pathname: '/task/[id]', params: { id: 'new', date } }),
+              },
+              {
+                label: t('anniv.add'),
+                onPress: () =>
+                  router.push({ pathname: '/anniversaries/[id]', params: { id: 'new', date } }),
               },
             ]}
           />

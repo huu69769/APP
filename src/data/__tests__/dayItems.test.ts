@@ -87,3 +87,23 @@ describe('buildDayItems', () => {
     ).toEqual([]);
   });
 });
+
+describe('buildDayItems with anniversaries', () => {
+  it('puts anniversaries on that day first', () => {
+    const items = buildDayItems({
+      date: '2026-10-07',
+      today: '2026-09-25',
+      shifts: [],
+      events: [],
+      tasks: [],
+      anniversaries: [
+        { id: 'a1', title: '妈妈生日', color: '#E5484D', date: '2026-10-07', years: 56, note: '' },
+        { id: 'a2', title: '别的日子', color: '#E5484D', date: '2026-10-08', years: 1, note: '' },
+      ],
+      jobsById: new Map(),
+    });
+    expect(items).toEqual([
+      expect.objectContaining({ key: 'anniversary:a1', slot: 'anniv', years: 56 }),
+    ]);
+  });
+});

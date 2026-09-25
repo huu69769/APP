@@ -126,6 +126,26 @@ export interface CalendarEvent extends BaseEntity {
   reminderMinutesBefore: number | null;
 }
 
+/**
+ * 纪念日（生日、在一起的日子、开始打工的日子…）。
+ * 只是给日历加个标记，不影响收入和工时统计。
+ */
+export interface Anniversary extends BaseEntity {
+  title: string;
+  /** 最初那一天（公历） */
+  date: LocalDate;
+  /** 每年重复 */
+  repeat: boolean;
+  /** 按农历重复（农历生日） */
+  lunar: boolean;
+  color: string;
+  /** 显示在首页顶部 */
+  pinned: boolean;
+  /** 提前几天提醒（9:00）；null = 不提醒 */
+  reminderDaysBefore: number | null;
+  note: string;
+}
+
 export interface DayNote extends BaseEntity {
   date: LocalDate;
   content: string;
@@ -146,6 +166,7 @@ export interface EntityTables {
   shifts: Shift;
   tasks: Task;
   events: CalendarEvent;
+  anniversaries: Anniversary;
   day_notes: DayNote;
   holidays_cache: HolidayCache;
 }
@@ -158,6 +179,7 @@ export const TABLE_NAMES: TableName[] = [
   'shifts',
   'tasks',
   'events',
+  'anniversaries',
   'day_notes',
   'holidays_cache',
 ];

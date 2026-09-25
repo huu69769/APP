@@ -37,6 +37,11 @@ export function DayPanel({
 }) {
   const { t } = useTranslation();
   const d = parseLocalDate(date);
+  // 纪念日：「56 周年 · 备注」
+  const subtitleOf = (item: DayItem) =>
+    item.kind === 'anniversary' && item.years
+      ? [t('anniv.years', { count: item.years }), item.subtitle].filter(Boolean).join(' · ')
+      : item.subtitle;
   const weekdays = t('day.weekdays', { returnObjects: true }) as string[];
   const title = t('day.title', { month: d.month() + 1, day: d.date(), weekday: weekdays[d.day()] });
   // 农历、节气 / 传统节日、节假日名（去掉重复，比如「中秋节」同时是农历节日和法定假日）
@@ -90,15 +95,7 @@ export function DayPanel({
             {selection && <CheckCircle checked={selection.has(item.key)} />}
             <View style={styles.slot}>
               {typeof item.slot === 'string' ? (
-                <Text style={styles.slotText}>
-                  {t(
-                    item.slot === 'allDay'
-                      ? 'home.slotAllDay'
-                      : item.slot === 'pending'
-                        ? 'home.slotPending'
-                        : 'home.slotDdl'
-                  )}
-                </Text>
+                <Text style={styles.slotText}>{t(SLOT_LABELS[item.slot])}</Text>
               ) : (
                 <>
                   <Text style={styles.slotText}>{item.slot.start}</Text>
@@ -123,12 +120,13 @@ export function DayPanel({
             <View style={styles.body}>
               <Text style={styles.itemTitle} numberOfLines={1}>
                 {item.kind === 'task' ? (item.done ? '✓ ' : '⏰ ') : ''}
+                {item.kind === 'anniversary' ? '★ ' : ''}
                 {item.title}
                 {item.reminder ? ' 🔔' : ''}
               </Text>
-              {item.subtitle ? (
+              {subtitleOf(item) ? (
                 <Text style={styles.itemSubtitle} numberOfLines={1}>
-                  {item.subtitle}
+                  {subtitleOf(item)}
                 </Text>
               ) : null}
             </View>
@@ -139,6 +137,13 @@ export function DayPanel({
     </View>
   );
 }
+
+const SLOT_LABELS = {
+  allDay: 'home.slotAllDay',
+  pending: 'home.slotPending',
+  ddl: 'home.slotDdl',
+  anniv: 'home.slotAnniv',
+} as const;
 
 const styles = StyleSheet.create({
   panel: {

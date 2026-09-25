@@ -64,7 +64,9 @@
     "slotDdl": "締切",
     "backupReminder": "30日以上バックアップしていません。機種変更や再インストールの前にバックアップを書き出しましょう。",
     "backupNow": "バックアップ",
-    "dismiss": "閉じる"
+    "dismiss": "閉じる",
+    "slotAnniv": "記念",
+    "anniversaries": "記念日"
   },
   "batch": {
     "hint": "日付をタップ：まとめてシフト登録・まとめて削除ができます",
@@ -296,7 +298,13 @@
     "startsAt": "{{date}} {{time}} 開始",
     "allDayBody": "{{date}}（終日）",
     "taskTitle": "締切：{{title}}",
-    "taskBody": "締切日 {{date}}"
+    "taskBody": "締切日 {{date}}",
+    "annivToday": "今日です",
+    "annivBody": "{{date}}、あと {{days}} 日",
+    "annivDay": "当日",
+    "annivD1": "1日前",
+    "annivD3": "3日前",
+    "annivD7": "7日前"
   },
   "settings": {
     "title": "設定",
@@ -370,5 +378,35 @@
   "bulk": {
     "deleteTitle": "選択した{{count}}件を削除しますか？",
     "deleteMessage": "削除した直後なら、下に出るメッセージの「元に戻す」で戻せます。"
+  },
+  "anniv": {
+    "title": "記念日",
+    "newTitle": "記念日を追加",
+    "editTitle": "記念日を編集",
+    "add": "記念日を追加",
+    "empty": "記念日はまだありません。誕生日、バイトを始めた日、試験の日…を登録すると、カレンダーに表示されます。",
+    "name": "名前",
+    "namePlaceholder": "例：母の誕生日",
+    "date": "日付",
+    "repeat": "繰り返し",
+    "repeatSolar": "毎年",
+    "repeatLunar": "毎年（旧暦）",
+    "repeatNone": "繰り返さない",
+    "lunarHint": "旧暦の {{date}} で毎年繰り返します",
+    "color": "色",
+    "pin": "ホームに表示",
+    "pinOn": "表示",
+    "pinOff": "表示しない",
+    "pinHint": "ホームのカレンダーの上に「あと N 日」を1行表示します",
+    "note": "メモ",
+    "deleteTitle": "この記念日を削除しますか？",
+    "today": "今日です",
+    "until": "あと {{count}} 日",
+    "since": "{{count}} 日経過",
+    "years": "{{count}}周年",
+    "totalDays": "{{count}} 日経過",
+    "passedSection": "過ぎた記念日",
+    "everyYear": "毎年 {{date}}",
+    "everyYearLunar": "毎年 旧暦 {{date}}"
   }
 }

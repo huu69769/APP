@@ -95,3 +95,44 @@ describe('computeReminders', () => {
     expect(r.map((x) => x.id)).toEqual(['shift:near']);
   });
 });
+
+describe('anniversary reminders', () => {
+  it('schedules the next yearly occurrence at 9:00 minus the days before', () => {
+    const r = computeReminders({
+      shifts: [],
+      events: [],
+      tasks: [],
+      anniversaries: [
+        {
+          id: 'a1',
+          title: '妈妈生日',
+          date: '1970-10-07',
+          repeat: true,
+          lunar: false,
+          reminderDaysBefore: 3,
+        },
+        {
+          id: 'a2',
+          title: '不提醒',
+          date: '1970-10-08',
+          repeat: true,
+          lunar: false,
+          reminderDaysBefore: null,
+        },
+        {
+          id: 'a3',
+          title: '已过去',
+          date: '2026-01-01',
+          repeat: false,
+          lunar: false,
+          reminderDaysBefore: 0,
+        },
+      ],
+      jobNames: new Map(),
+      now: new Date(2026, 8, 25, 12, 0),
+    });
+    expect(r.map((x) => [x.id, x.at.getMonth() + 1, x.at.getDate(), x.at.getHours()])).toEqual([
+      ['anniversary:a1:2026-10-07', 10, 4, 9],
+    ]);
+  });
+});
