@@ -8,7 +8,7 @@ import { useColors } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-/** 底部标签栏：日历 / 工作 / 纪念日 / 设置 */
+/** 底部标签栏：日历 / 统计 / 工作 / 纪念日 / 设置 */
 export default function TabsLayout() {
   const colors = useColors();
   const { t } = useTranslation();
@@ -34,6 +34,13 @@ export default function TabsLayout() {
           title: t('tabs.calendar'),
           headerShown: false,
           tabBarIcon: icon('calendar-outline', 'calendar'),
+        }}
+      />
+      <Tabs.Screen
+        name="stats"
+        options={{
+          title: t('tabs.stats'),
+          tabBarIcon: icon('stats-chart-outline', 'stats-chart'),
         }}
       />
       <Tabs.Screen

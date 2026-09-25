@@ -1,5 +1,5 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -25,6 +25,10 @@ export default function StatsScreen() {
   const [month, setMonth] = useState<YearMonth>(
     params.month && /^\d{4}-\d{2}$/.test(params.month) ? params.month : currentMonth()
   );
+  // 从首页统计栏点进来时带着那个月；统计是标签页，一直在后台，所以参数变了要跟着换
+  useEffect(() => {
+    if (params.month && /^\d{4}-\d{2}$/.test(params.month)) setMonth(params.month);
+  }, [params.month]);
   const { settings, updateSettings } = useData();
   const currency = settings.defaultCurrency;
   const { data } = useMonthStats(month);
@@ -39,8 +43,6 @@ export default function StatsScreen() {
 
   return (
     <FormScreen>
-      <Stack.Screen options={{ title: t('stats.title') }} />
-
       <View style={styles.monthNav}>
         <NavButton
           label="‹"

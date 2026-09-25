@@ -48,7 +48,6 @@
   },
   "home": {
     "batch": "まとめて登録・削除",
-    "stats": "集計",
     "menu": "メニュー",
     "onboardingTitle": "まずは仕事を1つ追加しましょう",
     "onboardingBody": "時給のバイト（コンビニ、飲食店…）でも、案件ごとのクライアント（翻訳、デザイン…）でも登録できます。",
@@ -431,6 +430,7 @@
   },
   "tabs": {
     "calendar": "カレンダー",
+    "stats": "集計",
     "jobs": "仕事",
     "anniversaries": "記念日",
     "settings": "設定"

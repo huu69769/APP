@@ -48,7 +48,6 @@
   },
   "home": {
     "batch": "批量排班 / 删除",
-    "stats": "统计",
     "menu": "菜单",
     "onboardingTitle": "先添加你的第一份工作",
     "onboardingBody": "时薪兼职（便利店、餐厅…）或者按项目结算的客户（翻译、设计…）都可以。",
@@ -431,6 +430,7 @@
   },
   "tabs": {
     "calendar": "日历",
+    "stats": "统计",
     "jobs": "工作",
     "anniversaries": "纪念日",
     "settings": "设置"
