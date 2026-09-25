@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useBackup } from '@/backup/useBackup';
 import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { showMessage } from '@/components/confirm';
 import { DayPanel } from '@/components/DayPanel';
@@ -26,6 +27,7 @@ import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { useDayLabels } from '@/holidays/useHolidays';
+import { shouldRemindBackup } from '@/lib/backup';
 import { HOME_ROW_HEIGHT, monthGridRange } from '@/lib/calendar';
 import {
   addMonths,
@@ -55,6 +57,7 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const { settings, updateSettings, repos } = useData();
   const toast = useToast();
+  const { exportBackup } = useBackup();
   const today = getToday();
   const [month, setMonth] = useState(currentMonth());
   const [focused, setFocused] = useState<LocalDate>(today);
@@ -146,6 +149,8 @@ export default function HomeScreen() {
         hourlyJobs,
         templates,
         hasJobs: jobs.some((j) => !j.deletedAt),
+        // 最早的一份工作的创建时间：从没备份过时，用它来判断要不要提示备份
+        oldestDataAt: jobs.map((j) => j.createdAt).sort()[0] ?? null,
       };
     },
     [month, settings.weekStart, today, view]
@@ -343,6 +348,30 @@ export default function HomeScreen() {
                 onChange={(v) => updateSettings({ calendarView: v })}
               />
             </View>
+            {data &&
+              shouldRemindBackup({
+                lastBackupAt: settings.lastBackupAt,
+                dismissedAt: settings.backupReminderDismissedAt,
+                oldestDataAt: data.oldestDataAt,
+                now: new Date(),
+              }) && (
+                <View style={styles.backupCard}>
+                  <Text style={styles.backupText}>{t('home.backupReminder')}</Text>
+                  <View style={styles.backupActions}>
+                    <Pressable
+                      onPress={() =>
+                        updateSettings({ backupReminderDismissedAt: new Date().toISOString() })
+                      }
+                      accessibilityRole="button"
+                      hitSlop={8}>
+                      <Text style={styles.backupDismiss}>{t('home.dismiss')}</Text>
+                    </Pressable>
+                    <Pressable onPress={exportBackup} accessibilityRole="button" hitSlop={8}>
+                      <Text style={styles.backupAction}>{t('home.backupNow')}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
             {data && !data.hasJobs && (
               <View style={styles.onboarding}>
                 <View style={styles.onboardingText}>
@@ -496,9 +525,21 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#EAF3FE',
+    backgroundColor: colors.infoBg,
   },
   onboardingText: { flex: 1, gap: 2 },
+  backupCard: {
+    marginHorizontal: 8,
+    marginBottom: 6,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.warningBg,
+    gap: 8,
+  },
+  backupText: { fontSize: 13, color: colors.warningText },
+  backupActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20 },
+  backupDismiss: { fontSize: 14, color: colors.textMuted },
+  backupAction: { fontSize: 14, color: colors.primary, fontWeight: '600' },
   onboardingTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
   onboardingBody: { fontSize: 12, color: colors.textMuted },
   onboardingButton: {
@@ -535,7 +576,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },

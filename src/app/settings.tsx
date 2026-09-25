@@ -1,7 +1,8 @@
+import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppState, Linking } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 
 import {
   Button,
@@ -12,8 +13,11 @@ import {
   Section,
   Segmented,
 } from '@/components/form';
-import { useData } from '@/data/DataProvider';
 import { useToast } from '@/components/Toast';
+import { useBackup } from '@/backup/useBackup';
+import { useData } from '@/data/DataProvider';
+import { CURRENCIES } from '@/data/types';
+import { dayjs } from '@/lib/date';
 import {
   getPermission,
   notificationsSupported,
@@ -23,13 +27,13 @@ import {
 } from '@/notifications';
 
 /**
- * 设置：节假日与农历（M5）、通知（M4）。
- * M6 会加上语言、币种、统计周期、备份等。
+ * 设置：通用（语言、币种、每周起始日）、统计、节假日与农历、通知、备份、关于。
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const toast = useToast();
   const { settings, updateSettings } = useData();
+  const { exportBackup, importBackup } = useBackup();
   const [permission, setPermission] = useState<PermissionState | null>(null);
 
   const refresh = useCallback(() => {
@@ -53,6 +57,60 @@ export default function SettingsScreen() {
   return (
     <FormScreen>
       <Stack.Screen options={{ title: t('settings.title') }} />
+
+      <Section title={t('settings.general')}>
+        <Field label={t('settings.language')} hint={t('settings.languageHint')}>
+          <Segmented
+            options={[
+              { value: 'zh', label: '中文' },
+              { value: 'ja', label: '日本語' },
+            ]}
+            value={settings.language}
+            onChange={(v) => updateSettings({ language: v })}
+          />
+        </Field>
+        <Field label={t('settings.defaultCurrency')} hint={t('settings.defaultCurrencyHint')}>
+          <Segmented
+            options={CURRENCIES.map((c) => ({ value: c, label: `${t(`currency.${c}`)} ${c}` }))}
+            value={settings.defaultCurrency}
+            onChange={(v) => updateSettings({ defaultCurrency: v })}
+          />
+        </Field>
+        <Field label={t('settings.weekStart')}>
+          <Segmented
+            options={[
+              { value: 0, label: t('settings.weekSun') },
+              { value: 1, label: t('settings.weekMon') },
+            ]}
+            value={settings.weekStart}
+            onChange={(v) => updateSettings({ weekStart: v })}
+          />
+        </Field>
+      </Section>
+
+      <Section title={t('settings.statsSection')}>
+        <Field label={t('stats.periodMode')}>
+          <Segmented
+            options={[
+              { value: 'calendarMonth', label: t('stats.calendarMonth') },
+              { value: 'payPeriod', label: t('stats.payPeriod') },
+            ]}
+            value={settings.statsPeriod}
+            onChange={(v) => updateSettings({ statsPeriod: v })}
+          />
+        </Field>
+        <Field label={t('stats.wageDisplay')}>
+          <Segmented
+            options={[
+              { value: 'total', label: t('stats.wageTotal') },
+              { value: 'split', label: t('stats.wageSplit') },
+            ]}
+            value={settings.wageDisplay}
+            onChange={(v) => updateSettings({ wageDisplay: v })}
+          />
+        </Field>
+      </Section>
+
       <Section title={t('settings.calendar')}>
         <Field label={t('settings.holidayMode')}>
           <Segmented
@@ -79,6 +137,7 @@ export default function SettingsScreen() {
         <EmptyText>{t('settings.legend')}</EmptyText>
         <EmptyText>{t('settings.holidaySource')}</EmptyText>
       </Section>
+
       <Section title={t('settings.notifications')}>
         {permission && (
           <ListRow
@@ -112,18 +171,36 @@ export default function SettingsScreen() {
             }}
           />
         )}
+        {notificationsSupported && (
+          <>
+            <EmptyText>{t('settings.batteryTitle')}</EmptyText>
+            <EmptyText>{t('settings.batteryBody')}</EmptyText>
+          </>
+        )}
       </Section>
-      {notificationsSupported && (
-        <Section title={t('settings.batteryTitle')}>
-          <EmptyText>{t('settings.batteryBody')}</EmptyText>
-          <Button
-            variant="secondary"
-            title={t('settings.openSystem')}
-            onPress={() => Linking.openSettings()}
-          />
-        </Section>
-      )}
-      <EmptyText>{t('settings.moreLater')}</EmptyText>
+
+      <Section title={t('settings.backup')}>
+        <EmptyText>{t('settings.backupDesc')}</EmptyText>
+        <ListRow
+          title={
+            settings.lastBackupAt
+              ? t('settings.lastBackup', {
+                  date: dayjs(settings.lastBackupAt).format('YYYY-MM-DD HH:mm'),
+                })
+              : t('settings.neverBacked')
+          }
+        />
+        <Button title={t('settings.export')} onPress={exportBackup} />
+        <Button variant="secondary" title={t('settings.import')} onPress={importBackup} />
+        {Platform.OS === 'web' && <EmptyText>{t('settings.webDataNote')}</EmptyText>}
+      </Section>
+
+      <Section title={t('settings.about')}>
+        <ListRow
+          title={t('app.name')}
+          right={t('settings.version', { version: Constants.expoConfig?.version ?? '' })}
+        />
+      </Section>
     </FormScreen>
   );
 }

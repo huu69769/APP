@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   cell: { flex: 1, alignItems: 'center', paddingTop: 3, overflow: 'hidden' },
   cellPressed: { backgroundColor: colors.surface },
-  cellSelected: { backgroundColor: '#DCEBFD' },
+  cellSelected: { backgroundColor: colors.selectedBg },
   cellFocused: { borderWidth: 2, borderColor: colors.primary, borderRadius: 4 },
   dayNumberWrap: {
     flexShrink: 0,
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   badge: {
     fontSize: 8,
     lineHeight: 11,
-    color: '#FFFFFF',
+    color: colors.onColor,
     fontWeight: '700',
     paddingHorizontal: 2,
     borderRadius: 3,
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   bar: { borderRadius: 3, paddingHorizontal: 2, paddingVertical: 1 },
   barPending: { opacity: 0.45 },
   barTask: { borderWidth: 1, paddingVertical: 0, backgroundColor: colors.background },
-  barText: { fontSize: 10, color: '#FFFFFF', fontWeight: '600' },
+  barText: { fontSize: 10, color: colors.onColor, fontWeight: '600' },
   more: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
   check: {
     position: 'absolute',

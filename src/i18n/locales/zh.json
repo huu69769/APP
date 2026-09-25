@@ -57,7 +57,10 @@
     "addTo": "添加到 {{date}}",
     "slotAllDay": "全天",
     "slotPending": "待定",
-    "slotDdl": "DDL"
+    "slotDdl": "DDL",
+    "backupReminder": "已经超过 30 天没有备份了。换手机或重装前，记得导出一份备份。",
+    "backupNow": "去备份",
+    "dismiss": "知道了"
   },
   "batch": {
     "hint": "点选要排班的日期",
@@ -149,8 +152,8 @@
     "endAction": "结束"
   },
   "templates": {
-    "newTitle": "新建班次模板",
-    "editTitle": "编辑班次模板",
+    "newTitle": "添加时间段模板",
+    "editTitle": "编辑时间段模板",
     "name": "模板名称",
     "namePlaceholder": "例如：早班",
     "deleteTitle": "删除这个模板？",
@@ -294,7 +297,6 @@
     "testSent": "5 秒后会收到一条测试通知",
     "batteryTitle": "收不到提醒？",
     "batteryBody": "部分手机（小米、华为、OPPO、vivo、三星等）的省电功能会拦截 App 的提醒。\n\n请打开手机的「设置 → 应用 → 打工日历」：\n1. 「通知」：全部允许\n2. 「电池 / 省电策略」：选「不限制」或「无限制」\n3. 「自启动 / 允许后台运行」：打开\n\n不同手机的名称可能略有不同。改完后可以点上面的「发送测试通知」试一下。",
-    "moreLater": "语言、币种、备份等设置会在之后的版本加入。",
     "calendar": "节假日与农历",
     "holidayMode": "节假日",
     "modeCn": "中国",
@@ -305,7 +307,37 @@
     "show": "显示",
     "hide": "不显示",
     "legend": "月历右上角的小标：红色「休」= 中国放假，灰色「班」= 中国调休上班，紫色「祝」= 日本祝日。",
-    "holidaySource": "节假日数据来自网上公开的 holiday-cn（中国）和 holiday_jp（日本），会自动更新；没有网络时使用手机里保存的数据。"
+    "holidaySource": "节假日数据来自网上公开的 holiday-cn（中国）和 holiday_jp（日本），会自动更新；没有网络时使用手机里保存的数据。",
+    "general": "通用",
+    "language": "界面语言",
+    "languageHint": "界面语言和节假日的国家是分开设置的。",
+    "defaultCurrency": "默认币种",
+    "defaultCurrencyHint": "新建工作时默认使用的币种，统计里没有收入时也按这个币种显示。",
+    "weekStart": "每周从哪天开始",
+    "weekSun": "周日",
+    "weekMon": "周一",
+    "statsSection": "统计",
+    "backup": "备份",
+    "backupDesc": "把全部数据（工作、班次、项目、日程、笔记、设置）导出成一个文件，保存到文件夹或网盘。换手机、重装之前记得导出一次。",
+    "export": "导出备份",
+    "import": "从备份恢复",
+    "lastBackup": "上次备份：{{date}}",
+    "neverBacked": "还没有备份过",
+    "exportDone": "已导出备份",
+    "webDataNote": "网页版的数据和手机上的数据是分开的。",
+    "importTitle": "用这个备份覆盖现在的数据？",
+    "importMessage": "备份里有：工作 {{jobs}} 个、班次 {{shifts}} 个、项目 {{tasks}} 个、日程 {{events}} 个、笔记 {{notes}} 条。\n\n现在手机里的数据会被全部替换，不能撤销。建议先导出一份现在的备份。",
+    "importConfirm": "覆盖并恢复",
+    "importDone": "已从备份恢复",
+    "importError": {
+      "notJson": "这个文件不是备份文件（无法读取）。",
+      "wrongFormat": "这个文件不是打工日历的备份。",
+      "newerVersion": "这个备份来自更新版本的 App，请先更新 App 再恢复。",
+      "corrupt": "备份文件已损坏，无法恢复。",
+      "other": "恢复失败：{{message}}"
+    },
+    "about": "关于",
+    "version": "版本 {{version}}"
   },
   "holiday": {
     "cnOff": "休",

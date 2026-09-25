@@ -107,6 +107,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
   text: { fontSize: 16, color: colors.text },
   placeholder: { color: colors.textFaint },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+  backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: { backgroundColor: colors.background, paddingBottom: 32 },
 });

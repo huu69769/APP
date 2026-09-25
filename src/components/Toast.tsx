@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/theme/colors';
 
 const DURATION_MS = 4000;
 
@@ -94,8 +95,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#2B2F36',
+    backgroundColor: colors.toastBg,
   },
-  text: { flexShrink: 1, color: '#FFFFFF', fontSize: 14 },
-  undo: { color: '#7CC0FF', fontSize: 14, fontWeight: '700' },
+  text: { flexShrink: 1, color: colors.toastText, fontSize: 14 },
+  undo: { color: colors.toastAction, fontSize: 14, fontWeight: '700' },
 });

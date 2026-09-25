@@ -283,8 +283,9 @@ function DayHeader({ lunar, marks }: { lunar: LunarInfo | null; marks: HolidayMa
                   : colors.holidayCN,
             },
           ]}>
-          {t(`holiday.country.${m.country}`)} · {m.name}（
-          {t(m.off ? 'holiday.off' : 'holiday.work')}）
+          {t(`holiday.country.${m.country}`)} · {m.name}
+          {/* 中国要区分放假和调休上班；日本的祝日本来就是休息日，不用再写 */}
+          {m.country === 'CN' ? `（${t(m.off ? 'holiday.off' : 'holiday.work')}）` : ''}
         </Text>
       ))}
     </View>

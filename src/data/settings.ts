@@ -20,6 +20,8 @@ export interface Settings {
   showLunar: boolean;
   /** 上次备份时间（ISO），null = 从未备份 */
   lastBackupAt: string | null;
+  /** 首页「该备份了」提示被关掉的时间（ISO） */
+  backupReminderDismissedAt: string | null;
   /** 首页月历的显示方式：work = 班次显示成色块；schedule = 日程显示成色块 */
   calendarView: CalendarView;
 }
@@ -33,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   holidayMode: 'cn',
   showLunar: true,
   lastBackupAt: null,
+  backupReminderDismissedAt: null,
   calendarView: 'work',
 };
 

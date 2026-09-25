@@ -7,6 +7,7 @@
 - 界面文字不能写死，全部放进 `src/i18n/locales/*.json`（zh 和 ja 的键必须一致，有测试检查）。
 - 界面代码只通过 `src/data/repository.ts` 读写数据，不直接用 SQLite / localStorage。
 - 日期一律用本地 `YYYY-MM-DD` 字符串；金额用最小单位整数。
+- 颜色统一放在 `src/theme/colors.ts`，界面代码不要直接写色号（为以后的「颜色套装」做准备）。
 - 计算函数放在 `src/lib/`，必须写 Jest 测试。
 - 本环境访问不了 Expo API，运行 `expo install` / `expo prebuild` / `expo export` 时加 `EXPO_OFFLINE=1`。
 - 提交前运行：`npm run format && npm run typecheck && npm test`

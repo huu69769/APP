@@ -6,13 +6,15 @@ import i18n from '@/i18n';
 import { createRepositories, type Repositories } from './repository';
 import { loadSettings, saveSettings, type Settings } from './settings';
 import { createDefaultDriver } from './storage';
-import type { StorageDriver } from './storage/types';
+import type { DataDump, StorageDriver } from './storage/types';
 
 interface DataContextValue {
   driver: StorageDriver;
   repos: Repositories;
   settings: Settings;
   updateSettings: (patch: Partial<Settings>) => Promise<void>;
+  /** 用备份整体替换所有数据（导入备份） */
+  replaceAllData: (dump: DataDump) => Promise<void>;
   /** 每次有数据写入就 +1，界面据此重新读取 */
   dataVersion: number;
 }
@@ -73,6 +75,18 @@ export function DataProvider({
     [state]
   );
 
+  const replaceAllData = useCallback(
+    async (dump: DataDump) => {
+      if (state.status !== 'ready') return;
+      await state.driver.importAll(dump);
+      const settings = await loadSettings(state.driver);
+      await i18n.changeLanguage(settings.language);
+      setState((s) => (s.status === 'ready' ? { ...s, settings } : s));
+      setDataVersion((v) => v + 1);
+    },
+    [state]
+  );
+
   if (state.status === 'loading') return fallback({});
   if (state.status === 'error') return fallback({ error: state.error });
 
@@ -83,6 +97,7 @@ export function DataProvider({
         repos: state.repos,
         settings: state.settings,
         updateSettings,
+        replaceAllData,
         dataVersion,
       }}>
       {children}

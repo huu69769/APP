@@ -153,9 +153,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#FFF4E5',
+    backgroundColor: colors.warningBg,
   },
-  staleText: { fontSize: 12, color: '#8A5A00', flexShrink: 1 },
+  staleText: { fontSize: 12, color: colors.warningText, flexShrink: 1 },
   staleAction: { fontSize: 13, color: colors.primary, fontWeight: '600' },
   endedToggle: { fontSize: 15, color: colors.textMuted },
 });
