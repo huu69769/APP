@@ -13,6 +13,10 @@ const config: ExpoConfig = {
   icon: './assets/images/icon.png',
   scheme: 'worklogcalendar',
   userInterfaceStyle: 'automatic',
+  // 桌面上的 App 名字按手机系统语言显示：日语系统 →「シフト手帳」，其他 →「打工日历」
+  locales: {
+    ja: './locales-native/ja.json',
+  },
   android: {
     package: 'io.github.huu69769.worklogcalendar',
     versionCode: buildNumber,
