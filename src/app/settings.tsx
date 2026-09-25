@@ -3,7 +3,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Linking } from 'react-native';
 
-import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/form';
+import {
+  Button,
+  EmptyText,
+  Field,
+  FormScreen,
+  ListRow,
+  Section,
+  Segmented,
+} from '@/components/form';
+import { useData } from '@/data/DataProvider';
 import { useToast } from '@/components/Toast';
 import {
   getPermission,
@@ -14,12 +23,13 @@ import {
 } from '@/notifications';
 
 /**
- * 设置。M4：通知（权限、测试、省电模式说明）。
+ * 设置：节假日与农历（M5）、通知（M4）。
  * M6 会加上语言、币种、统计周期、备份等。
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { settings, updateSettings } = useData();
   const [permission, setPermission] = useState<PermissionState | null>(null);
 
   const refresh = useCallback(() => {
@@ -43,6 +53,32 @@ export default function SettingsScreen() {
   return (
     <FormScreen>
       <Stack.Screen options={{ title: t('settings.title') }} />
+      <Section title={t('settings.calendar')}>
+        <Field label={t('settings.holidayMode')}>
+          <Segmented
+            options={[
+              { value: 'cn', label: t('settings.modeCn') },
+              { value: 'jp', label: t('settings.modeJp') },
+              { value: 'both', label: t('settings.modeBoth') },
+              { value: 'none', label: t('settings.modeNone') },
+            ]}
+            value={settings.holidayMode}
+            onChange={(v) => updateSettings({ holidayMode: v })}
+          />
+        </Field>
+        <Field label={t('settings.lunar')}>
+          <Segmented
+            options={[
+              { value: 'show', label: t('settings.show') },
+              { value: 'hide', label: t('settings.hide') },
+            ]}
+            value={settings.showLunar ? 'show' : 'hide'}
+            onChange={(v) => updateSettings({ showLunar: v === 'show' })}
+          />
+        </Field>
+        <EmptyText>{t('settings.legend')}</EmptyText>
+        <EmptyText>{t('settings.holidaySource')}</EmptyText>
+      </Section>
       <Section title={t('settings.notifications')}>
         {permission && (
           <ListRow

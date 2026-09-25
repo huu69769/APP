@@ -13,9 +13,12 @@ import { buildPendingShift, buildShiftFromTemplate, sortShifts } from '@/data/sh
 import { tasksOnDate } from '@/data/tasks';
 import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
+import { useDayLabels } from '@/holidays/useHolidays';
 import { formatDuration } from '@/i18n/format';
 import { isValidLocalDate, parseLocalDate } from '@/lib/date';
 import { formatMoney } from '@/lib/money';
+import type { HolidayMark } from '@/lib/holidays';
+import { lunarInfo, type LunarInfo } from '@/lib/lunar';
 import { isOvernight, shiftWage, workedMinutes } from '@/lib/shift';
 import { colors } from '@/theme/colors';
 
@@ -29,11 +32,13 @@ import { colors } from '@/theme/colors';
 export default function DayScreen() {
   const { t } = useTranslation();
   const { date } = useLocalSearchParams<{ date: string }>();
-  const { repos } = useData();
+  const { repos, settings } = useData();
   const toast = useToast();
   const valid = !!date && isValidLocalDate(date);
   const [adding, setAdding] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const safeDate = valid ? date : '2000-01-01';
+  const { data: holidayData } = useDayLabels(safeDate, safeDate);
 
   const { data } = useQuery(
     async (r) => {
@@ -99,6 +104,10 @@ export default function DayScreen() {
   return (
     <FormScreen>
       <Stack.Screen options={{ title }} />
+      <DayHeader
+        lunar={settings.showLunar ? lunarInfo(date) : null}
+        marks={holidayData?.marks.get(date) ?? []}
+      />
       {data && (
         <>
           {nothing ? (
@@ -249,6 +258,39 @@ export default function DayScreen() {
   );
 }
 
+/** 当天的农历、节气、节假日（放假 / 调休上班） */
+function DayHeader({ lunar, marks }: { lunar: LunarInfo | null; marks: HolidayMark[] }) {
+  const { t } = useTranslation();
+  if (!lunar && marks.length === 0) return null;
+  return (
+    <View style={styles.header}>
+      {lunar && (
+        <Text style={styles.headerLunar}>
+          {t('holiday.lunar', { date: lunar.date })}
+          {lunar.special ? ` · ${lunar.special}` : ''}
+        </Text>
+      )}
+      {marks.map((m) => (
+        <Text
+          key={`${m.country}-${m.name}`}
+          style={[
+            styles.headerHoliday,
+            {
+              color: !m.off
+                ? colors.holidayWork
+                : m.country === 'JP'
+                  ? colors.holidayJP
+                  : colors.holidayCN,
+            },
+          ]}>
+          {t(`holiday.country.${m.country}`)} · {m.name}（
+          {t(m.off ? 'holiday.off' : 'holiday.work')}）
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 function Chip({
   color,
   label,
@@ -283,6 +325,9 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
+  header: { paddingHorizontal: 4, gap: 2 },
+  headerLunar: { fontSize: 13, color: colors.textMuted },
+  headerHoliday: { fontSize: 14, fontWeight: '600' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row',

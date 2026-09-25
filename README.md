@@ -18,7 +18,7 @@
       很久没用的提示、首页引导、一键添加后可撤销、时间 / 日期选择器、「＋ 添加」菜单、
       点月份回到本月、长按日期批量排班
 - [x] **M4 日程**：日程、每日笔记、提醒通知（班次 / 日程 / 项目 DDL）
-- [ ] M5 节假日、农历
+- [x] **M5 节假日**：中国节假日和调休、日本祝日和振替休日、农历 / 节气 / 传统节日
 - [ ] M6 备份、设置页、日文检查
 
 ## 在电脑上运行
@@ -59,10 +59,12 @@ src/
     useStats.ts     读取统计数据
     storage/        底层存储：手机用 SQLite，网页用浏览器存储
   notifications/  本地通知（手机版；网页版什么都不做）
+  holidays/       节假日：按国家接入（providers.ts）、下载与缓存（service.ts）、预先打包的数据（bundled/）
   i18n/           多语言，界面文字都在 locales/*.json 里
   lib/            纯计算函数（都有单元测试）：日期、月历、时长、工钱、金额、
                   统计周期（period.ts）、统计与空闲时间（stats.ts）
   theme/          颜色
 plugins/          Expo 配置插件（release 签名）
+scripts/          update-holidays.mjs：更新 app 里预先打包的节假日数据
 .github/workflows 自动构建与发布
 ```

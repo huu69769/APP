@@ -16,6 +16,7 @@ import { isTaskDone } from '@/data/tasks';
 import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
+import { useDayLabels } from '@/holidays/useHolidays';
 import { monthGridRange } from '@/lib/calendar';
 import { addMonths, currentMonth, today as getToday, type LocalDate } from '@/lib/date';
 import { colors } from '@/theme/colors';
@@ -90,6 +91,8 @@ export default function HomeScreen() {
   );
 
   const { data: statsData } = useMonthStats(month);
+  const grid = monthGridRange(month, settings.weekStart);
+  const { data: holidayData } = useDayLabels(grid.from, grid.to);
 
   const toggle = (date: LocalDate) =>
     setSelected((prev) => {
@@ -209,6 +212,7 @@ export default function HomeScreen() {
         today={today}
         bars={data?.bars}
         dots={data?.dots}
+        labels={holidayData?.labels}
         selected={batchMode ? selected : undefined}
         onPressDay={onPressDay}
         onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}

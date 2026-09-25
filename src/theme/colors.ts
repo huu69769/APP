@@ -10,6 +10,11 @@ export const colors = {
   sunday: '#E5484D',
   saturday: '#208AEF',
   danger: '#E5484D',
+  /** 节假日：中国（红）、日本（紫）、调休上班（灰）、农历节日 / 节气（橙） */
+  holidayCN: '#E5484D',
+  holidayJP: '#7C5CD6',
+  holidayWork: '#6B7280',
+  lunarSpecial: '#C2620C',
 } as const;
 
 /** 兼职可选的颜色 */

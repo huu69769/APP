@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { buildMonthGrid, orderedWeekdays, type CalendarDay, type WeekStart } from '@/lib/calendar';
+import type { BadgeKind, DayLabel } from '@/lib/dayLabel';
 import type { LocalDate, YearMonth } from '@/lib/date';
 import { colors } from '@/theme/colors';
 
@@ -27,6 +28,8 @@ interface Props {
   bars?: Map<LocalDate, DayBar[]>;
   /** 日程（颜色）和笔记（灰色）显示成小圆点 */
   dots?: Map<LocalDate, string[]>;
+  /** 节假日小标、农历小字 */
+  labels?: Map<LocalDate, DayLabel>;
   /** 批量排班时选中的日期；传入时格子显示选中状态 */
   selected?: Set<LocalDate>;
   onPressDay: (date: LocalDate) => void;
@@ -45,6 +48,7 @@ export function MonthCalendar({
   today,
   bars,
   dots,
+  labels,
   selected,
   onPressDay,
   onLongPressDay,
@@ -81,6 +85,7 @@ export function MonthCalendar({
                 day={day}
                 bars={bars?.get(day.date) ?? []}
                 dots={dots?.get(day.date) ?? []}
+                label={labels?.get(day.date)}
                 selected={selected?.has(day.date)}
                 onPress={onPressDay}
                 onLongPress={onLongPressDay}
@@ -97,6 +102,7 @@ function DayCell({
   day,
   bars,
   dots,
+  label,
   selected,
   onPress,
   onLongPress,
@@ -104,6 +110,7 @@ function DayCell({
   day: CalendarDay;
   bars: DayBar[];
   dots: string[];
+  label?: DayLabel;
   selected?: boolean;
   onPress: (date: LocalDate) => void;
   onLongPress?: (date: LocalDate) => void;
@@ -129,13 +136,36 @@ function DayCell({
         <Text
           style={[
             styles.dayNumber,
-            weekdayColor(day.weekday),
+            label?.workday ? null : weekdayColor(day.weekday),
+            label?.off && styles.holidayNumber,
             !day.inMonth && styles.outOfMonth,
             day.isToday && styles.todayText,
           ]}>
           {day.day}
         </Text>
       </View>
+      {label?.badges.length ? (
+        <View style={[styles.badges, !day.inMonth && styles.barsOutOfMonth]}>
+          {label.badges.map((b) => (
+            <Text key={b} style={[styles.badge, { backgroundColor: BADGE_COLORS[b] }]}>
+              {t(`holiday.${b}`)}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+      {label?.text ? (
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.label,
+            label.tone === 'CN' && { color: colors.holidayCN },
+            label.tone === 'JP' && { color: colors.holidayJP },
+            label.tone === 'lunarSpecial' && { color: colors.lunarSpecial },
+            !day.inMonth && styles.barsOutOfMonth,
+          ]}>
+          {label.text}
+        </Text>
+      ) : null}
       <View style={[styles.dots, !day.inMonth && styles.barsOutOfMonth]}>
         {dots.slice(0, 4).map((c, i) => (
           <View key={i} style={[styles.dot, { backgroundColor: c }]} />
@@ -163,6 +193,12 @@ function DayCell({
     </Pressable>
   );
 }
+
+const BADGE_COLORS: Record<BadgeKind, string> = {
+  cnOff: colors.holidayCN,
+  cnWork: colors.holidayWork,
+  jpOff: colors.holidayJP,
+};
 
 function weekdayColor(weekday: number) {
   if (weekday === 0) return styles.sunday;
@@ -201,6 +237,18 @@ const styles = StyleSheet.create({
   outOfMonth: { color: colors.textFaint },
   sunday: { color: colors.sunday },
   saturday: { color: colors.saturday },
+  holidayNumber: { color: colors.holidayCN },
+  badges: { position: 'absolute', top: 2, right: 2, flexDirection: 'row', gap: 1 },
+  badge: {
+    fontSize: 8,
+    lineHeight: 11,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    paddingHorizontal: 2,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  label: { fontSize: 9, lineHeight: 11, color: colors.textMuted, maxWidth: '100%' },
   dots: { flexDirection: 'row', gap: 2, height: 5, marginTop: 1 },
   dot: { width: 5, height: 5, borderRadius: 2.5 },
   bars: { alignSelf: 'stretch', gap: 2, marginTop: 1, paddingHorizontal: 2 },
