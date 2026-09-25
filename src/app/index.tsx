@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
@@ -26,7 +26,7 @@ import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { useDayLabels } from '@/holidays/useHolidays';
-import { monthGridRange } from '@/lib/calendar';
+import { compactRowHeight, monthGridRange } from '@/lib/calendar';
 import {
   addMonths,
   currentMonth,
@@ -54,6 +54,7 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const { settings, updateSettings, repos } = useData();
   const toast = useToast();
+  const { height: screenHeight } = useWindowDimensions();
   const today = getToday();
   const [month, setMonth] = useState(currentMonth());
   const [focused, setFocused] = useState<LocalDate>(today);
@@ -370,7 +371,7 @@ export default function HomeScreen() {
         labels={holidayData?.labels}
         selected={batchMode ? selected : undefined}
         focusedDate={batchMode ? null : focused}
-        compact={!batchMode && panelOpen}
+        rowHeight={!batchMode && panelOpen ? compactRowHeight(screenHeight) : undefined}
         onPressDay={onPressDay}
         onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}
         onSwipe={(delta) => goToMonth(addMonths(month, delta))}

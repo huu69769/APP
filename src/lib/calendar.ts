@@ -65,3 +65,18 @@ export function monthGridRange(
   const weeks = buildMonthGrid(month, weekStart);
   return { from: weeks[0][0].date, to: weeks[5][6].date };
 }
+
+/** 首页下方列表展开时，月历每行的最大、最小高度 */
+export const COMPACT_ROW_MAX = 68;
+export const COMPACT_ROW_MIN = 44;
+
+/**
+ * 下方列表展开时，月历每行的高度：让月历大约占屏幕的一半，
+ * 保证手机浏览器（有地址栏、工具栏，屏幕比较矮）上也能看到下面的列表。
+ */
+export function compactRowHeight(screenHeight: number): number {
+  return Math.max(
+    COMPACT_ROW_MIN,
+    Math.min(COMPACT_ROW_MAX, Math.floor((screenHeight * 0.5 - 28) / 6))
+  );
+}
