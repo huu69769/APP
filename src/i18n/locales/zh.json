@@ -244,7 +244,7 @@
     "freeTime": "空闲时间",
     "freeRange": "统计范围：{{from}} ~ {{to}}",
     "payNote": "工资周期按每份工作自己的截止日计算。各工作截止日不同时，空闲时间按自然月统计。",
-    "freeNote": "不在打工的时间都算空闲；休息时间也算打工占用。",
+    "freeNote": "既没有打工、也没有日程的时间才算空闲；全天日程占用一整天，休息时间也算打工占用。项目 DDL 和纪念日不占用时间。",
     "year": "{{year}}年累计收入",
     "yearTotal": "全年合计",
     "monthLabel": "{{month}}月",
@@ -255,7 +255,8 @@
     "compactSplit": "{{done}}（预计 +{{expected}}）",
     "compactPending": " · 待定 {{count}}",
     "weekCompact": "打工 {{hours}} · {{wage}}",
-    "barWeek": "这周"
+    "barWeek": "这周",
+    "workDays": "打工天数"
   },
   "task": {
     "newTitle": "添加项目",

@@ -244,7 +244,7 @@
     "freeTime": "空き時間",
     "freeRange": "集計範囲：{{from}} ~ {{to}}",
     "payNote": "給与期間は仕事ごとの締め日で計算します。締め日が仕事によって違う場合、空き時間は暦月で集計します。",
-    "freeNote": "働いていない時間はすべて空き時間です。休憩時間は勤務中として扱います。",
+    "freeNote": "勤務も予定もない時間を空き時間として数えます。終日の予定は1日分、休憩時間も勤務として扱います。案件の締切と記念日は含みません。",
     "year": "{{year}}年の累計収入",
     "yearTotal": "年間合計",
     "monthLabel": "{{month}}月",
@@ -255,7 +255,8 @@
     "compactSplit": "{{done}}（見込み +{{expected}}）",
     "compactPending": " · 未定 {{count}}",
     "weekCompact": "勤務 {{hours}} · {{wage}}",
-    "barWeek": "この週"
+    "barWeek": "この週",
+    "workDays": "勤務日数"
   },
   "task": {
     "newTitle": "案件を追加",

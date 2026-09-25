@@ -12,13 +12,23 @@ export function useMonthStats(month: YearMonth) {
   return useQuery(
     async (r) => {
       const range = statsLoadRange(month);
-      const [shifts, jobs, tasks] = await Promise.all([
+      const [shifts, jobs, tasks, events] = await Promise.all([
         r.shifts.listByDateRange(range.from, range.to),
         r.jobs.listWithDeleted(),
         r.tasks.list(),
+        r.events.listByDateRange(range.from, range.to),
       ]);
       const activeJobs = jobs.filter(isActiveJob);
-      const stats = periodStats({ shifts, tasks, jobs, activeJobs, mode, month, now: localNow() });
+      const stats = periodStats({
+        shifts,
+        tasks,
+        events,
+        jobs,
+        activeJobs,
+        mode,
+        month,
+        now: localNow(),
+      });
       return { stats, jobsById: new Map(jobs.map((j) => [j.id, j])) };
     },
     [month, mode]

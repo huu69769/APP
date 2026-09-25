@@ -367,3 +367,65 @@ describe('yearIncome completed', () => {
     expect(r.total).toEqual({ CNY: 1000 + 1000 + 2000 + 1000 + 5000 + 7000 });
   });
 });
+
+describe('free time with events', () => {
+  const range = { from: '2026-09-01', to: '2026-09-03' };
+  const ev = (date: string, startTime: string | null, endTime: string | null, allDay = false) => ({
+    date,
+    allDay,
+    startTime,
+    endTime,
+  });
+
+  it('days with events are not free', () => {
+    const r = freeTime([], range, [ev('2026-09-02', '18:00', '21:00')]);
+    expect(r.freeDays).toBe(2);
+    expect(r.freeMinutes).toBe(3 * 1440 - 180);
+  });
+
+  it('an all-day event takes the whole day', () => {
+    expect(freeTime([], range, [ev('2026-09-01', null, null, true)]).freeMinutes).toBe(2 * 1440);
+  });
+
+  it('counts overlap between a shift and an event once', () => {
+    const r = freeTime([shift('2026-09-01', '09:00', '15:00')], range, [
+      ev('2026-09-01', '14:00', '16:00'),
+    ]);
+    expect(r.freeDays).toBe(2);
+    expect(r.freeMinutes).toBe(3 * 1440 - 7 * 60);
+  });
+
+  it('events without an end count one hour; overnight spills into the next day', () => {
+    expect(freeTime([], range, [ev('2026-09-01', '10:00', null)]).freeMinutes).toBe(3 * 1440 - 60);
+    expect(occupiedMinutesByDay([], [ev('2026-09-01', '23:00', '01:00')])).toEqual(
+      new Map([
+        ['2026-09-01', 60],
+        ['2026-09-02', 60],
+      ])
+    );
+  });
+});
+
+describe('work days', () => {
+  it('counts each day with shifts once, pending included', () => {
+    const r = periodStats({
+      shifts: [
+        shift('2026-09-01', '09:00', '12:00'),
+        shift('2026-09-01', '13:00', '17:00', { jobId: 'b' }),
+        { ...shift('2026-09-05', '09:00', '10:00'), startTime: null, endTime: null },
+      ],
+      jobs: [
+        { id: 'a', cutoffDay: null },
+        { id: 'b', cutoffDay: null },
+      ],
+      activeJobs: [
+        { id: 'a', cutoffDay: null },
+        { id: 'b', cutoffDay: null },
+      ],
+      mode: 'calendarMonth',
+      month: '2026-09',
+      now: { date: '2026-09-25', time: '12:00' },
+    });
+    expect(r.workDays).toBe(2);
+  });
+});

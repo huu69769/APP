@@ -65,30 +65,53 @@ export function isCompleted(
   return shiftEnd(shift) < `${now.date} ${now.time}`;
 }
 
+/** 统计空闲时间用到的日程字段 */
+export interface StatEvent {
+  date: LocalDate;
+  allDay: boolean;
+  startTime: string | null;
+  endTime: string | null;
+}
+
+/** 没有结束时间的日程按 1 小时算（和周视图一样） */
+const EVENT_DEFAULT_MINUTES = 60;
+
 /**
- * 每天被打工占用的分钟数（PRD 5.4）：
- * - 按开始到结束计算，包括休息
- * - 同一天的班次先合并重叠部分
- * - 跨夜班超过 24 点的部分算进第二天
- * - 时间待定的班次不占用时间
+ * 每天被占用的分钟数：
+ * - 班次：按开始到结束计算，包括休息；时间待定的班次不占用时间
+ * - 日程：指定时间的按开始到结束；全天日程占用一整天
+ * - 重叠的部分只算一次；跨夜的部分算进第二天
  */
-export function occupiedMinutesByDay(shifts: StatShift[]): Map<LocalDate, number> {
+export function occupiedMinutesByDay(
+  shifts: StatShift[],
+  events: StatEvent[] = []
+): Map<LocalDate, number> {
   const intervals = new Map<LocalDate, [number, number][]>();
   const push = (date: LocalDate, start: number, end: number) => {
     const list = intervals.get(date) ?? [];
     list.push([start, end]);
     intervals.set(date, list);
   };
-  for (const s of shifts.filter(isTimed)) {
-    let start = timeToMinutes(s.startTime);
-    let end = start + spanMinutes(s.startTime, s.endTime);
-    let date = s.date;
+  const pushSpan = (date: LocalDate, start: number, end: number) => {
     while (end > 0) {
       push(date, start, Math.min(end, MINUTES_PER_DAY));
       end -= MINUTES_PER_DAY;
       start = 0;
       date = addDays(date, 1);
     }
+  };
+  for (const s of shifts.filter(isTimed)) {
+    const start = timeToMinutes(s.startTime);
+    pushSpan(s.date, start, start + spanMinutes(s.startTime, s.endTime));
+  }
+  for (const e of events) {
+    if (e.allDay || !e.startTime) {
+      push(e.date, 0, MINUTES_PER_DAY);
+      continue;
+    }
+    const start = timeToMinutes(e.startTime);
+    const length = e.endTime ? spanMinutes(e.startTime, e.endTime) : EVENT_DEFAULT_MINUTES;
+    pushSpan(e.date, start, start + length);
   }
   const result = new Map<LocalDate, number>();
   for (const [date, list] of intervals) {
@@ -109,21 +132,23 @@ export function occupiedMinutesByDay(shifts: StatShift[]): Map<LocalDate, number
 }
 
 /**
- * 空闲时间（PRD 5.4 / 5.5）
- * - 空闲天数：范围内没有任何班次的天数（时间待定的班次也算有班次）
- * - 空闲分钟：每天 24 小时 − 打工占用，合计
- * shifts 需要包括范围开始前一天的班次（它的跨夜部分会占用第一天）
+ * 空闲时间：
+ * - 空闲天数：范围内既没有班次（时间待定的也算）、也没有日程的天数
+ *   （项目 DDL、纪念日不占用时间，不影响）
+ * - 空闲分钟：每天 24 小时 − 打工和日程占用（重叠只算一次），合计
+ * shifts / events 需要包括范围开始前一天的（跨夜部分会占用第一天）
  */
 export function freeTime(
   shifts: StatShift[],
-  range: DateRange
+  range: DateRange,
+  events: StatEvent[] = []
 ): { freeDays: number; freeMinutes: number } {
-  const shiftDates = new Set(shifts.map((s) => s.date));
-  const occupied = occupiedMinutesByDay(shifts);
+  const busyDates = new Set([...shifts.map((s) => s.date), ...events.map((e) => e.date)]);
+  const occupied = occupiedMinutesByDay(shifts, events);
   let freeDays = 0;
   let freeMinutes = 0;
   for (const day of eachDay(range)) {
-    if (!shiftDates.has(day)) freeDays++;
+    if (!busyDates.has(day)) freeDays++;
     freeMinutes += MINUTES_PER_DAY - (occupied.get(day) ?? 0);
   }
   return { freeDays, freeMinutes };
@@ -147,6 +172,8 @@ export interface PeriodStats {
   /** 空闲时间使用的范围 */
   freeRange: DateRange;
   totalMinutes: number;
+  /** 打工天数：有班次的日子（一天几个班都算 1 天，时间待定的也算） */
+  workDays: number;
   wage: { total: MoneyByCurrency; completed: MoneyByCurrency; expected: MoneyByCurrency };
   freeDays: number;
   freeMinutes: number;
@@ -185,13 +212,15 @@ export function periodStats(params: {
   shifts: StatShift[];
   /** 按项目结算的项目（未删除），不传则当作没有 */
   tasks?: StatTask[];
+  /** 日程（占用空闲时间），不传则当作没有 */
+  events?: StatEvent[];
   jobs: StatJob[];
   activeJobs: StatJob[];
   mode: PeriodMode;
   month: YearMonth;
   now: LocalNow;
 }): PeriodStats {
-  const { shifts, tasks = [], jobs, activeJobs, mode, month, now } = params;
+  const { shifts, tasks = [], events = [], jobs, activeJobs, mode, month, now } = params;
   const jobsById = new Map(jobs.map((j) => [j.id, j]));
   const perJob = new Map<string, JobStats & { dates: Set<LocalDate> }>();
   const total: MoneyByCurrency = {};
@@ -263,12 +292,16 @@ export function periodStats(params: {
   const extended = { from: addDays(freeRange.from, -1), to: freeRange.to };
   const { freeDays, freeMinutes } = freeTime(
     shifts.filter((s) => inRange(s.date, extended)),
-    freeRange
+    freeRange,
+    events.filter((e) => inRange(e.date, extended))
   );
+  const workDates = new Set<LocalDate>();
+  for (const entry of perJob.values()) for (const d of entry.dates) workDates.add(d);
 
   return {
     freeRange,
     totalMinutes,
+    workDays: workDates.size,
     wage: { total, completed, expected },
     freeDays,
     freeMinutes,

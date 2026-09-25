@@ -126,6 +126,12 @@ export default function StatsScreen() {
             <View style={styles.summary}>
               <Big label={t('stats.hours')} value={hours(stats.totalMinutes)} />
               <Big
+                label={t('stats.workDays')}
+                value={t('stats.freeDaysValue', { count: stats.workDays })}
+              />
+            </View>
+            <View style={styles.summary}>
+              <Big
                 label={t('stats.freeDays')}
                 value={t('stats.freeDaysValue', { count: stats.freeDays })}
               />
