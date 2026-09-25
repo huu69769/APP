@@ -80,13 +80,16 @@
     "doneSkipped": "{{count}}件のシフトを追加しました（{{skipped}}日は同じシフトがあるためスキップ）",
     "delete": "削除",
     "deleteWhat": "選択した{{count}}日の…",
-    "deleteShiftsOpt": "シフト（{{count}}件）",
-    "deleteEventsOpt": "予定（{{count}}件）",
-    "deleteAllOpt": "シフトと予定すべて（{{count}}件）",
+    "deleteAllOpt": "すべて（{{count}}件）",
     "deleteTitle_shifts": "選択した{{days}}日のシフトをすべて削除しますか？（{{count}}件）",
     "deleteTitle_events": "選択した{{days}}日の予定をすべて削除しますか？（{{count}}件）",
-    "deleteTitle_all": "選択した{{days}}日のシフトと予定をすべて削除しますか？（{{count}}件）",
-    "nothingToDelete": "選択した日にシフトや予定はありません"
+    "deleteTitle_all": "選択した{{days}}日のシフト・予定・案件をすべて削除しますか？（{{count}}件）",
+    "nothingToDelete": "選択した日にシフト・予定・案件はありません",
+    "deleteOpt_shifts": "シフト（{{count}}件）",
+    "deleteOpt_events": "予定（{{count}}件）",
+    "deleteOpt_tasks": "案件（{{count}}件）",
+    "deleteTitle_tasks": "選択した{{days}}日の案件をすべて削除しますか？（{{count}}件）",
+    "deleteTasksWarning": "案件を削除すると、その報酬は収入の集計に含まれなくなります。"
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",

@@ -405,20 +405,35 @@ export default function HomeScreen() {
     toast(t('toast.deleted', { count: chosen.length }), { onUndo: undo });
   };
 
-  /** 批量模式：删除所选日期的班次 / 日程（项目不在这里删），可以撤销 */
-  const deleteOnSelectedDays = async (what: 'shifts' | 'events' | 'all') => {
-    const refs = [
-      ...(what !== 'events' ? (data?.shifts ?? []) : [])
-        .filter((s) => selected.has(s.date))
-        .map((s) => ({ kind: 'shift' as const, id: s.id })),
-      ...(what !== 'shifts' ? (data?.events ?? []) : [])
-        .filter((e) => selected.has(e.date))
-        .map((e) => ({ kind: 'event' as const, id: e.id })),
-    ];
+  /** 批量模式：删除所选日期的班次 / 日程 / 项目（纪念日每年重复，不在这里删），可以撤销 */
+  type DeleteWhat = 'shifts' | 'events' | 'tasks' | 'all';
+  const onSelected = {
+    shifts: (data?.shifts ?? [])
+      .filter((s) => selected.has(s.date))
+      .map((s) => ({ kind: 'shift' as const, id: s.id })),
+    events: (data?.events ?? [])
+      .filter((e) => selected.has(e.date))
+      .map((e) => ({ kind: 'event' as const, id: e.id })),
+    tasks: (data?.tasks ?? [])
+      .filter((x) => selected.has(x.dueDate))
+      .map((x) => ({ kind: 'task' as const, id: x.id })),
+  };
+  const refsFor = (what: DeleteWhat) =>
+    what === 'all'
+      ? [...onSelected.shifts, ...onSelected.events, ...onSelected.tasks]
+      : onSelected[what];
+
+  const deleteOnSelectedDays = async (what: DeleteWhat) => {
+    const refs = refsFor(what);
     if (!refs.length) return;
     const ok = await confirmAsync({
       title: t(`batch.deleteTitle_${what}`, { days: selected.size, count: refs.length }),
-      message: t('bulk.deleteMessage'),
+      message: [
+        what === 'tasks' || what === 'all' ? t('batch.deleteTasksWarning') : null,
+        t('bulk.deleteMessage'),
+      ]
+        .filter(Boolean)
+        .join('\n'),
       confirmText: t('common.delete'),
       cancelText: t('common.cancel'),
       destructive: true,
@@ -429,36 +444,26 @@ export default function HomeScreen() {
     toast(t('toast.deleted', { count: refs.length }), { onUndo: undo });
   };
 
-  const shiftsOnSelected = (data?.shifts ?? []).filter((s) => selected.has(s.date)).length;
-  const eventsOnSelected = (data?.events ?? []).filter((e) => selected.has(e.date)).length;
   const openDeleteSheet = () => {
-    if (!shiftsOnSelected && !eventsOnSelected) {
+    if (!refsFor('all').length) {
       toast(t('batch.nothingToDelete'));
       return;
     }
     setDeleteOpen(true);
   };
+  const kindsWithItems = (['shifts', 'events', 'tasks'] as const).filter(
+    (k) => onSelected[k].length > 0
+  );
   const deleteActions: SheetAction[] = [
-    ...(shiftsOnSelected
+    ...kindsWithItems.map((k) => ({
+      label: t(`batch.deleteOpt_${k}`, { count: onSelected[k].length }),
+      onPress: () => deleteOnSelectedDays(k),
+    })),
+    // 有两种以上时才显示「全部」
+    ...(kindsWithItems.length > 1
       ? [
           {
-            label: t('batch.deleteShiftsOpt', { count: shiftsOnSelected }),
-            onPress: () => deleteOnSelectedDays('shifts'),
-          },
-        ]
-      : []),
-    ...(eventsOnSelected
-      ? [
-          {
-            label: t('batch.deleteEventsOpt', { count: eventsOnSelected }),
-            onPress: () => deleteOnSelectedDays('events'),
-          },
-        ]
-      : []),
-    ...(shiftsOnSelected && eventsOnSelected
-      ? [
-          {
-            label: t('batch.deleteAllOpt', { count: shiftsOnSelected + eventsOnSelected }),
+            label: t('batch.deleteAllOpt', { count: refsFor('all').length }),
             onPress: () => deleteOnSelectedDays('all'),
           },
         ]

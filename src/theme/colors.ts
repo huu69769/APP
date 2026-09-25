@@ -40,32 +40,38 @@ export const lightColors = {
 
 export type Palette = { [K in keyof typeof lightColors]: string };
 
-/** 夜间模式 */
+/**
+ * 夜间模式：参考 Material Design / Apple 的深色模式设计原则——
+ * - 不用纯黑，用带一点蓝的深藏青色（纯黑配白字对比太刺眼，也显得「空」）
+ * - 越靠前的层越亮：页面底色最深，卡片、日历稍亮，弹出层再亮一点（深色下阴影看不出层次）
+ * - 文字不用纯白，用略灰的白；强调色调浅、降低饱和度，避免在深底上「发光刺眼」
+ * - 按钮等浅色强调色上的文字用深色，保证对比度
+ */
 export const darkColors: Palette = {
-  background: '#15171B',
-  surface: '#1E2126',
-  border: '#2E333A',
-  text: '#E6E8EB',
-  textMuted: '#9AA1AB',
-  textFaint: '#50565F',
-  primary: '#3B9BFF',
-  onPrimary: '#FFFFFF',
-  sunday: '#FF6B6F',
-  saturday: '#4DA3FF',
-  danger: '#FF6B6F',
-  holidayCN: '#FF6B6F',
-  holidayJP: '#A78BFA',
-  holidayWork: '#9CA3AF',
-  lunarSpecial: '#F0A050',
+  background: '#1E2939',
+  surface: '#151D2A',
+  border: '#304058',
+  text: '#E3E9F2',
+  textMuted: '#98A6BC',
+  textFaint: '#56657D',
+  primary: '#6AB0FF',
+  onPrimary: '#0E1A2B',
+  sunday: '#FF8F92',
+  saturday: '#72B6FF',
+  danger: '#FF8084',
+  holidayCN: '#FF8F92',
+  holidayJP: '#B9A2FF',
+  holidayWork: '#A3B0C2',
+  lunarSpecial: '#F4B46E',
   onColor: '#FFFFFF',
-  selectedBg: '#1C3656',
-  infoBg: '#1A2A3F',
-  warningBg: '#3A2E14',
-  warningText: '#F2C46B',
-  overlay: 'rgba(0,0,0,0.6)',
-  toastBg: '#2F343B',
-  toastText: '#FFFFFF',
-  toastAction: '#7CC0FF',
+  selectedBg: '#2A4466',
+  infoBg: '#243552',
+  warningBg: '#3A3424',
+  warningText: '#F3CF80',
+  overlay: 'rgba(6,10,18,0.6)',
+  toastBg: '#34435C',
+  toastText: '#F0F4FA',
+  toastAction: '#8FC6FF',
   shadow: '#000000',
 };
 

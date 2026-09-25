@@ -80,13 +80,16 @@
     "doneSkipped": "已添加 {{count}} 个班次（{{skipped}} 天已经有同样的班次，跳过了）",
     "delete": "删除",
     "deleteWhat": "删除所选 {{count}} 天的…",
-    "deleteShiftsOpt": "班次（{{count}} 个）",
-    "deleteEventsOpt": "日程（{{count}} 个）",
-    "deleteAllOpt": "班次和日程全部（{{count}} 个）",
+    "deleteAllOpt": "全部（{{count}} 个）",
     "deleteTitle_shifts": "删除所选 {{days}} 天的全部班次（共 {{count}} 个）？",
     "deleteTitle_events": "删除所选 {{days}} 天的全部日程（共 {{count}} 个）？",
-    "deleteTitle_all": "删除所选 {{days}} 天的全部班次和日程（共 {{count}} 个）？",
-    "nothingToDelete": "所选日期没有班次或日程"
+    "deleteTitle_all": "删除所选 {{days}} 天的全部班次、日程和项目（共 {{count}} 个）？",
+    "nothingToDelete": "所选日期没有班次、日程或项目",
+    "deleteOpt_shifts": "班次（{{count}} 个）",
+    "deleteOpt_events": "日程（{{count}} 个）",
+    "deleteOpt_tasks": "项目（{{count}} 个）",
+    "deleteTitle_tasks": "删除所选 {{days}} 天的全部项目（共 {{count}} 个）？",
+    "deleteTasksWarning": "项目删除后，它的报酬也不会再算进收入统计。"
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",
