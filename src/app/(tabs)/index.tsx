@@ -498,8 +498,6 @@ export default function HomeScreen() {
     },
   ];
 
-  const isCurrentMonth = month === currentMonth();
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -532,12 +530,6 @@ export default function HomeScreen() {
           <Text style={styles.navText}>›</Text>
         </Pressable>
         <View style={styles.spacer} />
-        {(showWeek ? !week.includes(today) : !isCurrentMonth) && (
-          <HeaderButton
-            label={t('calendar.today')}
-            onPress={() => (showWeek ? goToWeek(today) : goToMonth(currentMonth()))}
-          />
-        )}
         {!batchMode && (
           <Segmented
             size="small"
