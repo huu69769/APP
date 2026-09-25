@@ -22,8 +22,6 @@ export interface Settings {
   lastBackupAt: string | null;
   /** 首页月历的显示方式：work = 班次显示成色块；schedule = 日程显示成色块 */
   calendarView: CalendarView;
-  /** 首页下方「选中那天的安排」是否展开 */
-  dayPanelOpen: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,7 +34,6 @@ export const DEFAULT_SETTINGS: Settings = {
   showLunar: true,
   lastBackupAt: null,
   calendarView: 'work',
-  dayPanelOpen: true,
 };
 
 /** 设置在存储里是键值对，值用 JSON 编码 */

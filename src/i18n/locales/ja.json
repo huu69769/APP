@@ -53,8 +53,6 @@
     "details": "詳細 ›",
     "empty": "この日の予定はありません",
     "emptyHint": "右下の「＋」から追加できます",
-    "expand": "開く",
-    "collapse": "閉じる",
     "add": "追加",
     "addTo": "{{date}} に追加",
     "slotAllDay": "終日",

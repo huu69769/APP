@@ -7,6 +7,7 @@ import type { BadgeKind, DayLabel } from '@/lib/dayLabel';
 import type { LocalDate, YearMonth } from '@/lib/date';
 import { colors } from '@/theme/colors';
 
+/** 左右滑动多远算切换月份；上下滑动交给页面滚动 */
 const SWIPE_DISTANCE = 50;
 const MAX_BARS = 3;
 
@@ -34,7 +35,7 @@ interface Props {
   selected?: Set<LocalDate>;
   /** 当前选中（下方列表显示）的那一天，画一个框 */
   focusedDate?: LocalDate | null;
-  /** 传入时：每行固定这个高度（下方列表展开时），色块数量按高度减少 */
+  /** 传入时：每行固定这个高度（首页整页滚动时用），色块数量按高度决定 */
   rowHeight?: number;
   onPressDay: (date: LocalDate) => void;
   /** 长按某一天（用来开始批量排班） */
@@ -74,7 +75,7 @@ export function MonthCalendar({
     });
 
   return (
-    <GestureDetector gesture={swipe}>
+    <GestureDetector gesture={swipe} touchAction="pan-y">
       <View style={rowHeight ? undefined : styles.container}>
         <View style={styles.weekHeader}>
           {orderedWeekdays(weekStart).map((wd) => (
@@ -107,7 +108,7 @@ export function MonthCalendar({
                 label={labels?.get(day.date)}
                 selected={selected?.has(day.date)}
                 focused={focusedDate === day.date}
-                maxBars={!rowHeight ? MAX_BARS : rowHeight >= 64 ? 2 : rowHeight >= 52 ? 1 : 0}
+                maxBars={!rowHeight || rowHeight >= 104 ? MAX_BARS : rowHeight >= 80 ? 2 : 1}
                 onPress={onPressDay}
                 onLongPress={onLongPressDay}
               />
@@ -253,6 +254,7 @@ const styles = StyleSheet.create({
   cellSelected: { backgroundColor: '#DCEBFD' },
   cellFocused: { borderWidth: 2, borderColor: colors.primary, borderRadius: 4 },
   dayNumberWrap: {
+    flexShrink: 0,
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -276,8 +278,15 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: 'hidden',
   },
-  label: { fontSize: 9, lineHeight: 11, color: colors.textMuted, maxWidth: '100%' },
-  dots: { flexDirection: 'row', gap: 2, height: 5, marginTop: 1 },
+  label: {
+    fontSize: 9,
+    lineHeight: 13,
+    height: 13,
+    flexShrink: 0,
+    color: colors.textMuted,
+    maxWidth: '100%',
+  },
+  dots: { flexDirection: 'row', gap: 2, height: 5, marginTop: 2, flexShrink: 0 },
   dot: { width: 5, height: 5, borderRadius: 2.5 },
   bars: { alignSelf: 'stretch', gap: 2, marginTop: 1, paddingHorizontal: 2 },
   barsOutOfMonth: { opacity: 0.4 },

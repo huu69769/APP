@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
@@ -26,7 +26,7 @@ import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { useDayLabels } from '@/holidays/useHolidays';
-import { compactRowHeight, monthGridRange } from '@/lib/calendar';
+import { HOME_ROW_HEIGHT, monthGridRange } from '@/lib/calendar';
 import {
   addMonths,
   currentMonth,
@@ -45,7 +45,8 @@ function defaultFocus(month: YearMonth, today: LocalDate): LocalDate {
 
 /**
  * 首页：
- * - 上面：月份、统计栏（一行）、打工 / 日程 视图切换、月历
+ * - 顶部固定：月份、菜单
+ * - 下面整页一起滚动：统计栏（一行）+ 打工 / 日程 视图切换、月历、选中那天的安排
  * - 点日期 = 选中那一天，下面列出这天的安排（点一条进入编辑，「详情」进入当天页面）
  * - 右下角「＋」：给选中的那天一键添加（模板）或添加日程 / 班次 / 项目
  * - 点月份标题回到本月；长按日期开始批量排班
@@ -54,7 +55,6 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const { settings, updateSettings, repos } = useData();
   const toast = useToast();
-  const { height: screenHeight } = useWindowDimensions();
   const today = getToday();
   const [month, setMonth] = useState(currentMonth());
   const [focused, setFocused] = useState<LocalDate>(today);
@@ -62,7 +62,6 @@ export default function HomeScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const view = settings.calendarView;
-  const panelOpen = settings.dayPanelOpen;
 
   // 批量排班
   const [batchMode, setBatchMode] = useState(false);
@@ -191,7 +190,6 @@ export default function HomeScreen() {
     // 再点一次已选中的日期 → 打开当天页面
     if (date === focused) openDay(date);
     else setFocused(date);
-    if (!panelOpen) updateSettings({ dayPanelOpen: true });
   };
 
   const openItem = (item: DayItem) => {
@@ -241,7 +239,6 @@ export default function HomeScreen() {
         ? `${job.name} ${template.startTime}–${template.endTime}`
         : t('day.pendingChip', { job: job.name });
       toast(t('toast.added', { what }), { onUndo: () => repos.shifts.remove(shift.id) });
-      if (!panelOpen) updateSettings({ dayPanelOpen: true });
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
     }
@@ -322,60 +319,73 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {batchMode ? (
-        <Text style={styles.batchHint}>{t('batch.hint')}</Text>
-      ) : (
-        <>
-          <View style={styles.toolbar}>
-            <StatsBar
-              month={month}
-              mode={settings.statsPeriod}
-              wageDisplay={settings.wageDisplay}
-              currency={settings.defaultCurrency}
-              stats={statsData?.stats}
-              onPress={() => router.push({ pathname: '/stats', params: { month } })}
-            />
-            <Segmented
-              size="small"
-              options={[
-                { value: 'work', label: t('home.viewWork') },
-                { value: 'schedule', label: t('home.viewSchedule') },
-              ]}
-              value={view}
-              onChange={(v) => updateSettings({ calendarView: v })}
-            />
-          </View>
-          {data && !data.hasJobs && (
-            <View style={styles.onboarding}>
-              <View style={styles.onboardingText}>
-                <Text style={styles.onboardingTitle}>{t('home.onboardingTitle')}</Text>
-                <Text style={styles.onboardingBody}>{t('home.onboardingBody')}</Text>
-              </View>
-              <Pressable
-                onPress={() => router.push({ pathname: '/jobs/[id]', params: { id: 'new' } })}
-                accessibilityRole="button"
-                style={styles.onboardingButton}>
-                <Text style={styles.onboardingButtonText}>{t('home.onboardingButton')}</Text>
-              </Pressable>
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+        {batchMode ? (
+          <Text style={styles.batchHint}>{t('batch.hint')}</Text>
+        ) : (
+          <>
+            <View style={styles.toolbar}>
+              <StatsBar
+                month={month}
+                mode={settings.statsPeriod}
+                wageDisplay={settings.wageDisplay}
+                currency={settings.defaultCurrency}
+                stats={statsData?.stats}
+                onPress={() => router.push({ pathname: '/stats', params: { month } })}
+              />
+              <Segmented
+                size="small"
+                options={[
+                  { value: 'work', label: t('home.viewWork') },
+                  { value: 'schedule', label: t('home.viewSchedule') },
+                ]}
+                value={view}
+                onChange={(v) => updateSettings({ calendarView: v })}
+              />
             </View>
-          )}
-        </>
-      )}
+            {data && !data.hasJobs && (
+              <View style={styles.onboarding}>
+                <View style={styles.onboardingText}>
+                  <Text style={styles.onboardingTitle}>{t('home.onboardingTitle')}</Text>
+                  <Text style={styles.onboardingBody}>{t('home.onboardingBody')}</Text>
+                </View>
+                <Pressable
+                  onPress={() => router.push({ pathname: '/jobs/[id]', params: { id: 'new' } })}
+                  accessibilityRole="button"
+                  style={styles.onboardingButton}>
+                  <Text style={styles.onboardingButtonText}>{t('home.onboardingButton')}</Text>
+                </Pressable>
+              </View>
+            )}
+          </>
+        )}
 
-      <MonthCalendar
-        month={month}
-        weekStart={settings.weekStart}
-        today={today}
-        bars={data?.bars}
-        dots={data?.dots}
-        labels={holidayData?.labels}
-        selected={batchMode ? selected : undefined}
-        focusedDate={batchMode ? null : focused}
-        rowHeight={!batchMode && panelOpen ? compactRowHeight(screenHeight) : undefined}
-        onPressDay={onPressDay}
-        onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}
-        onSwipe={(delta) => goToMonth(addMonths(month, delta))}
-      />
+        <MonthCalendar
+          month={month}
+          weekStart={settings.weekStart}
+          today={today}
+          bars={data?.bars}
+          dots={data?.dots}
+          labels={holidayData?.labels}
+          selected={batchMode ? selected : undefined}
+          focusedDate={batchMode ? null : focused}
+          rowHeight={HOME_ROW_HEIGHT}
+          onPressDay={onPressDay}
+          onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}
+          onSwipe={(delta) => goToMonth(addMonths(month, delta))}
+        />
+
+        {!batchMode && (
+          <DayPanel
+            date={focused}
+            items={items}
+            lunar={settings.showLunar ? lunarInfo(focused) : null}
+            marks={holidayData?.marks.get(focused) ?? []}
+            onOpenDetails={() => openDay(focused)}
+            onPressItem={openItem}
+          />
+        )}
+      </ScrollView>
 
       {batchMode ? (
         <View style={styles.batchBar}>
@@ -389,25 +399,13 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       ) : (
-        <>
-          <DayPanel
-            date={focused}
-            items={items}
-            lunar={settings.showLunar ? lunarInfo(focused) : null}
-            marks={holidayData?.marks.get(focused) ?? []}
-            open={panelOpen}
-            onToggle={() => updateSettings({ dayPanelOpen: !panelOpen })}
-            onOpenDetails={() => openDay(focused)}
-            onPressItem={openItem}
-          />
-          <Pressable
-            onPress={() => setAddOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('home.add')}
-            style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}>
-            <Text style={styles.fabText}>＋</Text>
-          </Pressable>
-        </>
+        <Pressable
+          onPress={() => setAddOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('home.add')}
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}>
+          <Text style={styles.fabText}>＋</Text>
+        </Pressable>
       )}
 
       <TemplatePicker
@@ -454,6 +452,7 @@ function HeaderButton({ label, onPress }: { label: string; onPress: () => void }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

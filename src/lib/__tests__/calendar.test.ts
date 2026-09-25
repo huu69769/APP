@@ -1,4 +1,4 @@
-import { buildMonthGrid, compactRowHeight, monthGridRange, orderedWeekdays } from '../calendar';
+import { buildMonthGrid, monthGridRange, orderedWeekdays } from '../calendar';
 import { addDays, addMonths, isValidLocalDate, today } from '../date';
 
 describe('buildMonthGrid', () => {
@@ -79,15 +79,5 @@ describe('monthGridRange', () => {
   it('covers the visible 6 weeks', () => {
     expect(monthGridRange('2026-09', 0)).toEqual({ from: '2026-08-30', to: '2026-10-10' });
     expect(monthGridRange('2026-09', 1)).toEqual({ from: '2026-08-31', to: '2026-10-11' });
-  });
-});
-
-describe('compactRowHeight', () => {
-  it('keeps the calendar at about half the screen, within limits', () => {
-    expect(compactRowHeight(1000)).toBe(68);
-    expect(compactRowHeight(640)).toBe(48);
-    expect(compactRowHeight(400)).toBe(44);
-    // 6 行加星期标题不超过屏幕高度的一半多一点
-    expect(6 * compactRowHeight(700) + 28).toBeLessThanOrEqual(350);
   });
 });

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { DayItem } from '@/data/dayItems';
 import type { LocalDate } from '@/lib/date';
@@ -10,15 +10,14 @@ import { colors } from '@/theme/colors';
 
 /**
  * 首页下方：选中那一天的安排（班次、日程、项目）。
- * 点一条进入编辑；「详情 ›」进入当天页面（笔记、一键添加等）；▼ 收起。
+ * 点一条进入编辑；「详情 ›」进入当天页面（笔记、一键添加等）。
+ * 和月历在同一个滚动页面里，往上滑就能看到。
  */
 export function DayPanel({
   date,
   items,
   lunar,
   marks,
-  open,
-  onToggle,
   onOpenDetails,
   onPressItem,
 }: {
@@ -26,8 +25,6 @@ export function DayPanel({
   items: DayItem[] | undefined;
   lunar: LunarInfo | null;
   marks: HolidayMark[];
-  open: boolean;
-  onToggle: () => void;
   onOpenDetails: () => void;
   onPressItem: (item: DayItem) => void;
 }) {
@@ -48,7 +45,7 @@ export function DayPanel({
   ].join(' · ');
 
   return (
-    <View style={[styles.panel, open && styles.panelOpen]}>
+    <View style={styles.panel}>
       <View style={styles.header}>
         <Pressable onPress={onOpenDetails} style={styles.headerMain} accessibilityRole="button">
           <Text style={styles.title}>{title}</Text>
@@ -61,78 +58,68 @@ export function DayPanel({
         <Pressable onPress={onOpenDetails} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.details}>{t('home.details')}</Text>
         </Pressable>
-        <Pressable
-          onPress={onToggle}
-          accessibilityRole="button"
-          accessibilityLabel={t(open ? 'home.collapse' : 'home.expand')}
-          hitSlop={8}
-          style={styles.toggle}>
-          <Text style={styles.toggleText}>{open ? '▼' : '▲'}</Text>
-        </Pressable>
       </View>
-      {open && (
-        <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-          {items && items.length === 0 && (
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>{t('home.empty')}</Text>
-              <Text style={styles.emptyHint}>{t('home.emptyHint')}</Text>
-            </View>
-          )}
-          {items?.map((item) => (
-            <Pressable
-              key={item.key}
-              onPress={() => onPressItem(item)}
-              accessibilityRole="button"
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-              <View style={styles.slot}>
-                {typeof item.slot === 'string' ? (
-                  <Text style={styles.slotText}>
-                    {t(
-                      item.slot === 'allDay'
-                        ? 'home.slotAllDay'
-                        : item.slot === 'pending'
-                          ? 'home.slotPending'
-                          : 'home.slotDdl'
-                    )}
-                  </Text>
-                ) : (
-                  <>
-                    <Text style={styles.slotText}>{item.slot.start}</Text>
-                    {item.slot.end && (
-                      <Text style={styles.slotText}>
-                        {item.slot.overnight ? '+1 ' : ''}
-                        {item.slot.end}
-                      </Text>
-                    )}
-                  </>
-                )}
-              </View>
-              <View
-                style={[
-                  styles.bar,
-                  item.kind === 'task'
-                    ? { borderColor: item.color, borderWidth: 2 }
-                    : { backgroundColor: item.color },
-                  item.slot === 'pending' && styles.barPending,
-                ]}
-              />
-              <View style={styles.body}>
-                <Text style={styles.itemTitle} numberOfLines={1}>
-                  {item.kind === 'task' ? (item.done ? '✓ ' : '⏰ ') : ''}
-                  {item.title}
-                  {item.reminder ? ' 🔔' : ''}
+      <View style={styles.list}>
+        {items && items.length === 0 && (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>{t('home.empty')}</Text>
+            <Text style={styles.emptyHint}>{t('home.emptyHint')}</Text>
+          </View>
+        )}
+        {items?.map((item) => (
+          <Pressable
+            key={item.key}
+            onPress={() => onPressItem(item)}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <View style={styles.slot}>
+              {typeof item.slot === 'string' ? (
+                <Text style={styles.slotText}>
+                  {t(
+                    item.slot === 'allDay'
+                      ? 'home.slotAllDay'
+                      : item.slot === 'pending'
+                        ? 'home.slotPending'
+                        : 'home.slotDdl'
+                  )}
                 </Text>
-                {item.subtitle ? (
-                  <Text style={styles.itemSubtitle} numberOfLines={1}>
-                    {item.subtitle}
-                  </Text>
-                ) : null}
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      )}
+              ) : (
+                <>
+                  <Text style={styles.slotText}>{item.slot.start}</Text>
+                  {item.slot.end && (
+                    <Text style={styles.slotText}>
+                      {item.slot.overnight ? '+1 ' : ''}
+                      {item.slot.end}
+                    </Text>
+                  )}
+                </>
+              )}
+            </View>
+            <View
+              style={[
+                styles.bar,
+                item.kind === 'task'
+                  ? { borderColor: item.color, borderWidth: 2 }
+                  : { backgroundColor: item.color },
+                item.slot === 'pending' && styles.barPending,
+              ]}
+            />
+            <View style={styles.body}>
+              <Text style={styles.itemTitle} numberOfLines={1}>
+                {item.kind === 'task' ? (item.done ? '✓ ' : '⏰ ') : ''}
+                {item.title}
+                {item.reminder ? ' 🔔' : ''}
+              </Text>
+              {item.subtitle ? (
+                <Text style={styles.itemSubtitle} numberOfLines={1}>
+                  {item.subtitle}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
@@ -143,7 +130,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  panelOpen: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -155,10 +141,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: '600', color: colors.text },
   extra: { fontSize: 12, color: colors.textMuted },
   details: { fontSize: 14, color: colors.primary },
-  toggle: { paddingHorizontal: 4 },
-  toggleText: { fontSize: 14, color: colors.textMuted },
-  list: { flex: 1 },
-  listContent: { paddingBottom: 88 },
+  list: { paddingBottom: 96 },
   empty: { padding: 16, gap: 4 },
   emptyText: { fontSize: 14, color: colors.textMuted },
   emptyHint: { fontSize: 12, color: colors.textFaint },
