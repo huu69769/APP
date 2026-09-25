@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { buildMonthGrid, orderedWeekdays, type CalendarDay, type WeekStart } from '@/lib/calendar';
 import type { BadgeKind, DayLabel } from '@/lib/dayLabel';
 import type { LocalDate, YearMonth } from '@/lib/date';
-import { colors } from '@/theme/colors';
+import { makeStyles, useColors, type Palette } from '@/theme';
 
 /** 左右滑动多远算切换月份；上下滑动交给页面滚动 */
 const SWIPE_DISTANCE = 50;
@@ -61,6 +61,7 @@ export function MonthCalendar({
   onLongPressDay,
   onSwipe,
 }: Props) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const weekdayNames = t('calendar.weekdaysShort', { returnObjects: true }) as string[];
   const weeks = buildMonthGrid(month, weekStart, today);
@@ -79,7 +80,7 @@ export function MonthCalendar({
       <View style={rowHeight ? undefined : styles.container}>
         <View style={styles.weekHeader}>
           {orderedWeekdays(weekStart).map((wd) => (
-            <Text key={wd} style={[styles.weekHeaderText, weekdayColor(wd)]}>
+            <Text key={wd} style={[styles.weekHeaderText, weekdayColor(styles, wd)]}>
               {weekdayNames[wd]}
             </Text>
           ))}
@@ -141,6 +142,8 @@ function DayCell({
   onPress: (date: LocalDate) => void;
   onLongPress?: (date: LocalDate) => void;
 }) {
+  const colors = useColors();
+  const styles = useStyles();
   const { t } = useTranslation();
   const [, month] = day.date.split('-').map(Number);
   const shown = bars.slice(0, maxBars);
@@ -163,7 +166,7 @@ function DayCell({
         <Text
           style={[
             styles.dayNumber,
-            label?.workday ? null : weekdayColor(day.weekday),
+            label?.workday ? null : weekdayColor(styles, day.weekday),
             label?.off && styles.holidayNumber,
             !day.inMonth && styles.outOfMonth,
             day.isToday && styles.todayText,
@@ -174,7 +177,7 @@ function DayCell({
       {label?.badges.length ? (
         <View style={[styles.badges, !day.inMonth && styles.barsOutOfMonth]}>
           {label.badges.map((b) => (
-            <Text key={b} style={[styles.badge, { backgroundColor: BADGE_COLORS[b] }]}>
+            <Text key={b} style={[styles.badge, { backgroundColor: badgeColor(colors, b) }]}>
               {t(`holiday.${b}`)}
             </Text>
           ))}
@@ -221,19 +224,17 @@ function DayCell({
   );
 }
 
-const BADGE_COLORS: Record<BadgeKind, string> = {
-  cnOff: colors.holidayCN,
-  cnWork: colors.holidayWork,
-  jpOff: colors.holidayJP,
-};
+function badgeColor(colors: Palette, kind: BadgeKind): string {
+  return { cnOff: colors.holidayCN, cnWork: colors.holidayWork, jpOff: colors.holidayJP }[kind];
+}
 
-function weekdayColor(weekday: number) {
+function weekdayColor(styles: { sunday: object; saturday: object }, weekday: number) {
   if (weekday === 0) return styles.sunday;
   if (weekday === 6) return styles.saturday;
   return null;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.background },
   weekHeader: {
     flexDirection: 'row',
@@ -304,4 +305,4 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.primary,
   },
-});
+}));

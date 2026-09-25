@@ -26,7 +26,7 @@ import { formatMoney } from '@/lib/money';
  */
 export default function ShiftEditScreen() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ id: string; date?: string }>();
+  const params = useLocalSearchParams<{ id: string; date?: string; startTime?: string }>();
   const isNew = params.id === 'new';
   const { repos } = useData();
 
@@ -51,7 +51,11 @@ export default function ShiftEditScreen() {
         setJobs(list);
         if (list[0]) {
           setJobId(list[0].id);
-          setAll({ startTime: '', endTime: '', breakMinutes: list[0].defaultBreakMinutes });
+          setAll({
+            startTime: params.startTime ?? '',
+            endTime: '',
+            breakMinutes: list[0].defaultBreakMinutes,
+          });
         }
       } else {
         const s = await repos.shifts.get(params.id);
@@ -69,7 +73,7 @@ export default function ShiftEditScreen() {
       }
       setLoaded(true);
     })();
-  }, [isNew, params.id, repos, setAll]);
+  }, [isNew, params.id, params.startTime, repos, setAll]);
 
   const job = jobs.find((j) => j.id === jobId);
   const wage = shift

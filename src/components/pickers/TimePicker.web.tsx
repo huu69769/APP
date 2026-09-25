@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 
-import { colors } from '@/theme/colors';
+import { useColors, useIsDark } from '@/theme';
 
 /**
  * 网页版：用浏览器自带的时间 / 日期输入框（点开会有选择器，也可以直接输入）。
@@ -28,6 +28,8 @@ function NativeInput({
   placeholder,
   accessibilityLabel,
 }: Props & { type: 'time' | 'date'; width: number }) {
+  const colors = useColors();
+  const dark = useIsDark();
   return createElement('input', {
     type,
     value,
@@ -44,6 +46,8 @@ function NativeInput({
       color: colors.text,
       backgroundColor: colors.background,
       fontFamily: 'inherit',
+      // 让浏览器自带的时钟、日历图标也跟着变成深色模式
+      colorScheme: dark ? 'dark' : 'light',
     },
   });
 }

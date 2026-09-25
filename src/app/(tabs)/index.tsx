@@ -45,7 +45,7 @@ import {
 } from '@/lib/date';
 import { lunarInfo } from '@/lib/lunar';
 import { startOfWeek, weekDates, weekTotals } from '@/lib/week';
-import { colors } from '@/theme/colors';
+import { makeStyles, useColors } from '@/theme';
 
 /** 切换到某个月时默认选中的日期：本月选今天，其他月选 1 号 */
 function defaultFocus(month: YearMonth, today: LocalDate): LocalDate {
@@ -61,6 +61,8 @@ function defaultFocus(month: YearMonth, today: LocalDate): LocalDate {
  * - 点月份标题回到本月；长按日期开始批量排班
  */
 export default function HomeScreen() {
+  const colors = useColors();
+  const styles = useStyles();
   const { t } = useTranslation();
   const { settings, updateSettings, repos } = useData();
   const toast = useToast();
@@ -79,6 +81,8 @@ export default function HomeScreen() {
   const [selected, setSelected] = useState<Set<LocalDate>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // 周视图里点了空白的时间格：在那个时间添加
+  const [slot, setSlot] = useState<{ date: LocalDate; time: string } | null>(null);
 
   // 下方列表的选择模式（一次删除多条）
   const [selection, setSelection] = useState<Set<string> | undefined>(undefined);
@@ -668,6 +672,10 @@ export default function HomeScreen() {
             chips={weekChips}
             onPressDay={(date) => (date === focused ? openDay(date) : setFocused(date))}
             onPressItem={openByKey}
+            onPressSlot={(date, time) => {
+              setFocused(date);
+              setSlot({ date, time });
+            }}
             onSwipe={(delta) => goToWeek(addDays(focused, delta * 7))}
           />
         ) : (
@@ -768,6 +776,34 @@ export default function HomeScreen() {
       />
 
       <ActionSheet
+        visible={slot !== null}
+        title={slot ? `${dayLabel(slot.date)} ${slot.time}` : undefined}
+        onClose={() => setSlot(null)}
+        actions={
+          slot
+            ? [
+                {
+                  label: t('day.addShift'),
+                  onPress: () =>
+                    router.push({
+                      pathname: '/shift/[id]',
+                      params: { id: 'new', date: slot.date, startTime: slot.time },
+                    }),
+                },
+                {
+                  label: t('day.addEvent'),
+                  onPress: () =>
+                    router.push({
+                      pathname: '/event/[id]',
+                      params: { id: 'new', date: slot.date, startTime: slot.time },
+                    }),
+                },
+              ]
+            : []
+        }
+      />
+
+      <ActionSheet
         visible={deleteOpen}
         title={t('batch.deleteWhat', { count: selected.size })}
         onClose={() => setDeleteOpen(false)}
@@ -790,6 +826,7 @@ export default function HomeScreen() {
 }
 
 function HeaderButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useStyles();
   return (
     <Pressable onPress={onPress} style={styles.headerButton} accessibilityRole="button">
       <Text style={styles.headerButtonText}>{label}</Text>
@@ -797,7 +834,7 @@ function HeaderButton({ label, onPress }: { label: string; onPress: () => void }
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
   header: {
@@ -934,4 +971,4 @@ const styles = StyleSheet.create({
   },
   fabPressed: { opacity: 0.8 },
   fabText: { color: colors.onPrimary, fontSize: 28, lineHeight: 30 },
-});
+}));

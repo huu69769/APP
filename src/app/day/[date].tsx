@@ -27,7 +27,7 @@ import { formatMoney } from '@/lib/money';
 import type { HolidayMark } from '@/lib/holidays';
 import { lunarInfo, type LunarInfo } from '@/lib/lunar';
 import { isOvernight, shiftWage, workedMinutes } from '@/lib/shift';
-import { colors } from '@/theme/colors';
+import { makeStyles, useColors } from '@/theme';
 
 /**
  * 当天详情页：
@@ -37,6 +37,7 @@ import { colors } from '@/theme/colors';
  * M4 起还会有日程和笔记。
  */
 export default function DayScreen() {
+  const styles = useStyles();
   const { t } = useTranslation();
   const { date } = useLocalSearchParams<{ date: string }>();
   const { repos, settings } = useData();
@@ -373,6 +374,8 @@ export default function DayScreen() {
 
 /** 当天的农历、节气、节假日（放假 / 调休上班） */
 function DayHeader({ lunar, marks }: { lunar: LunarInfo | null; marks: HolidayMark[] }) {
+  const colors = useColors();
+  const styles = useStyles();
   const { t } = useTranslation();
   if (!lunar && marks.length === 0) return null;
   return (
@@ -420,6 +423,7 @@ function Chip({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -438,7 +442,7 @@ function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   selectBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -477,4 +481,4 @@ const styles = StyleSheet.create({
   chipDot: { width: 8, height: 8, borderRadius: 4 },
   chipText: { fontSize: 14, color: colors.text },
   chipTime: { fontSize: 12, color: colors.textMuted },
-});
+}));

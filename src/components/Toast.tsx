@@ -10,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
+import { makeStyles } from '@/theme';
 
 const DURATION_MS = 4000;
 
@@ -28,6 +28,7 @@ const ToastContext = createContext<ShowToast>(() => {});
  * 几秒后自动消失。
  */
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState<{
@@ -85,7 +86,7 @@ export function useToast(): ShowToast {
   return useContext(ToastContext);
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   wrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   toast: {
     flexDirection: 'row',
@@ -99,4 +100,4 @@ const styles = StyleSheet.create({
   },
   text: { flexShrink: 1, color: colors.toastText, fontSize: 14 },
   undo: { color: colors.toastAction, fontSize: 14, fontWeight: '700' },
-});
+}));

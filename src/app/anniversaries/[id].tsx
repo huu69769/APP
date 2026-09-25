@@ -21,7 +21,7 @@ import type { Anniversary, NewEntity } from '@/data/types';
 import { anniversaryStatus } from '@/lib/anniversary';
 import { isValidLocalDate, today } from '@/lib/date';
 import { lunarInfo } from '@/lib/lunar';
-import { JOB_COLORS } from '@/theme/colors';
+import { JOB_COLORS } from '@/theme';
 
 type RepeatMode = 'solar' | 'lunar' | 'none';
 

@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Job, ShiftTemplate } from '@/data/types';
-import { colors } from '@/theme/colors';
+import { makeStyles } from '@/theme';
 
 import { EmptyText, ListRow } from './form';
 
@@ -21,6 +21,7 @@ export function TemplatePicker({
   onSelect: (job: Job, template: ShiftTemplate | null) => void;
   onClose: () => void;
 }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const rows = jobs.flatMap((job) => [
     ...templates
@@ -64,7 +65,7 @@ export function TemplatePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
     backgroundColor: colors.background,
@@ -79,4 +80,4 @@ const styles = StyleSheet.create({
   list: { flexGrow: 0 },
   cancel: { alignItems: 'center', paddingVertical: 12 },
   cancelText: { color: colors.primary, fontSize: 16 },
-});
+}));

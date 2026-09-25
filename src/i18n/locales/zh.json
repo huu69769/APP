@@ -167,7 +167,9 @@
     "activeSection": "进行中",
     "endedSection": "已结束（{{count}}）",
     "staleHint": "很久没用了，要结束吗？",
-    "endAction": "结束"
+    "endAction": "结束",
+    "thisMonth": "本月 {{summary}}",
+    "thisPeriod": "本期 {{summary}}"
   },
   "templates": {
     "newTitle": "添加时间段模板",
@@ -365,7 +367,11 @@
       "other": "恢复失败：{{message}}"
     },
     "about": "关于",
-    "version": "版本 {{version}}"
+    "version": "版本 {{version}}",
+    "theme": "外观",
+    "themeSystem": "跟随系统",
+    "themeLight": "浅色",
+    "themeDark": "夜间模式"
   },
   "holiday": {
     "cnOff": "休",

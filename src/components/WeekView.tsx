@@ -6,7 +6,7 @@ import type { LocalDate } from '@/lib/date';
 import type { DayLabel } from '@/lib/dayLabel';
 import { minutesToTime } from '@/lib/time';
 import { layoutWeek, visibleHours } from '@/lib/week';
-import { colors } from '@/theme/colors';
+import { makeStyles, useColors } from '@/theme';
 
 /** 画成时间块的班次、日程 */
 export interface WeekBlock {
@@ -50,6 +50,7 @@ export function WeekView({
   chips,
   onPressDay,
   onPressItem,
+  onPressSlot,
   onSwipe,
 }: {
   dates: LocalDate[];
@@ -60,8 +61,12 @@ export function WeekView({
   chips: Map<LocalDate, WeekChip[]>;
   onPressDay: (date: LocalDate) => void;
   onPressItem: (key: string) => void;
+  /** 点了空白的时间格（整点），用来在那个时间添加 */
+  onPressSlot: (date: LocalDate, time: string) => void;
   onSwipe: (delta: 1 | -1) => void;
 }) {
+  const colors = useColors();
+  const styles = useStyles();
   const { t } = useTranslation();
   const weekdayNames = t('calendar.weekdaysShort', { returnObjects: true }) as string[];
   const segments = layoutWeek(blocks, dates);
@@ -96,12 +101,12 @@ export function WeekView({
                 accessibilityRole="button"
                 accessibilityLabel={date}
                 style={[styles.dayHeader, date === focused && styles.dayHeaderFocused]}>
-                <Text style={[styles.weekday, weekdayColor(wd)]}>{weekdayNames[wd]}</Text>
+                <Text style={[styles.weekday, weekdayColor(styles, wd)]}>{weekdayNames[wd]}</Text>
                 <View style={[styles.dateWrap, isToday && styles.todayWrap]}>
                   <Text
                     style={[
                       styles.dateText,
-                      label?.off ? styles.holiday : !label?.workday && weekdayColor(wd),
+                      label?.off ? styles.holiday : !label?.workday && weekdayColor(styles, wd),
                       isToday && styles.todayText,
                     ]}>
                     {Number(date.slice(8, 10))}
@@ -173,7 +178,15 @@ export function WeekView({
           {dates.map((date, day) => (
             <Pressable
               key={date}
-              onPress={() => onPressDay(date)}
+              onPress={(e) => {
+                // 网页上 locationY 可能拿不到，用浏览器的 offsetY
+                const native = e.nativeEvent as { locationY?: number; offsetY?: number };
+                const y = Number.isFinite(native.locationY)
+                  ? native.locationY!
+                  : (native.offsetY ?? 0);
+                const hour = from + Math.floor(y / HOUR_HEIGHT);
+                onPressSlot(date, minutesToTime(Math.min(Math.max(hour, 0), 23) * 60));
+              }}
               accessibilityLabel={date}
               style={[styles.dayCol, date === focused && styles.dayColFocused]}>
               {segments
@@ -227,13 +240,13 @@ export function WeekView({
   );
 }
 
-function weekdayColor(weekday: number) {
+function weekdayColor(styles: { sunday: object; saturday: object }, weekday: number) {
   if (weekday === 0) return styles.sunday;
   if (weekday === 6) return styles.saturday;
   return null;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: { backgroundColor: colors.background },
   headerRow: {
     flexDirection: 'row',
@@ -300,4 +313,4 @@ const styles = StyleSheet.create({
   blockTime: { fontSize: 9, color: colors.onColor },
   eventText: { color: colors.text },
   eventTime: { color: colors.textMuted },
-});
+}));

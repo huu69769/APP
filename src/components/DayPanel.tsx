@@ -8,7 +8,7 @@ import type { LocalDate } from '@/lib/date';
 import { parseLocalDate } from '@/lib/date';
 import type { HolidayMark } from '@/lib/holidays';
 import type { LunarInfo } from '@/lib/lunar';
-import { colors } from '@/theme/colors';
+import { makeStyles } from '@/theme';
 
 /**
  * 首页下方：选中那一天的安排（班次、日程、项目）。
@@ -35,6 +35,7 @@ export function DayPanel({
   onOpenDetails: () => void;
   onPressItem: (item: DayItem) => void;
 }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const d = parseLocalDate(date);
   // 纪念日：「56 周年 · 备注」
@@ -145,7 +146,7 @@ const SLOT_LABELS = {
   anniv: 'home.slotAnniv',
 } as const;
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   panel: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
@@ -185,4 +186,4 @@ const styles = StyleSheet.create({
   itemTitle: { fontSize: 15, color: colors.text },
   itemSubtitle: { fontSize: 12, color: colors.textMuted },
   chevron: { fontSize: 18, color: colors.textFaint },
-});
+}));

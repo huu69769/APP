@@ -20,15 +20,16 @@ import { useData } from '@/data/DataProvider';
 import type { CalendarEvent, NewEntity } from '@/data/types';
 import { isValidLocalDate, today } from '@/lib/date';
 import { isValidTime } from '@/lib/time';
-import { colors, JOB_COLORS } from '@/theme/colors';
+import { makeStyles, JOB_COLORS } from '@/theme';
 
 /**
  * 日程：新建（id = "new"，参数 date）或编辑。
  * 日程不影响空闲时间的统计（日程就是用空闲时间安排的事，PRD 5.4）。
  */
 export default function EventEditScreen() {
+  const styles = useStyles();
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ id: string; date?: string }>();
+  const params = useLocalSearchParams<{ id: string; date?: string; startTime?: string }>();
   const isNew = params.id === 'new';
   const { repos } = useData();
 
@@ -37,7 +38,9 @@ export default function EventEditScreen() {
     params.date && isValidLocalDate(params.date) ? params.date : today()
   );
   const [allDay, setAllDay] = useState(false);
-  const [startTime, setStartTime] = useState('');
+  const [startTime, setStartTime] = useState(
+    params.startTime && isValidTime(params.startTime) ? params.startTime : ''
+  );
   const [endTime, setEndTime] = useState('');
   const [color, setColor] = useState<string>(JOB_COLORS[5]);
   const [note, setNote] = useState('');
@@ -178,7 +181,7 @@ export default function EventEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   dash: { color: colors.textMuted },
-});
+}));

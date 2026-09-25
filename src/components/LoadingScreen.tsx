@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { makeStyles, useColors } from '@/theme';
 
 export function LoadingScreen({ error }: { error?: Error }) {
+  const colors = useColors();
+  const styles = useStyles();
   const { t } = useTranslation();
   return (
     <View style={styles.container}>
@@ -19,7 +21,7 @@ export function LoadingScreen({ error }: { error?: Error }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: {
     flex: 1,
     alignItems: 'center',
@@ -30,4 +32,4 @@ const styles = StyleSheet.create({
   },
   text: { color: colors.textMuted },
   error: { color: colors.danger, textAlign: 'center' },
-});
+}));

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { makeStyles } from '@/theme';
 
 export interface SheetAction {
   label: string;
@@ -26,6 +26,7 @@ export function ActionSheet({
   actions: SheetAction[];
   onClose: () => void;
 }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -65,7 +66,7 @@ export function ActionSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
     backgroundColor: colors.background,
@@ -92,4 +93,4 @@ const styles = StyleSheet.create({
   detail: { fontSize: 13, color: colors.textMuted },
   cancel: { alignItems: 'center', paddingTop: 14 },
   cancelText: { color: colors.primary, fontSize: 16 },
-});
+}));

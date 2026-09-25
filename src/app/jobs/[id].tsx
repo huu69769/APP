@@ -24,7 +24,7 @@ import { formatDuration } from '@/i18n/format';
 import { isValidLocalDate, today } from '@/lib/date';
 import { formatMoney, moneyToInput, parseMoney } from '@/lib/money';
 import { validateShift, workedMinutes } from '@/lib/shift';
-import { colors, JOB_COLORS } from '@/theme/colors';
+import { makeStyles, JOB_COLORS } from '@/theme';
 
 /** 新建时薪兼职时，直接填的时间段（保存时变成班次模板） */
 interface SlotDraft {
@@ -43,6 +43,7 @@ interface SlotDraft {
  * 新建时可用参数：payType=piece（预选按项目结算）、due=YYYY-MM-DD（第一个项目的默认 DDL）
  */
 export default function JobEditScreen() {
+  const styles = useStyles();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ id: string; payType?: string; due?: string }>();
   const id = params.id;
@@ -517,7 +518,7 @@ export default function JobEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   moreToggle: { paddingVertical: 4 },
   moreText: { color: colors.primary, fontSize: 14 },
   narrow: { width: 96 },
@@ -536,4 +537,4 @@ const styles = StyleSheet.create({
   unit: { fontSize: 12, color: colors.textMuted },
   remove: { color: colors.danger, fontSize: 14 },
   error: { fontSize: 12, color: colors.danger },
-});
+}));

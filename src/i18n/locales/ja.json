@@ -167,7 +167,9 @@
     "activeSection": "進行中",
     "endedSection": "終了済み（{{count}}）",
     "staleHint": "しばらく使われていません。終了しますか？",
-    "endAction": "終了"
+    "endAction": "終了",
+    "thisMonth": "今月 {{summary}}",
+    "thisPeriod": "今期 {{summary}}"
   },
   "templates": {
     "newTitle": "時間帯テンプレートを追加",
@@ -365,7 +367,11 @@
       "other": "復元に失敗しました：{{message}}"
     },
     "about": "このアプリについて",
-    "version": "バージョン {{version}}"
+    "version": "バージョン {{version}}",
+    "theme": "外観",
+    "themeSystem": "システムに合わせる",
+    "themeLight": "ライト",
+    "themeDark": "ダークモード"
   },
   "holiday": {
     "cnOff": "休",

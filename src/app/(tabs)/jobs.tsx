@@ -8,15 +8,19 @@ import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/fo
 import { useData } from '@/data/DataProvider';
 import { jobPayType, type Job } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
+import { useMonthStats } from '@/data/useStats';
 import { isStale, lastActivityByJob } from '@/lib/activity';
-import { today as getToday } from '@/lib/date';
-import { formatMoney } from '@/lib/money';
-import { colors } from '@/theme/colors';
+import { currentMonth, today as getToday } from '@/lib/date';
+import { formatMoney, formatMoneyMulti } from '@/lib/money';
+import { formatHours } from '@/lib/time';
+import { makeStyles, useColors } from '@/theme';
 
 /** 工作列表：进行中在上，已结束的折叠在最下面 */
 export default function JobsScreen() {
+  const colors = useColors();
+  const styles = useStyles();
   const { t } = useTranslation();
-  const { repos } = useData();
+  const { repos, settings } = useData();
   const [showEnded, setShowEnded] = useState(false);
   const today = getToday();
 
@@ -54,7 +58,23 @@ export default function JobsScreen() {
     [today]
   );
 
-  const subtitle = (job: Job) => {
+  // 这个月（或本工资周期）每份工作的工时和收入
+  const { data: monthData } = useMonthStats(currentMonth());
+  const monthText = (job: Job) => {
+    const s = monthData?.stats.jobs.find((x) => x.jobId === job.id);
+    if (!s || (s.minutes === 0 && Object.keys(s.wage).length === 0)) return null;
+    const wage = formatMoneyMulti(s.wage, job.currency);
+    return t(settings.statsPeriod === 'payPeriod' ? 'jobs.thisPeriod' : 'jobs.thisMonth', {
+      summary:
+        jobPayType(job) === 'hourly'
+          ? `${t('stats.hoursValue', { hours: formatHours(s.minutes) })} · ${wage}`
+          : wage,
+    });
+  };
+
+  const subtitle = (job: Job) => [baseSubtitle(job), monthText(job)].filter(Boolean).join('\n');
+
+  const baseSubtitle = (job: Job) => {
     if (jobPayType(job) === 'hourly') {
       return t('jobs.perHour', { amount: formatMoney(job.hourlyWage, job.currency) });
     }
@@ -142,7 +162,7 @@ export default function JobsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   stale: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,4 +177,4 @@ const styles = StyleSheet.create({
   staleText: { fontSize: 12, color: colors.warningText, flexShrink: 1 },
   staleAction: { fontSize: 13, color: colors.primary, fontWeight: '600' },
   endedToggle: { fontSize: 15, color: colors.textMuted },
-});
+}));

@@ -7,7 +7,7 @@ import { formatDuration } from '@/i18n/format';
 import { formatMoney } from '@/lib/money';
 import { isOvernight, shiftWage, validateShift, workedMinutes, type ShiftTimes } from '@/lib/shift';
 import { normalizeTime } from '@/lib/time';
-import { colors } from '@/theme/colors';
+import { makeStyles } from '@/theme';
 
 import { EmptyText, Field, Input, Segmented } from './form';
 import { TimePicker } from './pickers/TimePicker';
@@ -113,6 +113,7 @@ function TimeFields({
   showErrors: boolean;
   wage?: { amount: MinorUnits; currency: Currency };
 }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const v = state.validated;
 
@@ -170,11 +171,11 @@ function TimeFields({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap' },
   dash: { paddingBottom: 12, color: colors.textMuted },
   break: { width: 80, textAlign: 'center' },
   error: { fontSize: 12, color: colors.danger },
   summary: { gap: 2 },
   summaryText: { fontSize: 13, color: colors.textMuted },
-});
+}));

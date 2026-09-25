@@ -4,12 +4,13 @@ import type { ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ColorValue } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { useColors } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 /** 底部标签栏：日历 / 工作 / 纪念日 / 设置 */
 export default function TabsLayout() {
+  const colors = useColors();
   const { t } = useTranslation();
   const icon =
     (name: IconName, focusedName: IconName) =>

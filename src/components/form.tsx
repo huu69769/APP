@@ -9,10 +9,11 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { colors, JOB_COLORS } from '@/theme/colors';
+import { makeStyles, useColors, JOB_COLORS } from '@/theme';
 
 /** 表单页面：可滚动，点输入框外不会收起按钮点击 */
 export function FormScreen({ children }: { children: ReactNode }) {
+  const styles = useStyles();
   return (
     <ScrollView
       style={styles.screen}
@@ -32,6 +33,7 @@ export function Section({
   children: ReactNode;
   right?: ReactNode;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.section}>
       {(title || right) && (
@@ -56,6 +58,7 @@ export function Field({
   hint?: string;
   children: ReactNode;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -70,6 +73,8 @@ export function Field({
 }
 
 export function Input(props: TextInputProps) {
+  const colors = useColors();
+  const styles = useStyles();
   return (
     <TextInput
       placeholderTextColor={colors.textFaint}
@@ -91,6 +96,7 @@ export function Segmented<T extends string | number>({
   /** small：连在一起的小切换（首页的视图切换） */
   size?: 'normal' | 'small';
 }) {
+  const styles = useStyles();
   if (size === 'small') {
     return (
       <View style={styles.segmentedSmall}>
@@ -138,6 +144,7 @@ export function ColorPicker({
   value: string;
   onChange: (color: string) => void;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.colors}>
       {JOB_COLORS.map((c) => (
@@ -165,6 +172,7 @@ export function Button({
   variant?: 'primary' | 'secondary' | 'danger';
   disabled?: boolean;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -207,6 +215,7 @@ export function ListRow({
   /** 传入时显示勾选框（选择模式） */
   selected?: boolean;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -233,6 +242,7 @@ export function ListRow({
 
 /** 选择模式里的圆形勾选框 */
 export function CheckCircle({ checked }: { checked: boolean }) {
+  const styles = useStyles();
   return (
     <View style={[styles.check, checked && styles.checkOn]}>
       {checked && <Text style={styles.checkMark}>✓</Text>}
@@ -241,10 +251,11 @@ export function CheckCircle({ checked }: { checked: boolean }) {
 }
 
 export function EmptyText({ children }: { children: string }) {
+  const styles = useStyles();
   return <Text style={styles.empty}>{children}</Text>;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   screen: { flex: 1, backgroundColor: colors.surface },
   screenContent: { padding: 16, gap: 16, paddingBottom: 48 },
   section: {
@@ -340,4 +351,4 @@ const styles = StyleSheet.create({
   },
   checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   checkMark: { color: colors.onPrimary, fontSize: 13, fontWeight: '700', lineHeight: 15 },
-});
+}));

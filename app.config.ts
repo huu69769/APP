@@ -12,7 +12,7 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'worklogcalendar',
-  userInterfaceStyle: 'light',
+  userInterfaceStyle: 'automatic',
   android: {
     package: 'io.github.huu69769.worklogcalendar',
     versionCode: buildNumber,

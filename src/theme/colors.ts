@@ -1,8 +1,9 @@
 /**
- * 全 app 的颜色都在这里（以后做「颜色套装」时，每一套就是这里的一组配色）。
- * 界面代码不要直接写色号，统一从这里取。兼职颜色（JOB_COLORS）是数据的一部分，不随套装改变。
+ * 全 app 的颜色都在这里。每一套配色（浅色、深色，以后的「颜色套装」）是一组同样键名的颜色。
+ * 界面代码不要直接写色号：样式用 makeStyles((colors) => ...)，组件里用 useColors()（见 theme/index.ts）。
+ * 兼职颜色（JOB_COLORS）是数据的一部分，不随配色改变。
  */
-export const colors = {
+export const lightColors = {
   background: '#FFFFFF',
   surface: '#F5F7FA',
   border: '#E3E7ED',
@@ -35,7 +36,38 @@ export const colors = {
   toastText: '#FFFFFF',
   toastAction: '#7CC0FF',
   shadow: '#000000',
-} as const;
+};
+
+export type Palette = { [K in keyof typeof lightColors]: string };
+
+/** 夜间模式 */
+export const darkColors: Palette = {
+  background: '#15171B',
+  surface: '#1E2126',
+  border: '#2E333A',
+  text: '#E6E8EB',
+  textMuted: '#9AA1AB',
+  textFaint: '#50565F',
+  primary: '#3B9BFF',
+  onPrimary: '#FFFFFF',
+  sunday: '#FF6B6F',
+  saturday: '#4DA3FF',
+  danger: '#FF6B6F',
+  holidayCN: '#FF6B6F',
+  holidayJP: '#A78BFA',
+  holidayWork: '#9CA3AF',
+  lunarSpecial: '#F0A050',
+  onColor: '#FFFFFF',
+  selectedBg: '#1C3656',
+  infoBg: '#1A2A3F',
+  warningBg: '#3A2E14',
+  warningText: '#F2C46B',
+  overlay: 'rgba(0,0,0,0.6)',
+  toastBg: '#2F343B',
+  toastText: '#FFFFFF',
+  toastAction: '#7CC0FF',
+  shadow: '#000000',
+};
 
 /** 兼职可选的颜色 */
 export const JOB_COLORS = [

@@ -11,12 +11,14 @@ import { addMonths, currentMonth, type YearMonth } from '@/lib/date';
 import { formatMoneyMulti } from '@/lib/money';
 import type { DateRange } from '@/lib/period';
 import { formatHours } from '@/lib/time';
-import { colors } from '@/theme/colors';
+import { makeStyles, useColors } from '@/theme';
 
 /**
  * 统计详情：切换统计周期和工钱显示方式、按兼职统计、空闲时间、年度累计收入。
  */
 export default function StatsScreen() {
+  const colors = useColors();
+  const styles = useStyles();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ month?: string }>();
   const [month, setMonth] = useState<YearMonth>(
@@ -202,6 +204,7 @@ export default function StatsScreen() {
 }
 
 function NavButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -214,6 +217,7 @@ function NavButton({ label, a11y, onPress }: { label: string; a11y: string; onPr
 }
 
 function Big({ label, value }: { label: string; value: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.big}>
       <Text style={styles.label}>{label}</Text>
@@ -224,7 +228,7 @@ function Big({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   navButton: { paddingHorizontal: 12, paddingVertical: 4 },
   navText: { fontSize: 24, color: colors.text },
@@ -247,4 +251,4 @@ const styles = StyleSheet.create({
   monthRowActive: { backgroundColor: colors.surface },
   monthLabel: { fontSize: 15, color: colors.text },
   monthValue: { fontSize: 15, color: colors.text },
-});
+}));

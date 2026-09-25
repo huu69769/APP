@@ -66,6 +66,17 @@ export default function SettingsScreen() {
             onChange={(v) => updateSettings({ language: v })}
           />
         </Field>
+        <Field label={t('settings.theme')}>
+          <Segmented
+            options={[
+              { value: 'system', label: t('settings.themeSystem') },
+              { value: 'light', label: t('settings.themeLight') },
+              { value: 'dark', label: t('settings.themeDark') },
+            ]}
+            value={settings.theme}
+            onChange={(v) => updateSettings({ theme: v })}
+          />
+        </Field>
         <Field label={t('settings.defaultCurrency')} hint={t('settings.defaultCurrencyHint')}>
           <Segmented
             options={CURRENCIES.map((c) => ({ value: c, label: `${t(`currency.${c}`)} ${c}` }))}

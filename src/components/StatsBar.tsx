@@ -8,7 +8,7 @@ import { formatMoneyMulti } from '@/lib/money';
 import type { PeriodMode } from '@/lib/period';
 import type { PeriodStats } from '@/lib/stats';
 import { formatHours } from '@/lib/time';
-import { colors } from '@/theme/colors';
+import { makeStyles } from '@/theme';
 
 /**
  * 首页的统计栏（一行）：打工时长 · 工钱 · 空闲天数。点击进入统计详情（那里有空闲时间等完整数据）。
@@ -28,6 +28,7 @@ export function StatsBar({
   stats: PeriodStats | undefined;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const monthNumber = Number(month.slice(5, 7));
   const period = t(mode === 'payPeriod' ? 'stats.barPayPeriod' : 'stats.barCalendarMonth', {
@@ -76,6 +77,7 @@ export function WeekStatsBar({
   currency: Currency;
   onPress: () => void;
 }) {
+  const styles = useStyles();
   const { t } = useTranslation();
   const summary =
     t('stats.weekCompact', {
@@ -97,7 +99,7 @@ export function WeekStatsBar({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   bar: {
     flex: 1,
     flexDirection: 'row',
@@ -112,4 +114,4 @@ const styles = StyleSheet.create({
   period: { fontSize: 12, color: colors.textMuted },
   summary: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.text },
   chevron: { fontSize: 16, color: colors.textMuted },
-});
+}));
