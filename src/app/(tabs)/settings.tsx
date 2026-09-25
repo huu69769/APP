@@ -1,5 +1,4 @@
 import Constants from 'expo-constants';
-import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Linking, Platform } from 'react-native';
@@ -56,8 +55,6 @@ export default function SettingsScreen() {
 
   return (
     <FormScreen>
-      <Stack.Screen options={{ title: t('settings.title') }} />
-
       <Section title={t('settings.general')}>
         <Field label={t('settings.language')} hint={t('settings.languageHint')}>
           <Segmented

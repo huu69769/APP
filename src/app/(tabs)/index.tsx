@@ -11,7 +11,8 @@ import { DayPanel } from '@/components/DayPanel';
 import { MonthCalendar, type DayBar } from '@/components/MonthCalendar';
 import { Segmented } from '@/components/form';
 import { anniversaryStatusText } from '@/components/anniversaryText';
-import { StatsBar } from '@/components/StatsBar';
+import { StatsBar, WeekStatsBar } from '@/components/StatsBar';
+import { WeekView, type WeekBlock, type WeekChip } from '@/components/WeekView';
 import { TemplatePicker } from '@/components/TemplatePicker';
 import { useToast } from '@/components/Toast';
 import { useData } from '@/data/DataProvider';
@@ -34,6 +35,7 @@ import { anniversaryStatus, occurrencesInRange } from '@/lib/anniversary';
 import { shouldRemindBackup } from '@/lib/backup';
 import { HOME_ROW_HEIGHT, monthGridRange } from '@/lib/calendar';
 import {
+  addDays,
   addMonths,
   currentMonth,
   parseLocalDate,
@@ -42,6 +44,7 @@ import {
   type YearMonth,
 } from '@/lib/date';
 import { lunarInfo } from '@/lib/lunar';
+import { startOfWeek, weekDates, weekTotals } from '@/lib/week';
 import { colors } from '@/theme/colors';
 
 /** 切换到某个月时默认选中的日期：本月选今天，其他月选 1 号 */
@@ -69,6 +72,7 @@ export default function HomeScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const view = settings.calendarView;
+  const isWeek = settings.calendarRange === 'week';
 
   // 批量排班
   const [batchMode, setBatchMode] = useState(false);
@@ -78,6 +82,13 @@ export default function HomeScreen() {
 
   // 下方列表的选择模式（一次删除多条）
   const [selection, setSelection] = useState<Set<string> | undefined>(undefined);
+
+  /** 周视图：跳到 date 所在的那一周（选中 date） */
+  const goToWeek = (date: LocalDate) => {
+    setFocused(date);
+    setMonth(date.slice(0, 7));
+    setSelection(undefined);
+  };
 
   const goToMonth = (m: YearMonth) => {
     setMonth(m);
@@ -237,7 +248,7 @@ export default function HomeScreen() {
     }
   };
 
-  const openItem = (item: DayItem) => {
+  const openItem = (item: Pick<DayItem, 'key' | 'kind' | 'id'>) => {
     if (selection) {
       const next = new Set(selection);
       if (next.has(item.key)) next.delete(item.key);
@@ -252,6 +263,71 @@ export default function HomeScreen() {
       router.push({ pathname: '/anniversaries/[id]', params: { id: item.id } });
     else router.push({ pathname: '/task/[id]', params: { id: item.id } });
   };
+
+  /** 周视图里点了色块（key = "shift:<id>" 等） */
+  const openByKey = (key: string) => {
+    const i = key.indexOf(':');
+    openItem({ key, kind: key.slice(0, i) as DayItem['kind'], id: key.slice(i + 1) });
+  };
+
+  // 周视图：选中那天所在的一周
+  const showWeek = isWeek && !batchMode;
+  const week = weekDates(startOfWeek(focused, settings.weekStart));
+  const dayLabel = (date: LocalDate) => {
+    const x = parseLocalDate(date);
+    return t('calendar.dayLabel', { month: x.month() + 1, day: x.date() });
+  };
+  const weekBlocks: WeekBlock[] = [];
+  const weekChips = new Map<LocalDate, WeekChip[]>();
+  if (data && showWeek) {
+    const chip = (date: LocalDate, c: WeekChip) =>
+      weekChips.set(date, [...(weekChips.get(date) ?? []), c]);
+    for (const s of sortShifts(data.shifts)) {
+      const job = data.jobsById.get(s.jobId);
+      const base = {
+        key: `shift:${s.id}`,
+        color: job?.color ?? colors.textMuted,
+        title: job?.name ?? '',
+      };
+      if (isTimed(s)) {
+        weekBlocks.push({
+          ...base,
+          kind: 'shift',
+          date: s.date,
+          startTime: s.startTime,
+          endTime: s.endTime,
+        });
+      } else chip(s.date, { ...base, pending: true });
+    }
+    for (const e of data.events) {
+      const base = { key: `event:${e.id}`, color: e.color, title: e.title };
+      if (e.allDay || !e.startTime) chip(e.date, base);
+      else
+        weekBlocks.push({
+          ...base,
+          kind: 'event',
+          date: e.date,
+          startTime: e.startTime,
+          endTime: e.endTime,
+        });
+    }
+    for (const task of data.tasks) {
+      chip(task.dueDate, {
+        key: `task:${task.id}`,
+        color: data.jobsById.get(task.jobId)?.color ?? colors.textMuted,
+        title: `${isTaskDone(task, today) ? '✓' : '⏰'}${task.title}`,
+        outline: true,
+      });
+    }
+    for (const o of data.anniversaryDays) {
+      chip(o.date, {
+        key: `anniversary:${o.id}`,
+        color: o.color,
+        title: `★${o.title}`,
+        outline: true,
+      });
+    }
+  }
 
   const startBatch = (date?: LocalDate) => {
     setBatchMode(true);
@@ -421,31 +497,53 @@ export default function HomeScreen() {
   const isCurrentMonth = month === currentMonth();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable
-          onPress={() => goToMonth(addMonths(month, -1))}
+          onPress={() =>
+            showWeek ? goToWeek(addDays(focused, -7)) : goToMonth(addMonths(month, -1))
+          }
           style={styles.navButton}
           accessibilityRole="button"
-          accessibilityLabel={t('calendar.prevMonth')}>
+          accessibilityLabel={t(showWeek ? 'calendar.prevWeek' : 'calendar.prevMonth')}>
           <Text style={styles.navText}>‹</Text>
         </Pressable>
         <Pressable
-          onPress={() => goToMonth(currentMonth())}
+          onPress={() => (showWeek ? goToWeek(today) : goToMonth(currentMonth()))}
           accessibilityRole="button"
           accessibilityHint={t('calendar.today')}>
-          <Text style={styles.title}>{t('calendar.monthTitle', { year, month: monthNumber })}</Text>
+          <Text style={styles.title}>
+            {showWeek
+              ? t('calendar.weekTitle', { from: dayLabel(week[0]), to: dayLabel(week[6]) })
+              : t('calendar.monthTitle', { year, month: monthNumber })}
+          </Text>
         </Pressable>
         <Pressable
-          onPress={() => goToMonth(addMonths(month, 1))}
+          onPress={() =>
+            showWeek ? goToWeek(addDays(focused, 7)) : goToMonth(addMonths(month, 1))
+          }
           style={styles.navButton}
           accessibilityRole="button"
-          accessibilityLabel={t('calendar.nextMonth')}>
+          accessibilityLabel={t(showWeek ? 'calendar.nextWeek' : 'calendar.nextMonth')}>
           <Text style={styles.navText}>›</Text>
         </Pressable>
         <View style={styles.spacer} />
-        {!isCurrentMonth && (
-          <HeaderButton label={t('calendar.today')} onPress={() => goToMonth(currentMonth())} />
+        {(showWeek ? !week.includes(today) : !isCurrentMonth) && (
+          <HeaderButton
+            label={t('calendar.today')}
+            onPress={() => (showWeek ? goToWeek(today) : goToMonth(currentMonth()))}
+          />
+        )}
+        {!batchMode && (
+          <Segmented
+            size="small"
+            options={[
+              { value: 'month', label: t('home.rangeMonth') },
+              { value: 'week', label: t('home.rangeWeek') },
+            ]}
+            value={settings.calendarRange}
+            onChange={(v) => updateSettings({ calendarRange: v })}
+          />
         )}
         {batchMode ? (
           <HeaderButton label={t('common.cancel')} onPress={exitBatch} />
@@ -466,23 +564,33 @@ export default function HomeScreen() {
         ) : (
           <>
             <View style={styles.toolbar}>
-              <StatsBar
-                month={month}
-                mode={settings.statsPeriod}
-                wageDisplay={settings.wageDisplay}
-                currency={settings.defaultCurrency}
-                stats={statsData?.stats}
-                onPress={() => router.push({ pathname: '/stats', params: { month } })}
-              />
-              <Segmented
-                size="small"
-                options={[
-                  { value: 'work', label: t('home.viewWork') },
-                  { value: 'schedule', label: t('home.viewSchedule') },
-                ]}
-                value={view}
-                onChange={(v) => updateSettings({ calendarView: v })}
-              />
+              {showWeek ? (
+                <WeekStatsBar
+                  totals={weekTotals(data?.shifts ?? [], week)}
+                  currency={settings.defaultCurrency}
+                  onPress={() => router.push({ pathname: '/stats', params: { month } })}
+                />
+              ) : (
+                <StatsBar
+                  month={month}
+                  mode={settings.statsPeriod}
+                  wageDisplay={settings.wageDisplay}
+                  currency={settings.defaultCurrency}
+                  stats={statsData?.stats}
+                  onPress={() => router.push({ pathname: '/stats', params: { month } })}
+                />
+              )}
+              {!showWeek && (
+                <Segmented
+                  size="small"
+                  options={[
+                    { value: 'work', label: t('home.viewWork') },
+                    { value: 'schedule', label: t('home.viewSchedule') },
+                  ]}
+                  value={view}
+                  onChange={(v) => updateSettings({ calendarView: v })}
+                />
+              )}
             </View>
             {data &&
               shouldRemindBackup({
@@ -550,20 +658,34 @@ export default function HomeScreen() {
           </>
         )}
 
-        <MonthCalendar
-          month={month}
-          weekStart={settings.weekStart}
-          today={today}
-          bars={data?.bars}
-          dots={data?.dots}
-          labels={holidayData?.labels}
-          selected={batchMode ? selected : undefined}
-          focusedDate={batchMode ? null : focused}
-          rowHeight={HOME_ROW_HEIGHT}
-          onPressDay={onPressDay}
-          onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}
-          onSwipe={(delta) => goToMonth(addMonths(month, delta))}
-        />
+        {showWeek ? (
+          <WeekView
+            dates={week}
+            today={today}
+            focused={focused}
+            labels={holidayData?.labels}
+            blocks={weekBlocks}
+            chips={weekChips}
+            onPressDay={(date) => (date === focused ? openDay(date) : setFocused(date))}
+            onPressItem={openByKey}
+            onSwipe={(delta) => goToWeek(addDays(focused, delta * 7))}
+          />
+        ) : (
+          <MonthCalendar
+            month={month}
+            weekStart={settings.weekStart}
+            today={today}
+            bars={data?.bars}
+            dots={data?.dots}
+            labels={holidayData?.labels}
+            selected={batchMode ? selected : undefined}
+            focusedDate={batchMode ? null : focused}
+            rowHeight={HOME_ROW_HEIGHT}
+            onPressDay={onPressDay}
+            onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}
+            onSwipe={(delta) => goToMonth(addMonths(month, delta))}
+          />
+        )}
 
         {!batchMode && (
           <DayPanel
@@ -656,14 +778,11 @@ export default function HomeScreen() {
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         actions={[
-          { label: t('home.jobs'), onPress: () => router.push('/jobs') },
           { label: t('home.batch'), onPress: () => startBatch() },
-          { label: t('home.anniversaries'), onPress: () => router.push('/anniversaries') },
           {
             label: t('home.stats'),
             onPress: () => router.push({ pathname: '/stats', params: { month } }),
           },
-          { label: t('home.settings'), onPress: () => router.push('/settings') },
         ]}
       />
     </SafeAreaView>

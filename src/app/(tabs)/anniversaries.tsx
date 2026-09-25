@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { anniversaryStatusText } from '@/components/anniversaryText';
@@ -55,7 +55,6 @@ export default function AnniversariesScreen() {
 
   return (
     <FormScreen>
-      <Stack.Screen options={{ title: t('anniv.title') }} />
       <Section>
         {data && data.upcoming.length + data.passed.length === 0 && (
           <EmptyText>{t('anniv.empty')}</EmptyText>

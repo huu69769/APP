@@ -24,7 +24,7 @@ export default function RootLayout() {
                 headerTintColor: colors.text,
                 contentStyle: { backgroundColor: colors.background },
               }}>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
           </ToastProvider>
         </DataProvider>

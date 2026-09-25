@@ -8,6 +8,7 @@ export type StatsPeriod = 'calendarMonth' | 'payPeriod';
 export type WageDisplay = 'total' | 'split';
 export type HolidayMode = 'cn' | 'jp' | 'both' | 'none';
 export type CalendarView = 'work' | 'schedule';
+export type CalendarRange = 'month' | 'week';
 
 export interface Settings {
   /** 界面语言（和节假日国家是两个独立的设置） */
@@ -24,6 +25,8 @@ export interface Settings {
   backupReminderDismissedAt: string | null;
   /** 首页月历的显示方式：work = 班次显示成色块；schedule = 日程显示成色块 */
   calendarView: CalendarView;
+  /** 首页显示月历还是周视图 */
+  calendarRange: CalendarRange;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -37,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lastBackupAt: null,
   backupReminderDismissedAt: null,
   calendarView: 'work',
+  calendarRange: 'month',
 };
 
 /** 设置在存储里是键值对，值用 JSON 编码 */

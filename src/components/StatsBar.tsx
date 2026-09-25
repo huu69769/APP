@@ -66,6 +66,37 @@ export function StatsBar({
   );
 }
 
+/** 周视图用的统计栏：这一周的打工时长和工钱 */
+export function WeekStatsBar({
+  totals,
+  currency,
+  onPress,
+}: {
+  totals: { minutes: number; wage: Partial<Record<Currency, number>>; pending: number };
+  currency: Currency;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  const summary =
+    t('stats.weekCompact', {
+      hours: t('stats.hoursValue', { hours: formatHours(totals.minutes) }),
+      wage: formatMoneyMulti(totals.wage, currency),
+    }) + (totals.pending > 0 ? t('stats.compactPending', { count: totals.pending }) : '');
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('stats.open')}
+      style={({ pressed }) => [styles.bar, pressed && styles.pressed]}>
+      <Text style={styles.period}>{t('stats.barWeek')}</Text>
+      <Text style={styles.summary} numberOfLines={2}>
+        {summary}
+      </Text>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   bar: {
     flex: 1,

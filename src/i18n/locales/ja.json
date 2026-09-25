@@ -41,17 +41,18 @@
       "土"
     ],
     "dayLabel": "{{month}}月{{day}}日",
-    "more": "+{{count}}"
+    "more": "+{{count}}",
+    "weekTitle": "{{from}} – {{to}}",
+    "prevWeek": "前の週",
+    "nextWeek": "次の週"
   },
   "home": {
-    "jobs": "仕事",
     "batch": "まとめて登録・削除",
     "stats": "集計",
     "menu": "メニュー",
     "onboardingTitle": "まずは仕事を1つ追加しましょう",
     "onboardingBody": "時給のバイト（コンビニ、飲食店…）でも、案件ごとのクライアント（翻訳、デザイン…）でも登録できます。",
     "onboardingButton": "仕事を追加",
-    "settings": "設定",
     "viewWork": "シフト",
     "viewSchedule": "予定",
     "details": "詳細 ›",
@@ -66,7 +67,8 @@
     "backupNow": "バックアップ",
     "dismiss": "閉じる",
     "slotAnniv": "記念",
-    "anniversaries": "記念日"
+    "rangeMonth": "月",
+    "rangeWeek": "週"
   },
   "batch": {
     "hint": "日付をタップ：まとめてシフト登録・まとめて削除ができます",
@@ -243,7 +245,9 @@
     "tasksSummary": "案件 {{count}} 件（確定 {{done}}・見込み {{open}}）",
     "compact": "勤務 {{hours}} · {{wage}} · 空き {{days}}日",
     "compactSplit": "{{done}}（見込み +{{expected}}）",
-    "compactPending": " · 未定 {{count}}"
+    "compactPending": " · 未定 {{count}}",
+    "weekCompact": "勤務 {{hours}} · {{wage}}",
+    "barWeek": "この週"
   },
   "task": {
     "newTitle": "案件を追加",
@@ -408,5 +412,11 @@
     "passedSection": "過ぎた記念日",
     "everyYear": "毎年 {{date}}",
     "everyYearLunar": "毎年 旧暦 {{date}}"
+  },
+  "tabs": {
+    "calendar": "カレンダー",
+    "jobs": "仕事",
+    "anniversaries": "記念日",
+    "settings": "設定"
   }
 }

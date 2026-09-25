@@ -41,17 +41,18 @@
       "六"
     ],
     "dayLabel": "{{month}}月{{day}}日",
-    "more": "+{{count}}"
+    "more": "+{{count}}",
+    "weekTitle": "{{from}} – {{to}}",
+    "prevWeek": "上一周",
+    "nextWeek": "下一周"
   },
   "home": {
-    "jobs": "工作",
     "batch": "批量排班 / 删除",
     "stats": "统计",
     "menu": "菜单",
     "onboardingTitle": "先添加你的第一份工作",
     "onboardingBody": "时薪兼职（便利店、餐厅…）或者按项目结算的客户（翻译、设计…）都可以。",
     "onboardingButton": "添加工作",
-    "settings": "设置",
     "viewWork": "打工",
     "viewSchedule": "日程",
     "details": "详情 ›",
@@ -66,7 +67,8 @@
     "backupNow": "去备份",
     "dismiss": "知道了",
     "slotAnniv": "纪念",
-    "anniversaries": "纪念日"
+    "rangeMonth": "月",
+    "rangeWeek": "周"
   },
   "batch": {
     "hint": "点选日期：可以批量排班，也可以批量删除",
@@ -243,7 +245,9 @@
     "tasksSummary": "{{count}} 个项目（已完成 {{done}} · 预计 {{open}}）",
     "compact": "打工 {{hours}} · {{wage}} · 空闲 {{days}}天",
     "compactSplit": "{{done}}（预计 +{{expected}}）",
-    "compactPending": " · 待定 {{count}}"
+    "compactPending": " · 待定 {{count}}",
+    "weekCompact": "打工 {{hours}} · {{wage}}",
+    "barWeek": "这周"
   },
   "task": {
     "newTitle": "添加项目",
@@ -408,5 +412,11 @@
     "passedSection": "已经过去的",
     "everyYear": "每年 {{date}}",
     "everyYearLunar": "每年农历 {{date}}"
+  },
+  "tabs": {
+    "calendar": "日历",
+    "jobs": "工作",
+    "anniversaries": "纪念日",
+    "settings": "设置"
   }
 }

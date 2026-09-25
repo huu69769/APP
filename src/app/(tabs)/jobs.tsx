@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -82,7 +82,6 @@ export default function JobsScreen() {
 
   return (
     <FormScreen>
-      <Stack.Screen options={{ title: t('jobs.title') }} />
       <Section title={data && data.ended.length > 0 ? t('jobs.activeSection') : undefined}>
         {data && data.active.length === 0 && <EmptyText>{t('jobs.empty')}</EmptyText>}
         {data?.active.map((job) => {
