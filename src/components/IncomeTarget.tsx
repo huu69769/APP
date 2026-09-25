@@ -149,7 +149,7 @@ function barPath(x: number, y: number, w: number, h: number) {
 }
 
 /**
- * 全年柱状图：每个月一根柱子（深色 = 已赚，浅色 = 已排班还没上），短横线 = 那个月的目标，
+ * 全年柱状图：每个月一根柱子（深色 = 已赚，浅色 = 已排班还没上），后面的浅色底柱 = 那个月的目标，
  * 达标的月份上面有 ✓。点一根柱子切换到那个月。
  */
 export function YearTargetChart({
@@ -206,6 +206,14 @@ export function YearTargetChart({
                       fill={colors.surface}
                     />
                   )}
+                  {b.target !== null && (
+                    <Path
+                      d={barPath(x - 2, y(b.target), barW + 4, (b.target / max) * plotH)}
+                      fill={colors.chartTargetFill}
+                      stroke={colors.chartTargetStroke}
+                      strokeWidth={1.5}
+                    />
+                  )}
                   {b.expected > 0 && (
                     <Path
                       d={barPath(x, y(b.expected), barW, (b.expected / max) * plotH)}
@@ -218,21 +226,10 @@ export function YearTargetChart({
                       fill={colors.primary}
                     />
                   )}
-                  {b.target !== null && (
-                    <Line
-                      x1={x - 3}
-                      x2={x + barW + 3}
-                      y1={y(b.target)}
-                      y2={y(b.target)}
-                      stroke={colors.text}
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                    />
-                  )}
                   {b.reached && (
                     <SvgText
                       x={cx}
-                      y={Math.min(y(b.earned), y(b.target ?? 0)) - 4}
+                      y={Math.min(y(b.earned), y(b.target ?? 0)) - 5}
                       fontSize={10}
                       fill={colors.text}
                       textAnchor="middle">
@@ -279,7 +276,10 @@ export function YearTargetChart({
           swatch={<View style={[styles.swatch, styles.swExpected]} />}
           label={t('target.expectedLabel')}
         />
-        <Legend swatch={<View style={styles.swLine} />} label={t('target.target')} />
+        <Legend
+          swatch={<View style={[styles.swatch, styles.swTarget]} />}
+          label={t('target.target')}
+        />
         <Legend swatch={<Text style={styles.check}>✓</Text>} label={t('target.reachedShort')} />
       </View>
     </View>
@@ -434,7 +434,11 @@ const useStyles = makeStyles((colors) => ({
   swatch: { width: 10, height: 10, borderRadius: 2 },
   swEarned: { backgroundColor: colors.primary },
   swExpected: { backgroundColor: colors.selectedBg },
-  swLine: { width: 12, height: 2, borderRadius: 1, backgroundColor: colors.text },
+  swTarget: {
+    backgroundColor: colors.chartTargetFill,
+    borderWidth: 1.5,
+    borderColor: colors.chartTargetStroke,
+  },
   check: { fontSize: 11, color: colors.text },
   axisRow: { flexDirection: 'row' },
   axisText: { fontSize: 10, color: colors.textMuted },

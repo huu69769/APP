@@ -36,6 +36,9 @@ export const lightColors = {
   toastText: '#FFFFFF',
   toastAction: '#7CC0FF',
   shadow: '#000000',
+  /** 收入图表里「目标」的浅色底柱 */
+  chartTargetFill: '#EEF4FC',
+  chartTargetStroke: '#B8D4F5',
 };
 
 export type Palette = { [K in keyof typeof lightColors]: string };
@@ -73,6 +76,8 @@ export const darkColors: Palette = {
   toastText: '#F0F4FA',
   toastAction: '#8FC6FF',
   shadow: '#000000',
+  chartTargetFill: '#1D2B40',
+  chartTargetStroke: '#3E5A80',
 };
 
 /** 兼职可选的颜色 */
