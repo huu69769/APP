@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
-import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { CURRENCIES, type Currency } from '@/data/types';
 import { formatMoney, moneyToInput, parseMoney } from '@/lib/money';
@@ -140,7 +140,7 @@ function Info({
 
 const CHART_HEIGHT = 150;
 const TOP = 16;
-const BOTTOM = 20;
+const BOTTOM = 2;
 
 /** 顶部圆角、底部直角的柱子 */
 function barPath(x: number, y: number, w: number, h: number) {
@@ -193,19 +193,8 @@ export function YearTargetChart({
             {bars.map((b, i) => {
               const cx = slot * i + slot / 2;
               const x = cx - barW / 2;
-              const selected = b.month === selectedMonth;
               return (
                 <GLike key={b.month}>
-                  {selected && (
-                    <Rect
-                      x={slot * i + 1}
-                      y={TOP - 12}
-                      width={slot - 2}
-                      height={plotH + 12 + BOTTOM}
-                      rx={6}
-                      fill={colors.surface}
-                    />
-                  )}
                   {b.target !== null && (
                     <Path
                       d={barPath(x, y(b.target), barW, (b.target / max) * plotH)}
@@ -226,15 +215,6 @@ export function YearTargetChart({
                       fill={colors.primary}
                     />
                   )}
-                  <SvgText
-                    x={cx}
-                    y={CHART_HEIGHT - 5}
-                    fontSize={10}
-                    fill={selected ? colors.text : colors.textMuted}
-                    fontWeight={selected ? 'bold' : 'normal'}
-                    textAnchor="middle">
-                    {String(i + 1)}
-                  </SvgText>
                 </GLike>
               );
             })}
@@ -256,6 +236,26 @@ export function YearTargetChart({
             />
           ))}
         </View>
+      </View>
+      {/* 月份：选中的月份（上面环形图显示的那个月）用蓝色圆底标出，和日历里的「今天」一样 */}
+      <View style={styles.monthLabels}>
+        {bars.map((b, i) => {
+          const selected = b.month === selectedMonth;
+          return (
+            <Pressable
+              key={b.month}
+              onPress={() => onSelectMonth(b.month)}
+              style={styles.monthLabelCell}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}>
+              <View style={[styles.monthLabelWrap, selected && styles.monthLabelSelected]}>
+                <Text style={[styles.monthLabelText, selected && styles.monthLabelTextSelected]}>
+                  {i + 1}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
       <View style={styles.legend}>
         <Legend
@@ -432,6 +432,18 @@ const useStyles = makeStyles((colors) => ({
   axisText: { fontSize: 10, color: colors.textMuted },
   hitRow: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, flexDirection: 'row' },
   hit: { flex: 1 },
+  monthLabels: { flexDirection: 'row', marginTop: 2 },
+  monthLabelCell: { flex: 1, alignItems: 'center' },
+  monthLabelWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthLabelSelected: { backgroundColor: colors.primary },
+  monthLabelText: { fontSize: 11, color: colors.textMuted },
+  monthLabelTextSelected: { color: colors.onPrimary, fontWeight: '600' },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 6 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendText: { fontSize: 11, color: colors.textMuted },
