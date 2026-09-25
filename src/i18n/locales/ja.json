@@ -449,5 +449,24 @@
     "periodInvalid": "終了日は開始日より後にしてください",
     "apply": "{{count}}件のシフトを追加",
     "noJobs": "時給の仕事がまだありません。先に「仕事」で追加してください。"
+  },
+  "target": {
+    "monthTitle": "{{month}}月の目標",
+    "periodTitle": "今期の目標",
+    "yearTitle": "{{year}}年の目標",
+    "set": "{{what}}を設定",
+    "monthSet": "月の収入目標",
+    "yearSet": "年の収入目標",
+    "earned": "稼いだ額 {{amount}}",
+    "expected": "見込み {{amount}}",
+    "reached": "目標達成（{{percent}}%）🎉",
+    "remaining": "達成率 {{percent}}%、あと {{amount}}",
+    "a11y": "収入目標の達成率 {{percent}}%",
+    "currency": "通貨",
+    "amount": "金額",
+    "amountInvalid": "0より大きい金額を入力してください",
+    "currencyHint": "この通貨の収入だけを集計します（通貨ごとに別計算）。毎月同じ目標を使います。",
+    "clear": "目標を設定しない",
+    "yearHint": "年の目標は1月〜12月で計算します。年収を一定額以内に抑えたいとき（年収の壁など）にも使えます。"
   }
 }

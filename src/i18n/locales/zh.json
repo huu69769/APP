@@ -449,5 +449,24 @@
     "periodInvalid": "结束日不能早于开始日",
     "apply": "添加 {{count}} 个班次",
     "noJobs": "还没有按时薪计算的工作。先在「工作」里添加一份。"
+  },
+  "target": {
+    "monthTitle": "{{month}}月目标",
+    "periodTitle": "本期目标",
+    "yearTitle": "{{year}}年目标",
+    "set": "设置{{what}}",
+    "monthSet": "每月收入目标",
+    "yearSet": "年收入目标",
+    "earned": "已赚 {{amount}}",
+    "expected": "预计 {{amount}}",
+    "reached": "已达成目标（{{percent}}%）🎉",
+    "remaining": "达成 {{percent}}%，还差 {{amount}}",
+    "a11y": "收入目标达成 {{percent}}%",
+    "currency": "币种",
+    "amount": "金额",
+    "amountInvalid": "请输入大于 0 的金额",
+    "currencyHint": "只统计这个币种的收入（不同币种不相加）。每个月都用同一个目标。",
+    "clear": "不设目标",
+    "yearHint": "年目标按 1 月到 12 月计算。想把年收入控制在某个金额以内（比如收入墙）时也可以用。"
   }
 }

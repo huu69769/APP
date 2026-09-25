@@ -37,7 +37,7 @@ export function useYearIncome(year: number) {
         r.jobs.listWithDeleted(),
         r.tasks.list(),
       ]);
-      return yearIncome({ shifts, tasks, jobs, mode, year });
+      return yearIncome({ shifts, tasks, jobs, mode, year, now: localNow() });
     },
     [year, mode]
   );

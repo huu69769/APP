@@ -11,6 +11,7 @@ import { DayPanel } from '@/components/DayPanel';
 import { MonthCalendar, type DayBar } from '@/components/MonthCalendar';
 import { Segmented } from '@/components/form';
 import { anniversaryStatusText } from '@/components/anniversaryText';
+import { TargetBar } from '@/components/IncomeTarget';
 import { StatsBar, WeekStatsBar } from '@/components/StatsBar';
 import { WeekView, type WeekBlock, type WeekChip } from '@/components/WeekView';
 import { TemplatePicker } from '@/components/TemplatePicker';
@@ -617,6 +618,13 @@ export default function HomeScreen() {
                   </View>
                 </View>
               )}
+            {!showWeek && settings.monthlyTarget && (
+              <TargetBar
+                target={settings.monthlyTarget}
+                wage={statsData?.stats.wage}
+                onPress={() => router.push({ pathname: '/stats', params: { month } })}
+              />
+            )}
             {data && data.pinned.length > 0 && (
               // 只占一行：显示最近的一个，其余的点进去在纪念日列表里看
               <Pressable

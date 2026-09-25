@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyText, Field, FormScreen, ListRow, Section, Segmented } from '@/components/form';
+import { TargetCard, TargetEditor } from '@/components/IncomeTarget';
 import { useData } from '@/data/DataProvider';
 import { isActiveJob, jobPayType } from '@/data/types';
 import { useMonthStats, useYearIncome } from '@/data/useStats';
@@ -30,6 +31,7 @@ export default function StatsScreen() {
   const year = Number(month.slice(0, 4));
   const { data: yearData } = useYearIncome(year);
   const stats = data?.stats;
+  const [editing, setEditing] = useState<'month' | 'year' | null>(null);
 
   const hours = (m: number) => t('stats.hoursValue', { hours: formatHours(m) });
   const range = (r: DateRange) => t('stats.range', { from: r.from, to: r.to });
@@ -52,6 +54,19 @@ export default function StatsScreen() {
           onPress={() => setMonth((x) => addMonths(x, 1))}
         />
       </View>
+
+      <TargetCard
+        title={
+          settings.monthlyTarget
+            ? settings.statsPeriod === 'payPeriod'
+              ? t('target.periodTitle')
+              : t('target.monthTitle', { month: m })
+            : t('target.monthSet')
+        }
+        target={settings.monthlyTarget}
+        wage={stats?.wage}
+        onEdit={() => setEditing('month')}
+      />
 
       <Section>
         <Field label={t('stats.periodMode')}>
@@ -176,6 +191,12 @@ export default function StatsScreen() {
 
       {yearData && (
         <Section title={t('stats.year', { year })}>
+          <TargetCard
+            title={settings.yearlyTarget ? t('target.yearTitle', { year }) : t('target.yearSet')}
+            target={settings.yearlyTarget}
+            wage={yearData}
+            onEdit={() => setEditing('year')}
+          />
           <ListRow
             title={t('stats.yearTotal')}
             right={formatMoneyMulti(yearData.total, currency)}
@@ -199,6 +220,17 @@ export default function StatsScreen() {
           ))}
         </Section>
       )}
+      <TargetEditor
+        visible={editing !== null}
+        title={t(editing === 'year' ? 'target.yearSet' : 'target.monthSet')}
+        value={editing === 'year' ? settings.yearlyTarget : settings.monthlyTarget}
+        defaultCurrency={settings.defaultCurrency}
+        hint={editing === 'year' ? t('target.yearHint') : undefined}
+        onSave={(v) =>
+          updateSettings(editing === 'year' ? { yearlyTarget: v } : { monthlyTarget: v })
+        }
+        onClose={() => setEditing(null)}
+      />
     </FormScreen>
   );
 }

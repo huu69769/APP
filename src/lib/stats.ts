@@ -286,8 +286,15 @@ export function yearIncome(params: {
   jobs: StatJob[];
   mode: PeriodMode;
   year: number;
-}): { months: { month: YearMonth; wage: MoneyByCurrency }[]; total: MoneyByCurrency } {
-  const { shifts, tasks = [], jobs, mode, year } = params;
+  /** 传入时另外算出「已完成」（班次已结束、项目 DDL 已过）的部分 */
+  now?: LocalNow;
+}): {
+  months: { month: YearMonth; wage: MoneyByCurrency }[];
+  total: MoneyByCurrency;
+  completed: MoneyByCurrency;
+} {
+  const { shifts, tasks = [], jobs, mode, year, now } = params;
+  const completed: MoneyByCurrency = {};
   const jobsById = new Map(jobs.map((j) => [j.id, j]));
   const months = Array.from({ length: 12 }, (_, i) => ({
     month: `${year}-${String(i + 1).padStart(2, '0')}`,
@@ -295,7 +302,13 @@ export function yearIncome(params: {
   }));
   // 一笔收入（日期 + 金额）属于哪个月：检查它落在哪个月的周期内
   // （工资周期会跨月，所以当月和下个月都要检查）
-  const place = (jobId: string, date: LocalDate, currency: Currency, amount: MinorUnits) => {
+  const place = (
+    jobId: string,
+    date: LocalDate,
+    currency: Currency,
+    amount: MinorUnits,
+    done: boolean
+  ) => {
     const job = jobsById.get(jobId);
     const [y, m] = date.split('-').map(Number);
     for (const offset of [0, 1]) {
@@ -304,13 +317,17 @@ export function yearIncome(params: {
       const month = `${year}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (inRange(date, jobRange(mode, month, job))) {
         addMoney(months[d.getMonth()].wage, currency, amount);
+        if (done) addMoney(completed, currency, amount);
         return;
       }
     }
   };
-  for (const s of shifts.filter(isTimed)) place(s.jobId, s.date, s.currencySnapshot, shiftWage(s));
-  for (const t of tasks) place(t.jobId, t.dueDate, t.currency, t.amount);
-  return { months, total: sumMoney(...months.map((m) => m.wage)) };
+  for (const s of shifts.filter(isTimed)) {
+    place(s.jobId, s.date, s.currencySnapshot, shiftWage(s), !!now && isCompleted(s, now));
+  }
+  for (const t of tasks)
+    place(t.jobId, t.dueDate, t.currency, t.amount, !!now && t.dueDate < now.date);
+  return { months, total: sumMoney(...months.map((m) => m.wage)), completed };
 }
 
 /** 统计需要读取的班次范围：前后各多一个月，覆盖工资周期和跨夜班 */

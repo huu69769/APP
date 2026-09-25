@@ -1,4 +1,5 @@
 import type { WeekStart } from '@/lib/calendar';
+import type { IncomeTarget } from '@/lib/target';
 
 import type { StorageDriver } from './storage/types';
 import type { Currency } from './types';
@@ -30,6 +31,9 @@ export interface Settings {
   /** 首页显示月历还是周视图 */
   calendarRange: CalendarRange;
   theme: ThemeMode;
+  /** 收入目标（每个月同一个目标 / 每年 1–12 月）；null = 不设 */
+  monthlyTarget: IncomeTarget | null;
+  yearlyTarget: IncomeTarget | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -45,6 +49,8 @@ export const DEFAULT_SETTINGS: Settings = {
   calendarView: 'work',
   calendarRange: 'month',
   theme: 'system',
+  monthlyTarget: null,
+  yearlyTarget: null,
 };
 
 /**

@@ -344,3 +344,26 @@ describe('project tasks in stats', () => {
     expect(r.total).toEqual({ CNY: 80500 });
   });
 });
+
+describe('yearIncome completed', () => {
+  it('counts finished shifts and passed deadlines as completed', () => {
+    const r = yearIncome({
+      shifts: [
+        shift('2026-01-10', '09:00', '10:00'), // 已结束
+        shift('2026-09-25', '09:00', '10:00'), // 今天 12:00 时已结束
+        shift('2026-09-25', '18:00', '20:00'), // 还没开始
+        shift('2026-12-01', '09:00', '10:00'), // 以后
+      ],
+      tasks: [
+        { jobId: 'a', dueDate: '2026-03-01', amount: 5000, currency: 'CNY' },
+        { jobId: 'a', dueDate: '2026-10-01', amount: 7000, currency: 'CNY' },
+      ],
+      jobs: [{ id: 'a', cutoffDay: null }],
+      mode: 'calendarMonth',
+      year: 2026,
+      now: { date: '2026-09-25', time: '12:00' },
+    });
+    expect(r.completed).toEqual({ CNY: 1000 + 1000 + 5000 });
+    expect(r.total).toEqual({ CNY: 1000 + 1000 + 2000 + 1000 + 5000 + 7000 });
+  });
+});
