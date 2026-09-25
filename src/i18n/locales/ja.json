@@ -47,7 +47,19 @@
     "onboardingTitle": "まずは仕事を1つ追加しましょう",
     "onboardingBody": "時給のバイト（コンビニ、飲食店…）でも、案件ごとのクライアント（翻訳、デザイン…）でも登録できます。",
     "onboardingButton": "仕事を追加",
-    "settings": "設定"
+    "settings": "設定",
+    "viewWork": "バイト",
+    "viewSchedule": "予定",
+    "details": "詳細 ›",
+    "empty": "この日の予定はありません",
+    "emptyHint": "右下の「＋」から追加できます",
+    "expand": "開く",
+    "collapse": "閉じる",
+    "add": "追加",
+    "addTo": "{{date}} に追加",
+    "slotAllDay": "終日",
+    "slotPending": "未定",
+    "slotDdl": "締切"
   },
   "batch": {
     "hint": "シフトを入れる日をタップして選択",
@@ -211,7 +223,10 @@
     "monthLabel": "{{month}}月",
     "pendingNote": "ほかに時間未定のシフトが {{count}} 件あります（勤務時間・給料には含まれません）",
     "pendingShort": "未定 {{count}} 件",
-    "tasksSummary": "案件 {{count}} 件（確定 {{done}}・見込み {{open}}）"
+    "tasksSummary": "案件 {{count}} 件（確定 {{done}}・見込み {{open}}）",
+    "compact": "勤務 {{hours}} · {{wage}} · 休み {{days}}日",
+    "compactSplit": "{{done}}（見込み +{{expected}}）",
+    "compactPending": " · 未定 {{count}}"
   },
   "task": {
     "newTitle": "案件を追加",

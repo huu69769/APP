@@ -7,6 +7,7 @@ export type Language = 'zh' | 'ja';
 export type StatsPeriod = 'calendarMonth' | 'payPeriod';
 export type WageDisplay = 'total' | 'split';
 export type HolidayMode = 'cn' | 'jp' | 'both' | 'none';
+export type CalendarView = 'work' | 'schedule';
 
 export interface Settings {
   /** 界面语言（和节假日国家是两个独立的设置） */
@@ -19,6 +20,10 @@ export interface Settings {
   showLunar: boolean;
   /** 上次备份时间（ISO），null = 从未备份 */
   lastBackupAt: string | null;
+  /** 首页月历的显示方式：work = 班次显示成色块；schedule = 日程显示成色块 */
+  calendarView: CalendarView;
+  /** 首页下方「选中那天的安排」是否展开 */
+  dayPanelOpen: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -30,6 +35,8 @@ export const DEFAULT_SETTINGS: Settings = {
   holidayMode: 'cn',
   showLunar: true,
   lastBackupAt: null,
+  calendarView: 'work',
+  dayPanelOpen: true,
 };
 
 /** 设置在存储里是键值对，值用 JSON 编码 */

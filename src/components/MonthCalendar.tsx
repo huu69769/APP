@@ -9,6 +9,8 @@ import { colors } from '@/theme/colors';
 
 const SWIPE_DISTANCE = 50;
 const MAX_BARS = 3;
+/** 下方列表展开时，每行固定高度，给列表留出位置 */
+const COMPACT_ROW_HEIGHT = 68;
 
 /** 格子里显示的一条班次色块 */
 export interface DayBar {
@@ -32,6 +34,10 @@ interface Props {
   labels?: Map<LocalDate, DayLabel>;
   /** 批量排班时选中的日期；传入时格子显示选中状态 */
   selected?: Set<LocalDate>;
+  /** 当前选中（下方列表显示）的那一天，画一个框 */
+  focusedDate?: LocalDate | null;
+  /** true：每行固定高度、最多 2 条色块（下方列表展开时） */
+  compact?: boolean;
   onPressDay: (date: LocalDate) => void;
   /** 长按某一天（用来开始批量排班） */
   onLongPressDay?: (date: LocalDate) => void;
@@ -50,6 +56,8 @@ export function MonthCalendar({
   dots,
   labels,
   selected,
+  focusedDate,
+  compact,
   onPressDay,
   onLongPressDay,
   onSwipe,
@@ -69,7 +77,7 @@ export function MonthCalendar({
 
   return (
     <GestureDetector gesture={swipe}>
-      <View style={styles.container}>
+      <View style={compact ? undefined : styles.container}>
         <View style={styles.weekHeader}>
           {orderedWeekdays(weekStart).map((wd) => (
             <Text key={wd} style={[styles.weekHeaderText, weekdayColor(wd)]}>
@@ -78,7 +86,7 @@ export function MonthCalendar({
           ))}
         </View>
         {weeks.map((week) => (
-          <View key={week[0].date} style={styles.week}>
+          <View key={week[0].date} style={[styles.week, compact && styles.weekCompact]}>
             {week.map((day) => (
               <DayCell
                 key={day.date}
@@ -87,6 +95,8 @@ export function MonthCalendar({
                 dots={dots?.get(day.date) ?? []}
                 label={labels?.get(day.date)}
                 selected={selected?.has(day.date)}
+                focused={focusedDate === day.date}
+                maxBars={compact ? 2 : MAX_BARS}
                 onPress={onPressDay}
                 onLongPress={onLongPressDay}
               />
@@ -104,9 +114,13 @@ function DayCell({
   dots,
   label,
   selected,
+  focused,
+  maxBars,
   onPress,
   onLongPress,
 }: {
+  focused?: boolean;
+  maxBars: number;
   day: CalendarDay;
   bars: DayBar[];
   dots: string[];
@@ -117,7 +131,7 @@ function DayCell({
 }) {
   const { t } = useTranslation();
   const [, month] = day.date.split('-').map(Number);
-  const shown = bars.slice(0, MAX_BARS);
+  const shown = bars.slice(0, maxBars);
   const hidden = bars.length - shown.length;
 
   return (
@@ -126,6 +140,7 @@ function DayCell({
         styles.cell,
         pressed && styles.cellPressed,
         selected && styles.cellSelected,
+        focused && styles.cellFocused,
       ]}
       onPress={() => onPress(day.date)}
       onLongPress={onLongPress ? () => onLongPress(day.date) : undefined}
@@ -224,6 +239,13 @@ const styles = StyleSheet.create({
   cell: { flex: 1, alignItems: 'center', paddingTop: 4, minHeight: 56, overflow: 'hidden' },
   cellPressed: { backgroundColor: colors.surface },
   cellSelected: { backgroundColor: '#DCEBFD' },
+  cellFocused: { borderWidth: 2, borderColor: colors.primary, borderRadius: 4 },
+  weekCompact: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: COMPACT_ROW_HEIGHT,
+    height: COMPACT_ROW_HEIGHT,
+  },
   dayNumberWrap: {
     width: 24,
     height: 24,

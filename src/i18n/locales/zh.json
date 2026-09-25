@@ -47,7 +47,19 @@
     "onboardingTitle": "先添加你的第一份工作",
     "onboardingBody": "时薪兼职（便利店、餐厅…）或者按项目结算的客户（翻译、设计…）都可以。",
     "onboardingButton": "添加工作",
-    "settings": "设置"
+    "settings": "设置",
+    "viewWork": "打工",
+    "viewSchedule": "日程",
+    "details": "详情 ›",
+    "empty": "这一天没有安排",
+    "emptyHint": "点右下角「＋」添加",
+    "expand": "展开",
+    "collapse": "收起",
+    "add": "添加",
+    "addTo": "添加到 {{date}}",
+    "slotAllDay": "全天",
+    "slotPending": "待定",
+    "slotDdl": "DDL"
   },
   "batch": {
     "hint": "点选要排班的日期",
@@ -211,7 +223,10 @@
     "monthLabel": "{{month}}月",
     "pendingNote": "另有 {{count}} 个班次时间待定，没有算进时长和工钱",
     "pendingShort": "待定 {{count}} 个",
-    "tasksSummary": "{{count}} 个项目（已完成 {{done}} · 预计 {{open}}）"
+    "tasksSummary": "{{count}} 个项目（已完成 {{done}} · 预计 {{open}}）",
+    "compact": "打工 {{hours}} · {{wage}} · 空闲 {{days}}天",
+    "compactSplit": "{{done}}（预计 +{{expected}}）",
+    "compactPending": " · 待定 {{count}}"
   },
   "task": {
     "newTitle": "添加项目",

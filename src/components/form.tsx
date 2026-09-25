@@ -83,11 +83,35 @@ export function Segmented<T extends string | number>({
   options,
   value,
   onChange,
+  size = 'normal',
 }: {
   options: { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  /** small：连在一起的小切换（首页的视图切换） */
+  size?: 'normal' | 'small';
 }) {
+  if (size === 'small') {
+    return (
+      <View style={styles.segmentedSmall}>
+        {options.map((o) => {
+          const active = o.value === value;
+          return (
+            <Pressable
+              key={String(o.value)}
+              onPress={() => onChange(o.value)}
+              style={[styles.segmentSmall, active && styles.segmentSmallActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}>
+              <Text style={[styles.segmentSmallText, active && styles.segmentTextActive]}>
+                {o.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
   return (
     <View style={styles.segmented}>
       {options.map((o) => {
@@ -245,6 +269,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   segmentActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  segmentedSmall: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    overflow: 'hidden',
+  },
+  segmentSmall: { paddingHorizontal: 10, paddingVertical: 6 },
+  segmentSmallActive: { backgroundColor: colors.primary },
+  segmentSmallText: { fontSize: 13, color: colors.primary },
   segmentText: { color: colors.text, fontSize: 14 },
   segmentTextActive: { color: colors.onPrimary },
   colors: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

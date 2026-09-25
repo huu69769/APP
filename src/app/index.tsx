@@ -4,46 +4,79 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionSheet } from '@/components/ActionSheet';
+import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
 import { showMessage } from '@/components/confirm';
+import { DayPanel } from '@/components/DayPanel';
 import { MonthCalendar, type DayBar } from '@/components/MonthCalendar';
+import { Segmented } from '@/components/form';
 import { StatsBar } from '@/components/StatsBar';
 import { TemplatePicker } from '@/components/TemplatePicker';
 import { useToast } from '@/components/Toast';
 import { useData } from '@/data/DataProvider';
-import { applyPendingToDates, applyTemplateToDates, sortShifts } from '@/data/shifts';
+import { buildDayItems, type DayItem } from '@/data/dayItems';
+import {
+  applyPendingToDates,
+  applyTemplateToDates,
+  buildPendingShift,
+  buildShiftFromTemplate,
+  sortShifts,
+} from '@/data/shifts';
 import { isTaskDone } from '@/data/tasks';
 import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { useDayLabels } from '@/holidays/useHolidays';
 import { monthGridRange } from '@/lib/calendar';
-import { addMonths, currentMonth, today as getToday, type LocalDate } from '@/lib/date';
+import {
+  addMonths,
+  currentMonth,
+  parseLocalDate,
+  today as getToday,
+  type LocalDate,
+  type YearMonth,
+} from '@/lib/date';
+import { lunarInfo } from '@/lib/lunar';
 import { colors } from '@/theme/colors';
 
+/** 切换到某个月时默认选中的日期：本月选今天，其他月选 1 号 */
+function defaultFocus(month: YearMonth, today: LocalDate): LocalDate {
+  return today.startsWith(month) ? today : `${month}-01`;
+}
+
 /**
- * 首页 = 统计栏 + 月历
- * - 点月份标题回到本月
- * - 长按某一天开始批量排班（菜单里也有入口）
+ * 首页：
+ * - 上面：月份、统计栏（一行）、打工 / 日程 视图切换、月历
+ * - 点日期 = 选中那一天，下面列出这天的安排（点一条进入编辑，「详情」进入当天页面）
+ * - 右下角「＋」：给选中的那天一键添加（模板）或添加日程 / 班次 / 项目
+ * - 点月份标题回到本月；长按日期开始批量排班
  */
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const { settings, repos } = useData();
+  const { settings, updateSettings, repos } = useData();
   const toast = useToast();
-  const [month, setMonth] = useState(currentMonth());
   const today = getToday();
+  const [month, setMonth] = useState(currentMonth());
+  const [focused, setFocused] = useState<LocalDate>(today);
   const [year, monthNumber] = month.split('-').map(Number);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const view = settings.calendarView;
+  const panelOpen = settings.dayPanelOpen;
 
   // 批量排班
   const [batchMode, setBatchMode] = useState(false);
   const [selected, setSelected] = useState<Set<LocalDate>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  const goToMonth = (m: YearMonth) => {
+    setMonth(m);
+    setFocused(defaultFocus(m, today));
+  };
+
   const { data } = useQuery(
     async (r) => {
       const { from, to } = monthGridRange(month, settings.weekStart);
-      const [shifts, jobs, templates, tasks, events, notes] = await Promise.all([
+      const [shifts, jobs, templates, allTasks, events, notes] = await Promise.all([
         r.shifts.listByDateRange(from, to),
         r.jobs.listWithDeleted(),
         r.shift_templates.list(),
@@ -51,48 +84,87 @@ export default function HomeScreen() {
         r.events.listByDateRange(from, to),
         r.day_notes.listByDateRange(from, to),
       ]);
+      const tasks = allTasks.filter((x) => x.dueDate >= from && x.dueDate <= to);
       const jobsById = new Map(jobs.map((j) => [j.id, j]));
       const bars = new Map<LocalDate, DayBar[]>();
-      const push = (date: LocalDate, bar: DayBar) =>
-        bars.set(date, [...(bars.get(date) ?? []), bar]);
-      for (const s of sortShifts(shifts)) {
-        const job = jobsById.get(s.jobId);
-        push(s.date, {
-          id: s.id,
-          color: job?.color ?? colors.textMuted,
-          label: job?.name ?? '',
-          pending: !isTimed(s),
-        });
+      const dots = new Map<LocalDate, string[]>();
+      const bar = (date: LocalDate, b: DayBar) => bars.set(date, [...(bars.get(date) ?? []), b]);
+      const dot = (date: LocalDate, c: string) => dots.set(date, [...(dots.get(date) ?? []), c]);
+
+      const sortedEvents = [...events].sort((a, b) =>
+        a.allDay === b.allDay
+          ? (a.startTime ?? '').localeCompare(b.startTime ?? '')
+          : a.allDay
+            ? -1
+            : 1
+      );
+      // 打工视图：班次是色块、日程是小圆点；日程视图：日程是色块、班次是小圆点
+      if (view === 'schedule') {
+        for (const e of sortedEvents) {
+          bar(e.date, {
+            id: e.id,
+            color: e.color,
+            // 标题在前：格子窄时至少能看到标题
+            label: e.allDay || !e.startTime ? e.title : `${e.title} ${e.startTime}`,
+          });
+        }
+        for (const s of sortShifts(shifts))
+          dot(s.date, jobsById.get(s.jobId)?.color ?? colors.textMuted);
+      } else {
+        for (const s of sortShifts(shifts)) {
+          const job = jobsById.get(s.jobId);
+          bar(s.date, {
+            id: s.id,
+            color: job?.color ?? colors.textMuted,
+            label: job?.name ?? '',
+            pending: !isTimed(s),
+          });
+        }
+        for (const e of sortedEvents) dot(e.date, e.color);
       }
-      // 项目显示在 DDL 那天：没到 ⏰，已过 ✓
+      // 项目在两种视图里都显示在 DDL 那天：没到 ⏰，已过 ✓
       for (const task of tasks) {
-        if (task.dueDate < from || task.dueDate > to) continue;
-        push(task.dueDate, {
+        bar(task.dueDate, {
           id: task.id,
           color: jobsById.get(task.jobId)?.color ?? colors.textMuted,
           label: `${isTaskDone(task, today) ? '✓' : '⏰'}${task.title}`,
           task: true,
         });
       }
-      // 日程：用日程的颜色；笔记：灰色
-      const dots = new Map<LocalDate, string[]>();
-      for (const e of [...events].sort((a, b) =>
-        (a.startTime ?? '').localeCompare(b.startTime ?? '')
-      )) {
-        dots.set(e.date, [...(dots.get(e.date) ?? []), e.color]);
-      }
-      for (const n of notes) dots.set(n.date, [...(dots.get(n.date) ?? []), colors.textMuted]);
+      for (const n of notes) dot(n.date, colors.textMuted);
+
       const hourlyJobs = jobs
         .filter((j) => isActiveJob(j) && jobPayType(j) === 'hourly')
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-      return { bars, dots, hourlyJobs, templates, hasJobs: jobs.some((j) => !j.deletedAt) };
+      return {
+        bars,
+        dots,
+        shifts,
+        events,
+        tasks,
+        jobsById,
+        hourlyJobs,
+        templates,
+        hasJobs: jobs.some((j) => !j.deletedAt),
+      };
     },
-    [month, settings.weekStart, today]
+    [month, settings.weekStart, today, view]
   );
 
   const { data: statsData } = useMonthStats(month);
   const grid = monthGridRange(month, settings.weekStart);
   const { data: holidayData } = useDayLabels(grid.from, grid.to);
+
+  const items = data
+    ? buildDayItems({
+        date: focused,
+        today,
+        shifts: data.shifts,
+        events: data.events,
+        tasks: data.tasks,
+        jobsById: data.jobsById,
+      })
+    : undefined;
 
   const toggle = (date: LocalDate) =>
     setSelected((prev) => {
@@ -102,9 +174,30 @@ export default function HomeScreen() {
       return next;
     });
 
+  const openDay = (date: LocalDate) => router.push({ pathname: '/day/[date]', params: { date } });
+
   const onPressDay = (date: LocalDate) => {
-    if (batchMode) toggle(date);
-    else router.push({ pathname: '/day/[date]', params: { date } });
+    if (batchMode) {
+      toggle(date);
+      return;
+    }
+    if (!date.startsWith(month)) {
+      // 点了上下月补位的日期：切到那个月并选中
+      setMonth(date.slice(0, 7));
+      setFocused(date);
+      return;
+    }
+    // 再点一次已选中的日期 → 打开当天页面
+    if (date === focused) openDay(date);
+    else setFocused(date);
+    if (!panelOpen) updateSettings({ dayPanelOpen: true });
+  };
+
+  const openItem = (item: DayItem) => {
+    if (item.kind === 'shift') router.push({ pathname: '/shift/[id]', params: { id: item.id } });
+    else if (item.kind === 'event')
+      router.push({ pathname: '/event/[id]', params: { id: item.id } });
+    else router.push({ pathname: '/task/[id]', params: { id: item.id } });
   };
 
   const startBatch = (date?: LocalDate) => {
@@ -118,7 +211,7 @@ export default function HomeScreen() {
     setPickerOpen(false);
   };
 
-  /** 套用模板；template 为 null 时标记「时间待定」。完成后可以撤销 */
+  /** 批量套用模板；template 为 null 时标记「时间待定」。完成后可以撤销 */
   const applyTemplate = async (job: Job, template: ShiftTemplate | null) => {
     setPickerOpen(false);
     try {
@@ -137,26 +230,75 @@ export default function HomeScreen() {
     }
   };
 
+  /** 一键添加到选中的那天（模板或时间待定），可以撤销 */
+  const quickAdd = async (job: Job, template: ShiftTemplate | null) => {
+    try {
+      const shift = await repos.shifts.create(
+        template ? buildShiftFromTemplate(job, template, focused) : buildPendingShift(job, focused)
+      );
+      const what = template
+        ? `${job.name} ${template.startTime}–${template.endTime}`
+        : t('day.pendingChip', { job: job.name });
+      toast(t('toast.added', { what }), { onUndo: () => repos.shifts.remove(shift.id) });
+      if (!panelOpen) updateSettings({ dayPanelOpen: true });
+    } catch (e) {
+      showMessage(t('common.saveFailed', { message: String(e) }));
+    }
+  };
+
+  const fd = parseLocalDate(focused);
+  const addActions: SheetAction[] = [
+    ...(data?.hourlyJobs ?? []).flatMap((job) => [
+      ...(data?.templates ?? [])
+        .filter((tpl) => tpl.jobId === job.id)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime))
+        .map((tpl) => ({
+          label: `${job.name} · ${tpl.name}`,
+          detail: `${tpl.startTime}–${tpl.endTime}`,
+          color: job.color,
+          onPress: () => quickAdd(job, tpl),
+        })),
+      {
+        label: t('day.pendingChip', { job: job.name }),
+        color: job.color,
+        dashed: true,
+        onPress: () => quickAdd(job, null),
+      },
+    ]),
+    {
+      label: t('day.addEvent'),
+      onPress: () => router.push({ pathname: '/event/[id]', params: { id: 'new', date: focused } }),
+    },
+    {
+      label: t('day.addShift'),
+      onPress: () => router.push({ pathname: '/shift/[id]', params: { id: 'new', date: focused } }),
+    },
+    {
+      label: t('day.addProject'),
+      onPress: () => router.push({ pathname: '/task/[id]', params: { id: 'new', date: focused } }),
+    },
+  ];
+
   const isCurrentMonth = month === currentMonth();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable
-          onPress={() => setMonth((m) => addMonths(m, -1))}
+          onPress={() => goToMonth(addMonths(month, -1))}
           style={styles.navButton}
           accessibilityRole="button"
           accessibilityLabel={t('calendar.prevMonth')}>
           <Text style={styles.navText}>‹</Text>
         </Pressable>
         <Pressable
-          onPress={() => setMonth(currentMonth())}
+          onPress={() => goToMonth(currentMonth())}
           accessibilityRole="button"
           accessibilityHint={t('calendar.today')}>
           <Text style={styles.title}>{t('calendar.monthTitle', { year, month: monthNumber })}</Text>
         </Pressable>
         <Pressable
-          onPress={() => setMonth((m) => addMonths(m, 1))}
+          onPress={() => goToMonth(addMonths(month, 1))}
           style={styles.navButton}
           accessibilityRole="button"
           accessibilityLabel={t('calendar.nextMonth')}>
@@ -164,7 +306,7 @@ export default function HomeScreen() {
         </Pressable>
         <View style={styles.spacer} />
         {!isCurrentMonth && (
-          <HeaderButton label={t('calendar.today')} onPress={() => setMonth(currentMonth())} />
+          <HeaderButton label={t('calendar.today')} onPress={() => goToMonth(currentMonth())} />
         )}
         {batchMode ? (
           <HeaderButton label={t('common.cancel')} onPress={exitBatch} />
@@ -183,18 +325,31 @@ export default function HomeScreen() {
         <Text style={styles.batchHint}>{t('batch.hint')}</Text>
       ) : (
         <>
-          <StatsBar
-            month={month}
-            mode={settings.statsPeriod}
-            wageDisplay={settings.wageDisplay}
-            currency={settings.defaultCurrency}
-            stats={statsData?.stats}
-            onPress={() => router.push({ pathname: '/stats', params: { month } })}
-          />
+          <View style={styles.toolbar}>
+            <StatsBar
+              month={month}
+              mode={settings.statsPeriod}
+              wageDisplay={settings.wageDisplay}
+              currency={settings.defaultCurrency}
+              stats={statsData?.stats}
+              onPress={() => router.push({ pathname: '/stats', params: { month } })}
+            />
+            <Segmented
+              size="small"
+              options={[
+                { value: 'work', label: t('home.viewWork') },
+                { value: 'schedule', label: t('home.viewSchedule') },
+              ]}
+              value={view}
+              onChange={(v) => updateSettings({ calendarView: v })}
+            />
+          </View>
           {data && !data.hasJobs && (
             <View style={styles.onboarding}>
-              <Text style={styles.onboardingTitle}>{t('home.onboardingTitle')}</Text>
-              <Text style={styles.onboardingBody}>{t('home.onboardingBody')}</Text>
+              <View style={styles.onboardingText}>
+                <Text style={styles.onboardingTitle}>{t('home.onboardingTitle')}</Text>
+                <Text style={styles.onboardingBody}>{t('home.onboardingBody')}</Text>
+              </View>
               <Pressable
                 onPress={() => router.push({ pathname: '/jobs/[id]', params: { id: 'new' } })}
                 accessibilityRole="button"
@@ -214,12 +369,14 @@ export default function HomeScreen() {
         dots={data?.dots}
         labels={holidayData?.labels}
         selected={batchMode ? selected : undefined}
+        focusedDate={batchMode ? null : focused}
+        compact={!batchMode && panelOpen}
         onPressDay={onPressDay}
         onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}
-        onSwipe={(delta) => setMonth((m) => addMonths(m, delta))}
+        onSwipe={(delta) => goToMonth(addMonths(month, delta))}
       />
 
-      {batchMode && (
+      {batchMode ? (
         <View style={styles.batchBar}>
           <Text style={styles.batchCount}>{t('batch.selected', { count: selected.size })}</Text>
           <Pressable
@@ -230,6 +387,26 @@ export default function HomeScreen() {
             <Text style={styles.applyText}>{t('batch.apply')}</Text>
           </Pressable>
         </View>
+      ) : (
+        <>
+          <DayPanel
+            date={focused}
+            items={items}
+            lunar={settings.showLunar ? lunarInfo(focused) : null}
+            marks={holidayData?.marks.get(focused) ?? []}
+            open={panelOpen}
+            onToggle={() => updateSettings({ dayPanelOpen: !panelOpen })}
+            onOpenDetails={() => openDay(focused)}
+            onPressItem={openItem}
+          />
+          <Pressable
+            onPress={() => setAddOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('home.add')}
+            style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}>
+            <Text style={styles.fabText}>＋</Text>
+          </Pressable>
+        </>
       )}
 
       <TemplatePicker
@@ -238,6 +415,15 @@ export default function HomeScreen() {
         templates={data?.templates ?? []}
         onSelect={applyTemplate}
         onClose={() => setPickerOpen(false)}
+      />
+
+      <ActionSheet
+        visible={addOpen}
+        title={t('home.addTo', {
+          date: t('calendar.dayLabel', { month: fd.month() + 1, day: fd.date() }),
+        })}
+        onClose={() => setAddOpen(false)}
+        actions={addActions}
       />
 
       <ActionSheet
@@ -272,7 +458,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: 4,
     paddingRight: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,
     gap: 4,
   },
   navButton: { paddingHorizontal: 10, paddingVertical: 4 },
@@ -289,6 +475,13 @@ const styles = StyleSheet.create({
   headerButtonText: { color: colors.primary, fontSize: 13 },
   menuButton: { paddingHorizontal: 10, paddingVertical: 4 },
   menuIcon: { fontSize: 22, color: colors.text },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingBottom: 6,
+  },
   batchHint: {
     textAlign: 'center',
     color: colors.primary,
@@ -296,19 +489,20 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   onboarding: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginHorizontal: 8,
     marginBottom: 6,
-    padding: 14,
+    padding: 12,
     borderRadius: 12,
     backgroundColor: '#EAF3FE',
-    gap: 6,
   },
-  onboardingTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  onboardingBody: { fontSize: 13, color: colors.textMuted },
+  onboardingText: { flex: 1, gap: 2 },
+  onboardingTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
+  onboardingBody: { fontSize: 12, color: colors.textMuted },
   onboardingButton: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
     backgroundColor: colors.primary,
@@ -331,4 +525,22 @@ const styles = StyleSheet.create({
   },
   applyText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' },
   disabled: { opacity: 0.4 },
+  fab: {
+    position: 'absolute',
+    right: 18,
+    bottom: 28,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  fabPressed: { opacity: 0.8 },
+  fabText: { color: colors.onPrimary, fontSize: 28, lineHeight: 30 },
 });
