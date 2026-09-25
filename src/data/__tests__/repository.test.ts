@@ -103,6 +103,15 @@ describe('settings on first launch', () => {
   });
 });
 
+describe('income targets migration', () => {
+  it('moves the old single monthly target to the current month', async () => {
+    const driver = new MemoryDriver();
+    await driver.setSetting('monthlyTarget', JSON.stringify({ amount: 50000, currency: 'JPY' }));
+    const s = await loadSettings(driver);
+    expect(Object.values(s.monthlyTargets)).toEqual([{ amount: 50000, currency: 'JPY' }]);
+  });
+});
+
 describe('WebDriver', () => {
   it('persists data across instances via Storage', async () => {
     const store = new Map<string, string>();

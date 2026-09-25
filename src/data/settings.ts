@@ -1,5 +1,6 @@
 import type { WeekStart } from '@/lib/calendar';
-import type { IncomeTarget } from '@/lib/target';
+import { currentMonth } from '@/lib/date';
+import type { MonthlyTargets } from '@/lib/target';
 
 import type { StorageDriver } from './storage/types';
 import type { Currency } from './types';
@@ -31,9 +32,8 @@ export interface Settings {
   /** 首页显示月历还是周视图 */
   calendarRange: CalendarRange;
   theme: ThemeMode;
-  /** 收入目标（每个月同一个目标 / 每年 1–12 月）；null = 不设 */
-  monthlyTarget: IncomeTarget | null;
-  yearlyTarget: IncomeTarget | null;
+  /** 每个月单独的收入目标（键 "YYYY-MM"）；年目标 = 各月目标加起来 */
+  monthlyTargets: MonthlyTargets;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -49,8 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   calendarView: 'work',
   calendarRange: 'month',
   theme: 'system',
-  monthlyTarget: null,
-  yearlyTarget: null,
+  monthlyTargets: {},
 };
 
 /**
@@ -88,6 +87,15 @@ export async function loadSettings(
       (result as unknown as Record<string, unknown>)[key] = JSON.parse(raw[key]);
     } catch {
       // 坏数据就保留默认值
+    }
+  }
+  // 旧版本只有一个「每月同一个目标」（monthlyTarget）：换算成当前这个月的目标
+  if (raw.monthlyTarget && Object.keys(result.monthlyTargets).length === 0) {
+    try {
+      const legacy = JSON.parse(raw.monthlyTarget);
+      if (legacy) result.monthlyTargets = { [currentMonth()]: legacy };
+    } catch {
+      // 坏数据就忽略
     }
   }
   return result;

@@ -618,9 +618,9 @@ export default function HomeScreen() {
                   </View>
                 </View>
               )}
-            {!showWeek && settings.monthlyTarget && (
+            {!showWeek && settings.monthlyTargets[month] && (
               <TargetBar
-                target={settings.monthlyTarget}
+                target={settings.monthlyTargets[month]!}
                 wage={statsData?.stats.wage}
                 onPress={() => router.push({ pathname: '/stats', params: { month } })}
               />

@@ -289,7 +289,8 @@ export function yearIncome(params: {
   /** 传入时另外算出「已完成」（班次已结束、项目 DDL 已过）的部分 */
   now?: LocalNow;
 }): {
-  months: { month: YearMonth; wage: MoneyByCurrency }[];
+  /** wage = 全部（已完成 + 预计），completed = 其中已完成的 */
+  months: { month: YearMonth; wage: MoneyByCurrency; completed: MoneyByCurrency }[];
   total: MoneyByCurrency;
   completed: MoneyByCurrency;
 } {
@@ -299,6 +300,7 @@ export function yearIncome(params: {
   const months = Array.from({ length: 12 }, (_, i) => ({
     month: `${year}-${String(i + 1).padStart(2, '0')}`,
     wage: {} as MoneyByCurrency,
+    completed: {} as MoneyByCurrency,
   }));
   // 一笔收入（日期 + 金额）属于哪个月：检查它落在哪个月的周期内
   // （工资周期会跨月，所以当月和下个月都要检查）
@@ -317,7 +319,10 @@ export function yearIncome(params: {
       const month = `${year}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (inRange(date, jobRange(mode, month, job))) {
         addMoney(months[d.getMonth()].wage, currency, amount);
-        if (done) addMoney(completed, currency, amount);
+        if (done) {
+          addMoney(completed, currency, amount);
+          addMoney(months[d.getMonth()].completed, currency, amount);
+        }
         return;
       }
     }

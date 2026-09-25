@@ -1,55 +1,83 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
+import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { CURRENCIES, type Currency } from '@/data/types';
 import { formatMoney, moneyToInput, parseMoney } from '@/lib/money';
 import type { MoneyByCurrency } from '@/lib/stats';
-import { targetProgress, type IncomeTarget } from '@/lib/target';
-import { makeStyles } from '@/theme';
+import { niceCeil, targetProgress, type IncomeTarget, type MonthBar } from '@/lib/target';
+import { makeStyles, useColors } from '@/theme';
 
 import { Button, Field, Input, Segmented } from './form';
 
 type Wage = { completed: MoneyByCurrency; total: MoneyByCurrency };
 
-/** 进度条：深色 = 已赚，浅色 = 已排班还没上 */
-function ProgressBar({
-  earned,
-  expected,
-  thin,
-}: {
-  earned: number;
-  expected: number;
-  thin?: boolean;
-}) {
-  const styles = useStyles();
+/** 环形进度图：深色弧 = 已赚，浅色弧 = 已排班还没上 */
+function Ring({ earned, expected, size }: { earned: number; expected: number; size: number }) {
+  const colors = useColors();
+  const stroke = 14;
+  const r = (size - stroke) / 2;
+  const c = size / 2;
+  const len = 2 * Math.PI * r;
+  const arc = (ratio: number, color: string) =>
+    ratio > 0 ? (
+      <Circle
+        cx={c}
+        cy={c}
+        r={r}
+        stroke={color}
+        strokeWidth={stroke}
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray={`${len * ratio} ${len}`}
+        transform={`rotate(-90 ${c} ${c})`}
+      />
+    ) : null;
   return (
-    <View style={[styles.track, thin && styles.trackThin]}>
-      <View style={[styles.expected, { width: `${expected * 100}%` }]} />
-      <View style={[styles.earned, { width: `${earned * 100}%` }]} />
-    </View>
+    <Svg width={size} height={size}>
+      <Circle cx={c} cy={c} r={r} stroke={colors.surface} strokeWidth={stroke} fill="none" />
+      {arc(expected, colors.selectedBg)}
+      {arc(earned, colors.primary)}
+    </Svg>
   );
 }
 
-/** 统计页的目标卡片；没设目标时只显示一行「设置收入目标」 */
-export function TargetCard({
-  title,
+/** 统计页：这个月的目标（环形图）。没设目标时显示「设置」和「沿用上个月」 */
+export function MonthTargetCard({
+  label,
   target,
+  prevTarget,
   wage,
   onEdit,
+  onCopyPrev,
 }: {
-  title: string;
-  target: IncomeTarget | null;
+  /** 「9月」或「本期」 */
+  label: string;
+  target: IncomeTarget | undefined;
+  prevTarget: IncomeTarget | undefined;
   wage: Wage | undefined;
   onEdit: () => void;
+  onCopyPrev: () => void;
 }) {
   const { t } = useTranslation();
   const styles = useStyles();
   if (!target) {
     return (
-      <Pressable onPress={onEdit} accessibilityRole="button" style={styles.card}>
-        <Text style={styles.setText}>＋ {t('target.set', { what: title })}</Text>
-      </Pressable>
+      <View style={styles.card}>
+        <Pressable onPress={onEdit} accessibilityRole="button">
+          <Text style={styles.setText}>＋ {t('target.setMonth', { month: label })}</Text>
+        </Pressable>
+        {prevTarget && (
+          <Pressable onPress={onCopyPrev} accessibilityRole="button">
+            <Text style={styles.copyText}>
+              {t('target.copyPrev', {
+                amount: formatMoney(prevTarget.amount, prevTarget.currency),
+              })}
+            </Text>
+          </Pressable>
+        )}
+      </View>
     );
   }
   const p = wage ? targetProgress(target, wage) : null;
@@ -57,28 +85,223 @@ export function TargetCard({
   return (
     <Pressable onPress={onEdit} accessibilityRole="button" style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.amount}>{money(target.amount)} ✏️</Text>
+        <Text style={styles.title}>{t('target.monthTitle', { month: label })}</Text>
+        <Text style={styles.edit}>✏️</Text>
       </View>
       {p && (
-        <>
-          <ProgressBar earned={p.earnedRatio} expected={p.expectedRatio} />
-          <Text style={styles.detail}>
-            {t('target.earned', { amount: money(p.earned) })} ·{' '}
-            {t('target.expected', { amount: money(p.expected) })}
-          </Text>
-          <Text style={styles.status}>
-            {p.remaining === 0
-              ? t('target.reached', { percent: p.percent })
-              : t('target.remaining', { percent: p.percent, amount: money(p.remaining) })}
-          </Text>
-        </>
+        <View style={styles.ringRow}>
+          <View style={styles.ringWrap}>
+            <Ring earned={p.earnedRatio} expected={p.expectedRatio} size={150} />
+            <View style={styles.ringCenter}>
+              <Text style={styles.ringPercent}>{p.percent}%</Text>
+              <Text style={styles.ringSub}>{money(p.earned)}</Text>
+            </View>
+          </View>
+          <View style={styles.ringInfo}>
+            <Info label={t('target.target')} value={money(target.amount)} />
+            <Info label={t('target.earnedLabel')} value={money(p.earned)} swatch="earned" />
+            <Info label={t('target.expectedLabel')} value={money(p.expected)} swatch="expected" />
+            <Text style={styles.status}>
+              {p.remaining === 0
+                ? t('target.reached')
+                : t('target.remaining', { amount: money(p.remaining) })}
+            </Text>
+          </View>
+        </View>
       )}
     </Pressable>
   );
 }
 
-/** 首页统计栏下面的细进度条（只有设了月目标才显示） */
+function Info({
+  label,
+  value,
+  swatch,
+}: {
+  label: string;
+  value: string;
+  swatch?: 'earned' | 'expected';
+}) {
+  const styles = useStyles();
+  return (
+    <View style={styles.info}>
+      <View style={styles.infoLabelRow}>
+        {swatch && (
+          <View
+            style={[styles.swatch, swatch === 'earned' ? styles.swEarned : styles.swExpected]}
+          />
+        )}
+        <Text style={styles.infoLabel}>{label}</Text>
+      </View>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+const CHART_HEIGHT = 150;
+const TOP = 16;
+const BOTTOM = 20;
+
+/** 顶部圆角、底部直角的柱子 */
+function barPath(x: number, y: number, w: number, h: number) {
+  const r = Math.min(4, w / 2, h);
+  return `M${x},${y + h} V${y + r} Q${x},${y} ${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h} Z`;
+}
+
+/**
+ * 全年柱状图：每个月一根柱子（深色 = 已赚，浅色 = 已排班还没上），短横线 = 那个月的目标，
+ * 达标的月份上面有 ✓。点一根柱子切换到那个月。
+ */
+export function YearTargetChart({
+  bars,
+  currency,
+  selectedMonth,
+  onSelectMonth,
+}: {
+  bars: MonthBar[];
+  currency: Currency;
+  selectedMonth: string;
+  onSelectMonth: (month: string) => void;
+}) {
+  const { t } = useTranslation();
+  const colors = useColors();
+  const styles = useStyles();
+  const [width, setWidth] = useState(0);
+  const max = niceCeil(Math.max(0, ...bars.map((b) => Math.max(b.expected, b.target ?? 0))));
+  const plotH = CHART_HEIGHT - TOP - BOTTOM;
+  const slot = width / 12;
+  const barW = Math.min(20, slot * 0.6);
+  const y = (v: number) => TOP + plotH - (v / max) * plotH;
+
+  return (
+    <View>
+      <View style={styles.axisRow}>
+        <Text style={styles.axisText}>{formatMoney(max, currency)}</Text>
+      </View>
+      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ height: CHART_HEIGHT }}>
+        {width > 0 && (
+          <Svg width={width} height={CHART_HEIGHT}>
+            <Line x1={0} x2={width} y1={TOP} y2={TOP} stroke={colors.border} strokeWidth={1} />
+            <Line
+              x1={0}
+              x2={width}
+              y1={TOP + plotH}
+              y2={TOP + plotH}
+              stroke={colors.border}
+              strokeWidth={1}
+            />
+            {bars.map((b, i) => {
+              const cx = slot * i + slot / 2;
+              const x = cx - barW / 2;
+              const selected = b.month === selectedMonth;
+              return (
+                <GLike key={b.month}>
+                  {selected && (
+                    <Rect
+                      x={slot * i + 1}
+                      y={TOP - 12}
+                      width={slot - 2}
+                      height={plotH + 12 + BOTTOM}
+                      rx={6}
+                      fill={colors.surface}
+                    />
+                  )}
+                  {b.expected > 0 && (
+                    <Path
+                      d={barPath(x, y(b.expected), barW, (b.expected / max) * plotH)}
+                      fill={colors.selectedBg}
+                    />
+                  )}
+                  {b.earned > 0 && (
+                    <Path
+                      d={barPath(x, y(b.earned), barW, (b.earned / max) * plotH)}
+                      fill={colors.primary}
+                    />
+                  )}
+                  {b.target !== null && (
+                    <Line
+                      x1={x - 3}
+                      x2={x + barW + 3}
+                      y1={y(b.target)}
+                      y2={y(b.target)}
+                      stroke={colors.text}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                    />
+                  )}
+                  {b.reached && (
+                    <SvgText
+                      x={cx}
+                      y={Math.min(y(b.earned), y(b.target ?? 0)) - 4}
+                      fontSize={10}
+                      fill={colors.text}
+                      textAnchor="middle">
+                      ✓
+                    </SvgText>
+                  )}
+                  <SvgText
+                    x={cx}
+                    y={CHART_HEIGHT - 5}
+                    fontSize={10}
+                    fill={selected ? colors.text : colors.textMuted}
+                    fontWeight={selected ? 'bold' : 'normal'}
+                    textAnchor="middle">
+                    {String(i + 1)}
+                  </SvgText>
+                </GLike>
+              );
+            })}
+          </Svg>
+        )}
+        {/* 点击区域比柱子大：每个月一整列 */}
+        <View style={styles.hitRow} pointerEvents="box-none">
+          {bars.map((b, i) => (
+            <Pressable
+              key={b.month}
+              onPress={() => onSelectMonth(b.month)}
+              accessibilityRole="button"
+              accessibilityLabel={t('target.barA11y', {
+                month: i + 1,
+                earned: formatMoney(b.earned, currency),
+                target: b.target === null ? '—' : formatMoney(b.target, currency),
+              })}
+              style={styles.hit}
+            />
+          ))}
+        </View>
+      </View>
+      <View style={styles.legend}>
+        <Legend
+          swatch={<View style={[styles.swatch, styles.swEarned]} />}
+          label={t('target.earnedLabel')}
+        />
+        <Legend
+          swatch={<View style={[styles.swatch, styles.swExpected]} />}
+          label={t('target.expectedLabel')}
+        />
+        <Legend swatch={<View style={styles.swLine} />} label={t('target.target')} />
+        <Legend swatch={<Text style={styles.check}>✓</Text>} label={t('target.reachedShort')} />
+      </View>
+    </View>
+  );
+}
+
+/** react-native-svg 的 G 在这里只用来分组，用 Fragment 就够了 */
+function GLike({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+function Legend({ swatch, label }: { swatch: React.ReactNode; label: string }) {
+  const styles = useStyles();
+  return (
+    <View style={styles.legendItem}>
+      {swatch}
+      <Text style={styles.legendText}>{label}</Text>
+    </View>
+  );
+}
+
+/** 首页统计栏下面的细进度条（只有这个月设了目标才显示） */
 export function TargetBar({
   target,
   wage,
@@ -99,27 +322,26 @@ export function TargetBar({
       accessibilityLabel={t('target.a11y', { percent: p.percent })}
       style={styles.bar}>
       <View style={styles.barTrack}>
-        <ProgressBar earned={p.earnedRatio} expected={p.expectedRatio} thin />
+        <View style={[styles.barExpected, { width: `${p.expectedRatio * 100}%` }]} />
+        <View style={[styles.barEarned, { width: `${p.earnedRatio * 100}%` }]} />
       </View>
       <Text style={styles.barText}>{p.percent}%</Text>
     </Pressable>
   );
 }
 
-/** 设置目标：金额 + 币种；「不设目标」清除 */
+/** 设置某个月的目标：金额 + 币种；「不设目标」清除 */
 export function TargetEditor({
   visible,
   title,
   value,
   defaultCurrency,
-  hint,
   onSave,
   onClose,
 }: {
-  hint?: string;
   visible: boolean;
   title: string;
-  value: IncomeTarget | null;
+  value: IncomeTarget | undefined;
   defaultCurrency: Currency;
   onSave: (target: IncomeTarget | null) => void;
   onClose: () => void;
@@ -127,7 +349,7 @@ export function TargetEditor({
   const { t } = useTranslation();
   const styles = useStyles();
   const [currency, setCurrency] = useState<Currency>(value?.currency ?? defaultCurrency);
-  const [text, setText] = useState(value ? moneyToInput(value.amount, value.currency) : '');
+  const [text, setText] = useState('');
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -169,7 +391,6 @@ export function TargetEditor({
             />
           </Field>
           <Text style={styles.hint}>{t('target.currencyHint')}</Text>
-          {hint ? <Text style={styles.hint}>{hint}</Text> : null}
           <Button title={t('common.save')} onPress={save} />
           {value && (
             <Button
@@ -192,29 +413,36 @@ const useStyles = makeStyles((colors) => ({
     backgroundColor: colors.background,
     borderRadius: 12,
     padding: 16,
-    gap: 8,
+    gap: 10,
   },
   setText: { fontSize: 15, color: colors.primary },
+  copyText: { fontSize: 14, color: colors.textMuted, textDecorationLine: 'underline' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 15, fontWeight: '600', color: colors.text },
-  amount: { fontSize: 15, color: colors.text },
-  track: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.surface,
-    overflow: 'hidden',
-  },
-  trackThin: { height: 5, borderRadius: 3, backgroundColor: colors.border },
-  expected: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: colors.selectedBg,
-  },
-  earned: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.primary },
-  detail: { fontSize: 13, color: colors.textMuted },
-  status: { fontSize: 14, color: colors.text, fontWeight: '600' },
+  edit: { fontSize: 14 },
+  ringRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  ringWrap: { width: 150, height: 150, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { position: 'absolute', alignItems: 'center' },
+  ringPercent: { fontSize: 26, fontWeight: '700', color: colors.text },
+  ringSub: { fontSize: 12, color: colors.textMuted },
+  ringInfo: { flex: 1, gap: 8 },
+  info: { gap: 1 },
+  infoLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  infoLabel: { fontSize: 12, color: colors.textMuted },
+  infoValue: { fontSize: 15, fontWeight: '600', color: colors.text },
+  status: { fontSize: 13, color: colors.text },
+  swatch: { width: 10, height: 10, borderRadius: 2 },
+  swEarned: { backgroundColor: colors.primary },
+  swExpected: { backgroundColor: colors.selectedBg },
+  swLine: { width: 12, height: 2, borderRadius: 1, backgroundColor: colors.text },
+  check: { fontSize: 11, color: colors.text },
+  axisRow: { flexDirection: 'row' },
+  axisText: { fontSize: 10, color: colors.textMuted },
+  hitRow: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, flexDirection: 'row' },
+  hit: { flex: 1 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 6 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendText: { fontSize: 11, color: colors.textMuted },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,7 +450,21 @@ const useStyles = makeStyles((colors) => ({
     marginHorizontal: 12,
     marginBottom: 6,
   },
-  barTrack: { flex: 1 },
+  barTrack: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  barExpected: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: colors.selectedBg,
+  },
+  barEarned: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.primary },
   barText: { fontSize: 11, color: colors.textMuted, minWidth: 30, textAlign: 'right' },
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: {

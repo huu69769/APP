@@ -4,12 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyText, Field, FormScreen, ListRow, Section, Segmented } from '@/components/form';
-import { TargetCard, TargetEditor } from '@/components/IncomeTarget';
+import { ActionSheet } from '@/components/ActionSheet';
+import { MonthTargetCard, TargetEditor, YearTargetChart } from '@/components/IncomeTarget';
 import { useData } from '@/data/DataProvider';
-import { isActiveJob, jobPayType } from '@/data/types';
+import { isActiveJob, jobPayType, type Currency } from '@/data/types';
 import { useMonthStats, useYearIncome } from '@/data/useStats';
 import { addMonths, currentMonth, type YearMonth } from '@/lib/date';
-import { formatMoneyMulti } from '@/lib/money';
+import { formatMoney, formatMoneyMulti } from '@/lib/money';
+import { currenciesInYear, type IncomeTarget, yearTargetSummary } from '@/lib/target';
 import type { DateRange } from '@/lib/period';
 import { formatHours } from '@/lib/time';
 import { makeStyles, useColors } from '@/theme';
@@ -35,7 +37,31 @@ export default function StatsScreen() {
   const year = Number(month.slice(0, 4));
   const { data: yearData } = useYearIncome(year);
   const stats = data?.stats;
-  const [editing, setEditing] = useState<'month' | 'year' | null>(null);
+  const [editing, setEditing] = useState(false);
+  // 年度图表显示哪个币种：默认是设置里的默认币种，可以切换
+  const [chartCurrency, setChartCurrency] = useState<Currency>(settings.defaultCurrency);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+
+  const targets = settings.monthlyTargets;
+  const target = targets[month];
+  const prevTarget = targets[addMonths(month, -1)];
+  const setTarget = (v: IncomeTarget | null) => {
+    const next = { ...targets };
+    if (v) next[month] = v;
+    else delete next[month];
+    updateSettings({ monthlyTargets: next });
+  };
+  const summary = yearData
+    ? yearTargetSummary({
+        months: yearData.months,
+        targets,
+        currency: chartCurrency,
+        currentMonth: currentMonth(),
+      })
+    : null;
+  const chartCurrencies = yearData
+    ? [...new Set([settings.defaultCurrency, ...currenciesInYear(yearData.months, targets)])]
+    : [];
 
   const hours = (m: number) => t('stats.hoursValue', { hours: formatHours(m) });
   const range = (r: DateRange) => t('stats.range', { from: r.from, to: r.to });
@@ -57,17 +83,17 @@ export default function StatsScreen() {
         />
       </View>
 
-      <TargetCard
-        title={
-          settings.monthlyTarget
-            ? settings.statsPeriod === 'payPeriod'
-              ? t('target.periodTitle')
-              : t('target.monthTitle', { month: m })
-            : t('target.monthSet')
+      <MonthTargetCard
+        label={
+          settings.statsPeriod === 'payPeriod'
+            ? t('target.periodLabel')
+            : t('stats.monthLabel', { month: m })
         }
-        target={settings.monthlyTarget}
+        target={target}
+        prevTarget={prevTarget}
         wage={stats?.wage}
-        onEdit={() => setEditing('month')}
+        onEdit={() => setEditing(true)}
+        onCopyPrev={() => prevTarget && setTarget(prevTarget)}
       />
 
       <Section>
@@ -193,12 +219,41 @@ export default function StatsScreen() {
 
       {yearData && (
         <Section title={t('stats.year', { year })}>
-          <TargetCard
-            title={settings.yearlyTarget ? t('target.yearTitle', { year }) : t('target.yearSet')}
-            target={settings.yearlyTarget}
-            wage={yearData}
-            onEdit={() => setEditing('year')}
-          />
+          {summary && (
+            <>
+              <View style={styles.chartHeader}>
+                <View style={styles.chartSummary}>
+                  <Text style={styles.chartTotal}>
+                    {t('target.yearEarned', { amount: formatMoney(summary.earned, chartCurrency) })}
+                  </Text>
+                  {summary.targetTotal > 0 && (
+                    <Text style={styles.muted}>
+                      {t('target.yearTarget', {
+                        amount: formatMoney(summary.targetTotal, chartCurrency),
+                      })}
+                      {summary.judgedCount > 0 &&
+                        ` · ${t('target.reachedCount', { reached: summary.reachedCount, total: summary.judgedCount })}`}
+                    </Text>
+                  )}
+                </View>
+                {chartCurrencies.length > 1 && (
+                  <Pressable
+                    onPress={() => setCurrencyOpen(true)}
+                    accessibilityRole="button"
+                    style={styles.currencyButton}>
+                    <Text style={styles.currencyText}>{t(`currency.${chartCurrency}`)} ▾</Text>
+                  </Pressable>
+                )}
+              </View>
+              <YearTargetChart
+                bars={summary.bars}
+                currency={chartCurrency}
+                selectedMonth={month}
+                onSelectMonth={setMonth}
+              />
+              <View style={styles.divider} />
+            </>
+          )}
           <ListRow
             title={t('stats.yearTotal')}
             right={formatMoneyMulti(yearData.total, currency)}
@@ -216,6 +271,13 @@ export default function StatsScreen() {
                 <Text
                   style={[styles.monthValue, Object.keys(row.wage).length === 0 && styles.muted]}>
                   {formatMoneyMulti(row.wage, currency)}
+                  {targets[row.month] && (
+                    <Text style={styles.muted}>
+                      {' / '}
+                      {formatMoney(targets[row.month]!.amount, targets[row.month]!.currency)}
+                      {summary?.bars.find((b) => b.month === row.month)?.reached ? ' ✓' : ''}
+                    </Text>
+                  )}
                 </Text>
               </View>
             </Pressable>
@@ -223,15 +285,26 @@ export default function StatsScreen() {
         </Section>
       )}
       <TargetEditor
-        visible={editing !== null}
-        title={t(editing === 'year' ? 'target.yearSet' : 'target.monthSet')}
-        value={editing === 'year' ? settings.yearlyTarget : settings.monthlyTarget}
-        defaultCurrency={settings.defaultCurrency}
-        hint={editing === 'year' ? t('target.yearHint') : undefined}
-        onSave={(v) =>
-          updateSettings(editing === 'year' ? { yearlyTarget: v } : { monthlyTarget: v })
-        }
-        onClose={() => setEditing(null)}
+        visible={editing}
+        title={t('target.editTitle', {
+          month:
+            settings.statsPeriod === 'payPeriod'
+              ? t('target.periodLabel')
+              : t('stats.monthLabel', { month: m }),
+        })}
+        value={target}
+        defaultCurrency={prevTarget?.currency ?? settings.defaultCurrency}
+        onSave={setTarget}
+        onClose={() => setEditing(false)}
+      />
+      <ActionSheet
+        visible={currencyOpen}
+        title={t('target.chartCurrency')}
+        onClose={() => setCurrencyOpen(false)}
+        actions={chartCurrencies.map((c) => ({
+          label: `${t(`currency.${c}`)} ${c}`,
+          onPress: () => setChartCurrency(c),
+        }))}
       />
     </FormScreen>
   );
@@ -285,4 +358,15 @@ const useStyles = makeStyles((colors) => ({
   monthRowActive: { backgroundColor: colors.surface },
   monthLabel: { fontSize: 15, color: colors.text },
   monthValue: { fontSize: 15, color: colors.text },
+  chartHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
+  chartSummary: { flex: 1, gap: 2 },
+  chartTotal: { fontSize: 16, fontWeight: '600', color: colors.text },
+  currencyButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  currencyText: { fontSize: 13, color: colors.text },
 }));
