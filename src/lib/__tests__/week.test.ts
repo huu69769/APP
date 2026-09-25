@@ -1,4 +1,12 @@
-import { layoutWeek, startOfWeek, visibleHours, weekDates, weekTotals } from '../week';
+import {
+  datesByWeekdays,
+  endOfNextMonth,
+  layoutWeek,
+  startOfWeek,
+  visibleHours,
+  weekDates,
+  weekTotals,
+} from '../week';
 
 const dates = weekDates('2026-09-20');
 
@@ -92,5 +100,31 @@ describe('weekTotals', () => {
         dates
       )
     ).toEqual({ minutes: 360, wage: { JPY: 6600 }, pending: 1 });
+  });
+});
+
+describe('datesByWeekdays', () => {
+  it('lists weekdays in the range, both ends included', () => {
+    // 2026-09-21 是周一
+    expect(datesByWeekdays('2026-09-21', '2026-10-02', [1, 3, 5])).toEqual([
+      '2026-09-21',
+      '2026-09-23',
+      '2026-09-25',
+      '2026-09-28',
+      '2026-09-30',
+      '2026-10-02',
+    ]);
+  });
+  it('is empty for no weekdays or a reversed range', () => {
+    expect(datesByWeekdays('2026-09-21', '2026-10-02', [])).toEqual([]);
+    expect(datesByWeekdays('2026-10-02', '2026-09-21', [1])).toEqual([]);
+  });
+});
+
+describe('endOfNextMonth', () => {
+  it('returns the last day of next month', () => {
+    expect(endOfNextMonth('2026-09-25')).toBe('2026-10-31');
+    expect(endOfNextMonth('2026-12-31')).toBe('2027-01-31');
+    expect(endOfNextMonth('2026-01-31')).toBe('2026-02-28');
   });
 });

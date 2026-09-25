@@ -806,6 +806,7 @@ export default function HomeScreen() {
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         actions={[
+          { label: t('home.recurring'), onPress: () => router.push('/recurring') },
           { label: t('home.batch'), onPress: () => startBatch() },
           {
             label: t('home.stats'),

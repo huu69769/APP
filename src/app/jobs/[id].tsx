@@ -482,6 +482,13 @@ export default function JobEditScreen() {
           ))}
         </Section>
       )}
+      {!isNew && !isPiece && !endedAt && (
+        <Button
+          variant="secondary"
+          title={t('jobs.recurring')}
+          onPress={() => router.push({ pathname: '/recurring', params: { jobId: id } })}
+        />
+      )}
       {!isNew && isPiece && (
         <Section
           title={t('jobs.projects')}

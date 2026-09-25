@@ -68,7 +68,8 @@
     "dismiss": "閉じる",
     "slotAnniv": "記念",
     "rangeMonth": "月",
-    "rangeWeek": "週"
+    "rangeWeek": "週",
+    "recurring": "曜日でシフト登録"
   },
   "batch": {
     "hint": "日付をタップ：まとめてシフト登録・まとめて削除ができます",
@@ -169,7 +170,8 @@
     "staleHint": "しばらく使われていません。終了しますか？",
     "endAction": "終了",
     "thisMonth": "今月 {{summary}}",
-    "thisPeriod": "今期 {{summary}}"
+    "thisPeriod": "今期 {{summary}}",
+    "recurring": "曜日でシフト登録"
   },
   "templates": {
     "newTitle": "時間帯テンプレートを追加",
@@ -424,5 +426,20 @@
     "jobs": "仕事",
     "anniversaries": "記念日",
     "settings": "設定"
+  },
+  "recurring": {
+    "title": "曜日でシフト登録",
+    "hint": "固定のシフト（例：月〜金 9:00–15:00）をまとめて登録します。登録後はシフトごとに変更・削除できます。同じシフトがある日はスキップします。",
+    "job": "仕事",
+    "template": "時間帯",
+    "pending": "時間未定",
+    "noTemplates": "この仕事にはまだ時間帯テンプレートがありません。「仕事」で追加するか、時間未定で登録できます。",
+    "weekdays": "曜日",
+    "period": "期間",
+    "from": "開始日",
+    "to": "終了日",
+    "periodInvalid": "終了日は開始日より後にしてください",
+    "apply": "{{count}}件のシフトを追加",
+    "noJobs": "時給の仕事がまだありません。先に「仕事」で追加してください。"
   }
 }

@@ -68,7 +68,8 @@
     "dismiss": "知道了",
     "slotAnniv": "纪念",
     "rangeMonth": "月",
-    "rangeWeek": "周"
+    "rangeWeek": "周",
+    "recurring": "按星期排班"
   },
   "batch": {
     "hint": "点选日期：可以批量排班，也可以批量删除",
@@ -169,7 +170,8 @@
     "staleHint": "很久没用了，要结束吗？",
     "endAction": "结束",
     "thisMonth": "本月 {{summary}}",
-    "thisPeriod": "本期 {{summary}}"
+    "thisPeriod": "本期 {{summary}}",
+    "recurring": "按星期排班"
   },
   "templates": {
     "newTitle": "添加时间段模板",
@@ -424,5 +426,20 @@
     "jobs": "工作",
     "anniversaries": "纪念日",
     "settings": "设置"
+  },
+  "recurring": {
+    "title": "按星期排班",
+    "hint": "固定排班（比如周一到周五 9:00–15:00）在这里一次录入。录入后每个班次都可以单独修改或删除；已经有同样班次的日子会跳过。",
+    "job": "工作",
+    "template": "时间段",
+    "pending": "时间待定",
+    "noTemplates": "这份工作还没有时间段模板，可以先在「工作」里添加，也可以先录成时间待定。",
+    "weekdays": "星期",
+    "period": "期间",
+    "from": "开始日",
+    "to": "结束日",
+    "periodInvalid": "结束日不能早于开始日",
+    "apply": "添加 {{count}} 个班次",
+    "noJobs": "还没有按时薪计算的工作。先在「工作」里添加一份。"
   }
 }

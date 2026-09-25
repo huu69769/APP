@@ -141,3 +141,18 @@ export function weekTotals(
   }
   return { minutes, wage, pending };
 }
+
+/** from 到 to（含两端）之间，星期几在 weekdays 里的日期（0 = 周日 … 6 = 周六） */
+export function datesByWeekdays(from: LocalDate, to: LocalDate, weekdays: number[]): LocalDate[] {
+  const wanted = new Set(weekdays);
+  const result: LocalDate[] = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    if (wanted.has(parseLocalDate(d).day())) result.push(d);
+  }
+  return result;
+}
+
+/** 「按星期排班」默认的结束日：下个月的最后一天 */
+export function endOfNextMonth(date: LocalDate): LocalDate {
+  return parseLocalDate(date).add(1, 'month').endOf('month').format('YYYY-MM-DD');
+}

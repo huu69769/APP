@@ -137,6 +137,38 @@ export function Segmented<T extends string | number>({
   );
 }
 
+/** 可以选多个的切换（比如星期几） */
+export function MultiSelect<T extends string | number>({
+  options,
+  values,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  values: T[];
+  onChange: (values: T[]) => void;
+}) {
+  const styles = useStyles();
+  return (
+    <View style={styles.multi}>
+      {options.map((o) => {
+        const active = values.includes(o.value);
+        return (
+          <Pressable
+            key={String(o.value)}
+            onPress={() =>
+              onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])
+            }
+            style={[styles.segment, styles.multiItem, active && styles.segmentActive]}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: active }}>
+            <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function ColorPicker({
   value,
   onChange,
@@ -294,6 +326,8 @@ const useStyles = makeStyles((colors) => ({
     borderColor: colors.border,
   },
   segmentActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  multi: { flexDirection: 'row', gap: 6 },
+  multiItem: { flex: 1, paddingHorizontal: 0, alignItems: 'center' },
   segmentedSmall: {
     flexDirection: 'row',
     borderRadius: 14,
