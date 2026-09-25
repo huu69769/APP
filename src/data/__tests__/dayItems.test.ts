@@ -107,3 +107,30 @@ describe('buildDayItems with anniversaries', () => {
     ]);
   });
 });
+
+describe('overnight events', () => {
+  it('marks an event ending after midnight as overnight', () => {
+    const [item] = buildDayItems({
+      date: '2026-09-28',
+      today: '2026-09-25',
+      shifts: [],
+      events: [
+        {
+          ...base,
+          id: 'e1',
+          date: '2026-09-28',
+          title: '和妈妈吃饭',
+          allDay: false,
+          startTime: '18:00',
+          endTime: '00:00',
+          color: '#208AEF',
+          note: '',
+          reminderMinutesBefore: null,
+        },
+      ],
+      tasks: [],
+      jobsById: new Map(),
+    });
+    expect(item.slot).toEqual({ start: '18:00', end: '00:00', overnight: true });
+  });
+});

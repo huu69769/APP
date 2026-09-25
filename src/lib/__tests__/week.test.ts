@@ -3,7 +3,6 @@ import {
   endOfNextMonth,
   layoutWeek,
   startOfWeek,
-  visibleHours,
   weekDates,
   weekTotals,
 } from '../week';
@@ -66,17 +65,6 @@ describe('layoutWeek', () => {
     );
     const by = Object.fromEntries(r.map((s) => [s.key, [s.lane, s.lanes]]));
     expect(by).toEqual({ a: [0, 2], b: [1, 2], c: [0, 2], d: [0, 1] });
-  });
-});
-
-describe('visibleHours', () => {
-  it('defaults to 8–22 and grows for early or late blocks', () => {
-    expect(visibleHours([])).toEqual({ from: 8, to: 22 });
-    const r = layoutWeek(
-      [{ key: 'n', date: '2026-09-22', startTime: '22:00', endTime: '05:30' }],
-      dates
-    );
-    expect(visibleHours(r)).toEqual({ from: 0, to: 24 });
   });
 });
 

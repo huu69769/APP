@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { LocalDate } from '@/lib/date';
 import type { DayLabel } from '@/lib/dayLabel';
 import { minutesToTime } from '@/lib/time';
-import { layoutWeek, visibleHours } from '@/lib/week';
+import { layoutWeek } from '@/lib/week';
 import { makeStyles, useColors } from '@/theme';
 
 /** 画成时间块的班次、日程 */
@@ -31,8 +31,8 @@ export interface WeekChip {
   outline?: boolean;
 }
 
-/** 每小时的高度：要显示的时间段很长（比如有夜班）时矮一些 */
-const hourHeight = (hours: number) => (hours > 16 ? 32 : 44);
+/** 一整天 0–24 点都显示，每小时的高度 */
+const HOUR_HEIGHT = 32;
 const GUTTER = 34;
 const MAX_CHIPS = 2;
 const SWIPE_DISTANCE = 50;
@@ -70,8 +70,8 @@ export function WeekView({
   const { t } = useTranslation();
   const weekdayNames = t('calendar.weekdaysShort', { returnObjects: true }) as string[];
   const segments = layoutWeek(blocks, dates);
-  const { from, to } = visibleHours(segments);
-  const HOUR_HEIGHT = hourHeight(to - from);
+  const from = 0;
+  const to = 24;
   const byKey = new Map(blocks.map((b) => [b.key, b]));
   const hasChips = dates.some((d) => (chips.get(d)?.length ?? 0) > 0);
 

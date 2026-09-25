@@ -72,7 +72,9 @@ export default function EventEditScreen() {
     date: isValidLocalDate(date) ? null : t('errors.dateInvalid'),
     time:
       allDay ||
-      (isValidTime(startTime) && (endTime === '' || (isValidTime(endTime) && endTime > startTime)))
+      (isValidTime(startTime) &&
+        // 结束时间比开始早 = 到第二天（比如 18:00–00:00、22:00–02:00）
+        (endTime === '' || (isValidTime(endTime) && endTime !== startTime)))
         ? null
         : t('errors.timeInvalid'),
   };

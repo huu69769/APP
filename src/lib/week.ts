@@ -105,17 +105,6 @@ export function layoutWeek(blocks: TimedBlock[], dates: LocalDate[]): BlockSegme
   return result;
 }
 
-/** 周视图要显示的时间范围（整点）：默认 8–22 点，有更早或更晚的块就扩大 */
-export function visibleHours(segments: BlockSegment[]): { from: number; to: number } {
-  let from = 8;
-  let to = 22;
-  for (const s of segments) {
-    from = Math.min(from, Math.floor(s.start / 60));
-    to = Math.max(to, Math.ceil(s.end / 60));
-  }
-  return { from, to };
-}
-
 /** 一周的打工合计：时长、工钱（按币种）、时间待定的班次数 */
 export function weekTotals(
   shifts: Pick<

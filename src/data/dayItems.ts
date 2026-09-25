@@ -81,7 +81,11 @@ export function buildDayItems(params: {
     else
       timed.push({
         ...base,
-        slot: { start: e.startTime, end: e.endTime, overnight: false },
+        slot: {
+          start: e.startTime,
+          end: e.endTime,
+          overnight: e.endTime ? isOvernight(e.startTime, e.endTime) : false,
+        },
         sort: e.startTime,
       });
   }

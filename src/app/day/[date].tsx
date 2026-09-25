@@ -252,7 +252,7 @@ export default function DayScreen() {
                       subtitle={[
                         e.allDay
                           ? t('day.allDay')
-                          : `${e.startTime}${e.endTime ? ` – ${e.endTime}` : ''}`,
+                          : `${e.startTime}${e.endTime ? ` – ${isOvernight(e.startTime!, e.endTime) ? '+1 ' : ''}${e.endTime}` : ''}`,
                         e.reminderMinutesBefore !== null ? '🔔' : null,
                         e.note || null,
                       ]
