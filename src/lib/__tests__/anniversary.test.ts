@@ -1,5 +1,7 @@
 import {
   anniversaryStatus,
+  lunarToSolar,
+  solarToLunar,
   daysSince,
   nextOccurrence,
   occurrenceInYear,
@@ -98,5 +100,26 @@ describe('nextOccurrence / daysSince', () => {
   it('counts total days since the start', () => {
     expect(daysSince(solar('2026-09-20'), '2026-09-25')).toBe(5);
     expect(daysSince(solar('2026-09-30'), '2026-09-25')).toBeNull();
+  });
+});
+
+describe('lunarToSolar / solarToLunar', () => {
+  it('converts a lunar birthday to its solar date', () => {
+    // 农历 1977 年十月十三 = 公历 1977-11-23
+    expect(lunarToSolar(1977, 10, 13)).toBe('1977-11-23');
+    expect(solarToLunar('1977-11-23')).toEqual({ year: 1977, month: 10, day: 13 });
+  });
+  it('rejects dates that do not exist', () => {
+    expect(lunarToSolar(2026, 12, 30)).toBeNull(); // 2026 年腊月只有 29 天
+    expect(lunarToSolar(2026, 13, 1)).toBeNull();
+    expect(lunarToSolar(NaN, 1, 1)).toBeNull();
+  });
+  it('repeats on the lunar date every year', () => {
+    const date = lunarToSolar(1977, 10, 13)!;
+    // 2026 年农历十月十三 = 2026-11-21
+    expect(nextOccurrence({ date, repeat: true, lunar: true }, '2026-09-25')).toEqual({
+      date: '2026-11-21',
+      years: 49,
+    });
   });
 });

@@ -407,7 +407,7 @@
     "repeatSolar": "毎年",
     "repeatLunar": "毎年（旧暦）",
     "repeatNone": "繰り返さない",
-    "lunarHint": "旧暦の {{date}} で毎年繰り返します",
+    "lunarHint": "毎年 旧暦{{date}}（最初の日は新暦 {{solar}}）",
     "color": "色",
     "pin": "ホームに表示",
     "pinOn": "表示",
@@ -422,7 +422,12 @@
     "totalDays": "{{count}} 日経過",
     "passedSection": "過ぎた記念日",
     "everyYear": "毎年 {{date}}",
-    "everyYearLunar": "毎年 旧暦 {{date}}"
+    "everyYearLunar": "毎年 旧暦 {{date}}",
+    "lunarDate": "旧暦の日付",
+    "lunarYear": "年",
+    "lunarMonth": "月",
+    "lunarDay": "日",
+    "lunarInvalid": "存在しない旧暦の日付です（その月に30日がない など）"
   },
   "tabs": {
     "calendar": "カレンダー",

@@ -407,7 +407,7 @@
     "repeatSolar": "每年",
     "repeatLunar": "每年（农历）",
     "repeatNone": "不重复",
-    "lunarHint": "按农历 {{date}} 每年重复",
+    "lunarHint": "每年农历{{date}}（最初那天是公历 {{solar}}）",
     "color": "颜色",
     "pin": "显示在首页",
     "pinOn": "显示",
@@ -422,7 +422,12 @@
     "totalDays": "已经 {{count}} 天",
     "passedSection": "已经过去的",
     "everyYear": "每年 {{date}}",
-    "everyYearLunar": "每年农历 {{date}}"
+    "everyYearLunar": "每年农历 {{date}}",
+    "lunarDate": "农历日期",
+    "lunarYear": "年",
+    "lunarMonth": "月",
+    "lunarDay": "日",
+    "lunarInvalid": "这个农历日期不存在（比如这个月没有三十）"
   },
   "tabs": {
     "calendar": "日历",

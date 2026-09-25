@@ -1,6 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Text, View } from 'react-native';
 
 import { anniversaryStatusText } from '@/components/anniversaryText';
 import { confirmAsync, showMessage } from '@/components/confirm';
@@ -18,15 +19,16 @@ import { DatePicker } from '@/components/pickers/TimePicker';
 import { ReminderSelect } from '@/components/ReminderSelect';
 import { useData } from '@/data/DataProvider';
 import type { Anniversary, NewEntity } from '@/data/types';
-import { anniversaryStatus } from '@/lib/anniversary';
+import { anniversaryStatus, lunarToSolar, solarToLunar } from '@/lib/anniversary';
 import { isValidLocalDate, today } from '@/lib/date';
 import { lunarInfo } from '@/lib/lunar';
-import { JOB_COLORS } from '@/theme';
+import { JOB_COLORS, makeStyles } from '@/theme';
 
 type RepeatMode = 'solar' | 'lunar' | 'none';
 
 /** 纪念日：新建（id = "new"，参数 date）或编辑 */
 export default function AnniversaryEditScreen() {
+  const styles = useStyles();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ id: string; date?: string }>();
   const isNew = params.id === 'new';
@@ -37,6 +39,17 @@ export default function AnniversaryEditScreen() {
     params.date && isValidLocalDate(params.date) ? params.date : today()
   );
   const [repeat, setRepeat] = useState<RepeatMode>('solar');
+  // 农历：直接输入农历的年、月、日（农历生日大家记的是农历日期）
+  const [lunarY, setLunarY] = useState('');
+  const [lunarM, setLunarM] = useState('');
+  const [lunarD, setLunarD] = useState('');
+  const setLunarFrom = (solar: string) => {
+    if (!isValidLocalDate(solar)) return;
+    const l = solarToLunar(solar);
+    setLunarY(String(l.year));
+    setLunarM(String(l.month));
+    setLunarD(String(l.day));
+  };
   const [color, setColor] = useState<string>(JOB_COLORS[0]);
   const [pinned, setPinned] = useState(false);
   const [reminder, setReminder] = useState<number | null>(null);
@@ -53,6 +66,7 @@ export default function AnniversaryEditScreen() {
         setTitle(a.title);
         setDate(a.date);
         setRepeat(!a.repeat ? 'none' : a.lunar ? 'lunar' : 'solar');
+        if (a.lunar) setLunarFrom(a.date);
         setColor(a.color);
         setPinned(a.pinned);
         setReminder(a.reminderDaysBefore);
@@ -62,9 +76,23 @@ export default function AnniversaryEditScreen() {
     });
   }, [isNew, params.id, repos]);
 
+  const isLunar = repeat === 'lunar';
+  // 实际保存的公历日期（农历模式下由农历年月日换算）
+  const effectiveDate = isLunar
+    ? lunarToSolar(Number(lunarY), Number(lunarM), Number(lunarD))
+    : isValidLocalDate(date)
+      ? date
+      : null;
+
+  const changeRepeat = (next: RepeatMode) => {
+    if (next === 'lunar' && !isLunar) setLunarFrom(date);
+    if (next !== 'lunar' && isLunar && effectiveDate) setDate(effectiveDate);
+    setRepeat(next);
+  };
+
   const errors = {
     title: title.trim() ? null : t('errors.nameRequired'),
-    date: isValidLocalDate(date) ? null : t('errors.dateInvalid'),
+    date: effectiveDate ? null : t(isLunar ? 'anniv.lunarInvalid' : 'errors.dateInvalid'),
   };
   const err = (k: keyof typeof errors) => (showErrors ? errors[k] : null);
 
@@ -73,7 +101,7 @@ export default function AnniversaryEditScreen() {
     if (Object.values(errors).some(Boolean)) return;
     const data: NewEntity<Anniversary> = {
       title: title.trim(),
-      date,
+      date: effectiveDate!,
       repeat: repeat !== 'none',
       lunar: repeat === 'lunar',
       color,
@@ -111,10 +139,23 @@ export default function AnniversaryEditScreen() {
   }
   if (!loaded) return null;
 
-  const valid = isValidLocalDate(date);
-  const status = valid
-    ? anniversaryStatus({ date, repeat: repeat !== 'none', lunar: repeat === 'lunar' }, today())
+  const status = effectiveDate
+    ? anniversaryStatus({ date: effectiveDate, repeat: repeat !== 'none', lunar: isLunar }, today())
     : null;
+  const numberInput = (
+    value: string,
+    onChange: (v: string) => void,
+    width: number,
+    label: string
+  ) => (
+    <Input
+      value={value}
+      onChangeText={(v) => onChange(v.replace(/\D/g, ''))}
+      keyboardType="number-pad"
+      accessibilityLabel={label}
+      style={{ width, textAlign: 'center' }}
+    />
+  );
 
   return (
     <FormScreen>
@@ -122,10 +163,6 @@ export default function AnniversaryEditScreen() {
       <Section>
         <Field label={t('anniv.name')} error={err('title')}>
           <Input value={title} onChangeText={setTitle} placeholder={t('anniv.namePlaceholder')} />
-        </Field>
-        <Field label={t('anniv.date')} error={err('date')}>
-          <DatePicker value={date} onChange={setDate} accessibilityLabel={t('anniv.date')} />
-          {status && <EmptyText>{anniversaryStatusText(t, status)}</EmptyText>}
         </Field>
         <Field label={t('anniv.repeat')}>
           <Segmented
@@ -135,13 +172,31 @@ export default function AnniversaryEditScreen() {
               { value: 'none', label: t('anniv.repeatNone') },
             ]}
             value={repeat}
-            onChange={setRepeat}
+            onChange={changeRepeat}
           />
-          {repeat === 'lunar' && valid && (
+        </Field>
+        <Field label={t(isLunar ? 'anniv.lunarDate' : 'anniv.date')} error={err('date')}>
+          {isLunar ? (
+            <View style={styles.lunarRow}>
+              {numberInput(lunarY, setLunarY, 76, t('anniv.lunarYear'))}
+              <Text style={styles.unit}>{t('anniv.lunarYear')}</Text>
+              {numberInput(lunarM, setLunarM, 52, t('anniv.lunarMonth'))}
+              <Text style={styles.unit}>{t('anniv.lunarMonth')}</Text>
+              {numberInput(lunarD, setLunarD, 52, t('anniv.lunarDay'))}
+              <Text style={styles.unit}>{t('anniv.lunarDay')}</Text>
+            </View>
+          ) : (
+            <DatePicker value={date} onChange={setDate} accessibilityLabel={t('anniv.date')} />
+          )}
+          {isLunar && effectiveDate && (
             <EmptyText>
-              {t('anniv.lunarHint', { date: lunarInfo(date).date.replace('闰', '') })}
+              {t('anniv.lunarHint', {
+                date: lunarInfo(effectiveDate).date.replace('闰', ''),
+                solar: effectiveDate,
+              })}
             </EmptyText>
           )}
+          {status && <EmptyText>{anniversaryStatusText(t, status)}</EmptyText>}
         </Field>
         <Field label={t('anniv.color')}>
           <ColorPicker value={color} onChange={setColor} />
@@ -167,3 +222,8 @@ export default function AnniversaryEditScreen() {
     </FormScreen>
   );
 }
+
+const useStyles = makeStyles((colors) => ({
+  lunarRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  unit: { fontSize: 15, color: colors.text },
+}));

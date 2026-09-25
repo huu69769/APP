@@ -100,3 +100,18 @@ export function anniversaryStatus(a: AnniversaryDate, today: LocalDate): Anniver
 export function daysSince(a: AnniversaryDate, today: LocalDate): number | null {
   return a.date < today ? diffDays(a.date, today) : null;
 }
+
+/** 农历年月日 → 公历日期；这个农历日期不存在（比如那个月没有三十）返回 null */
+export function lunarToSolar(year: number, month: number, day: number): LocalDate | null {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  if (year < 1901 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 30) return null;
+  if (day > LunarMonth.fromYm(year, month).getDayCount()) return null;
+  return Lunar.fromYmd(year, month, day).getSolar().toYmd();
+}
+
+/** 公历日期 → 农历年月日（闰月按普通月） */
+export function solarToLunar(date: LocalDate): { year: number; month: number; day: number } {
+  const d = parseLocalDate(date);
+  const l = Solar.fromYmd(d.year(), d.month() + 1, d.date()).getLunar();
+  return { year: l.getYear(), month: Math.abs(l.getMonth()), day: l.getDay() };
+}
