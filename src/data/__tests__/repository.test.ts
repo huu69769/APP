@@ -77,6 +77,32 @@ describe('settings', () => {
   });
 });
 
+describe('settings on first launch', () => {
+  it('uses Japanese defaults when the system language is Japanese', async () => {
+    const driver = new MemoryDriver();
+    expect(await loadSettings(driver, 'ja')).toEqual({
+      ...DEFAULT_SETTINGS,
+      language: 'ja',
+      holidayMode: 'jp',
+      defaultCurrency: 'JPY',
+    });
+    // 保存下来了：之后系统语言变了也不再改
+    expect((await loadSettings(driver, 'zh')).language).toBe('ja');
+  });
+
+  it('keeps Chinese defaults for other system languages', async () => {
+    expect(await loadSettings(new MemoryDriver(), 'zh')).toEqual(DEFAULT_SETTINGS);
+    expect(await loadSettings(new MemoryDriver(), 'en')).toEqual(DEFAULT_SETTINGS);
+    expect(await loadSettings(new MemoryDriver(), null)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('does not touch existing users', async () => {
+    const driver = new MemoryDriver();
+    await saveSettings(driver, { showLunar: false });
+    expect((await loadSettings(driver, 'ja')).language).toBe('zh');
+  });
+});
+
 describe('WebDriver', () => {
   it('persists data across instances via Storage', async () => {
     const store = new Map<string, string>();

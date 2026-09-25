@@ -1,3 +1,4 @@
+import { getLocales } from 'expo-localization';
 import * as Crypto from 'expo-crypto';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
@@ -45,7 +46,7 @@ export function DataProvider({
     (async () => {
       const driver = createDefaultDriver();
       await driver.init();
-      const settings = await loadSettings(driver);
+      const settings = await loadSettings(driver, getLocales()[0]?.languageCode);
       const repos = createRepositories(driver, {
         newId: () => Crypto.randomUUID(),
         onChange: () => setDataVersion((v) => v + 1),

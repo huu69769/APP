@@ -47,9 +47,34 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
 };
 
-/** 设置在存储里是键值对，值用 JSON 编码 */
-export async function loadSettings(driver: StorageDriver): Promise<Settings> {
+/**
+ * 第一次打开时按手机的系统语言决定默认设置：
+ * 系统是日语 → 日语界面、日本节假日、日元；其他语言 → 中文界面、中国节假日、人民币（默认值）。
+ */
+export function localeDefaults(systemLanguage: string | null | undefined): Partial<Settings> {
+  if (systemLanguage?.toLowerCase().startsWith('ja')) {
+    return { language: 'ja', holidayMode: 'jp', defaultCurrency: 'JPY' };
+  }
+  return {};
+}
+
+/**
+ * 设置在存储里是键值对，值用 JSON 编码。
+ * 还一个设置都没保存过（第一次打开）时，按系统语言定好默认值并保存下来，
+ * 之后改了系统语言也不会再变（在「设置」里可以随时改）。
+ */
+export async function loadSettings(
+  driver: StorageDriver,
+  systemLanguage?: string | null
+): Promise<Settings> {
   const raw = await driver.getAllSettings();
+  if (Object.keys(raw).length === 0) {
+    const initial = localeDefaults(systemLanguage);
+    if (Object.keys(initial).length > 0) {
+      await saveSettings(driver, initial);
+      Object.assign(raw, await driver.getAllSettings());
+    }
+  }
   const result: Settings = { ...DEFAULT_SETTINGS };
   for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]) {
     if (raw[key] === undefined) continue;
