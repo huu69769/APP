@@ -45,7 +45,7 @@
   },
   "home": {
     "jobs": "仕事",
-    "batch": "まとめて登録",
+    "batch": "まとめて登録・削除",
     "stats": "集計",
     "menu": "メニュー",
     "onboardingTitle": "まずは仕事を1つ追加しましょう",
@@ -67,15 +67,21 @@
     "dismiss": "閉じる"
   },
   "batch": {
-    "hint": "シフトを入れる日をタップしてください",
+    "hint": "日付をタップ：まとめてシフト登録・まとめて削除ができます",
     "selected": "{{count}}日を選択中",
     "apply": "テンプレートを適用",
     "chooseTemplate": "適用するテンプレートを選択",
     "done": "{{count}}件のシフトを追加しました",
     "doneSkipped": "{{count}}件のシフトを追加しました（{{skipped}}日は同じシフトがあるためスキップ）",
-    "deleteShifts": "シフトを削除",
-    "deleteTitle": "選択した{{days}}日のシフトをすべて削除しますか？（{{count}}件）",
-    "noShifts": "選択した日にシフトはありません"
+    "delete": "削除",
+    "deleteWhat": "選択した{{count}}日の…",
+    "deleteShiftsOpt": "シフト（{{count}}件）",
+    "deleteEventsOpt": "予定（{{count}}件）",
+    "deleteAllOpt": "シフトと予定すべて（{{count}}件）",
+    "deleteTitle_shifts": "選択した{{days}}日のシフトをすべて削除しますか？（{{count}}件）",
+    "deleteTitle_events": "選択した{{days}}日の予定をすべて削除しますか？（{{count}}件）",
+    "deleteTitle_all": "選択した{{days}}日のシフトと予定をすべて削除しますか？（{{count}}件）",
+    "nothingToDelete": "選択した日にシフトや予定はありません"
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",

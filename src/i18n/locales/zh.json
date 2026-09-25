@@ -45,7 +45,7 @@
   },
   "home": {
     "jobs": "工作",
-    "batch": "批量排班",
+    "batch": "批量排班 / 删除",
     "stats": "统计",
     "menu": "菜单",
     "onboardingTitle": "先添加你的第一份工作",
@@ -67,15 +67,21 @@
     "dismiss": "知道了"
   },
   "batch": {
-    "hint": "点选要排班的日期",
+    "hint": "点选日期：可以批量排班，也可以批量删除",
     "selected": "已选 {{count}} 天",
     "apply": "套用模板",
     "chooseTemplate": "选择要套用的模板",
     "done": "已添加 {{count}} 个班次",
     "doneSkipped": "已添加 {{count}} 个班次（{{skipped}} 天已经有同样的班次，跳过了）",
-    "deleteShifts": "删除班次",
-    "deleteTitle": "删除所选 {{days}} 天的全部班次（共 {{count}} 个）？",
-    "noShifts": "所选日期没有班次"
+    "delete": "删除",
+    "deleteWhat": "删除所选 {{count}} 天的…",
+    "deleteShiftsOpt": "班次（{{count}} 个）",
+    "deleteEventsOpt": "日程（{{count}} 个）",
+    "deleteAllOpt": "班次和日程全部（{{count}} 个）",
+    "deleteTitle_shifts": "删除所选 {{days}} 天的全部班次（共 {{count}} 个）？",
+    "deleteTitle_events": "删除所选 {{days}} 天的全部日程（共 {{count}} 个）？",
+    "deleteTitle_all": "删除所选 {{days}} 天的全部班次和日程（共 {{count}} 个）？",
+    "nothingToDelete": "所选日期没有班次或日程"
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",

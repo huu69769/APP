@@ -72,6 +72,7 @@ export default function HomeScreen() {
   const [batchMode, setBatchMode] = useState(false);
   const [selected, setSelected] = useState<Set<LocalDate>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // 下方列表的选择模式（一次删除多条）
   const [selection, setSelection] = useState<Set<string> | undefined>(undefined);
@@ -292,28 +293,65 @@ export default function HomeScreen() {
     toast(t('toast.deleted', { count: chosen.length }), { onUndo: undo });
   };
 
-  /** 批量模式：删除所选日期的全部班次，可以撤销 */
-  const deleteShiftsOnSelectedDays = async () => {
-    const shifts = (data?.shifts ?? []).filter((s) => selected.has(s.date));
-    if (!shifts.length) {
-      toast(t('batch.noShifts'));
-      return;
-    }
+  /** 批量模式：删除所选日期的班次 / 日程（项目不在这里删），可以撤销 */
+  const deleteOnSelectedDays = async (what: 'shifts' | 'events' | 'all') => {
+    const refs = [
+      ...(what !== 'events' ? (data?.shifts ?? []) : [])
+        .filter((s) => selected.has(s.date))
+        .map((s) => ({ kind: 'shift' as const, id: s.id })),
+      ...(what !== 'shifts' ? (data?.events ?? []) : [])
+        .filter((e) => selected.has(e.date))
+        .map((e) => ({ kind: 'event' as const, id: e.id })),
+    ];
+    if (!refs.length) return;
     const ok = await confirmAsync({
-      title: t('batch.deleteTitle', { days: selected.size, count: shifts.length }),
+      title: t(`batch.deleteTitle_${what}`, { days: selected.size, count: refs.length }),
       message: t('bulk.deleteMessage'),
       confirmText: t('common.delete'),
       cancelText: t('common.cancel'),
       destructive: true,
     });
     if (!ok) return;
-    const undo = await deleteItems(
-      repos,
-      shifts.map((s) => ({ kind: 'shift' as const, id: s.id }))
-    );
+    const undo = await deleteItems(repos, refs);
     exitBatch();
-    toast(t('toast.deleted', { count: shifts.length }), { onUndo: undo });
+    toast(t('toast.deleted', { count: refs.length }), { onUndo: undo });
   };
+
+  const shiftsOnSelected = (data?.shifts ?? []).filter((s) => selected.has(s.date)).length;
+  const eventsOnSelected = (data?.events ?? []).filter((e) => selected.has(e.date)).length;
+  const openDeleteSheet = () => {
+    if (!shiftsOnSelected && !eventsOnSelected) {
+      toast(t('batch.nothingToDelete'));
+      return;
+    }
+    setDeleteOpen(true);
+  };
+  const deleteActions: SheetAction[] = [
+    ...(shiftsOnSelected
+      ? [
+          {
+            label: t('batch.deleteShiftsOpt', { count: shiftsOnSelected }),
+            onPress: () => deleteOnSelectedDays('shifts'),
+          },
+        ]
+      : []),
+    ...(eventsOnSelected
+      ? [
+          {
+            label: t('batch.deleteEventsOpt', { count: eventsOnSelected }),
+            onPress: () => deleteOnSelectedDays('events'),
+          },
+        ]
+      : []),
+    ...(shiftsOnSelected && eventsOnSelected
+      ? [
+          {
+            label: t('batch.deleteAllOpt', { count: shiftsOnSelected + eventsOnSelected }),
+            onPress: () => deleteOnSelectedDays('all'),
+          },
+        ]
+      : []),
+  ];
 
   const fd = parseLocalDate(focused);
   const addActions: SheetAction[] = [
@@ -488,11 +526,11 @@ export default function HomeScreen() {
         <View style={styles.batchBar}>
           <Text style={styles.batchCount}>{t('batch.selected', { count: selected.size })}</Text>
           <Pressable
-            onPress={deleteShiftsOnSelectedDays}
+            onPress={openDeleteSheet}
             disabled={selected.size === 0}
             accessibilityRole="button"
             style={[styles.deleteButton, selected.size === 0 && styles.disabled]}>
-            <Text style={styles.deleteText}>{t('batch.deleteShifts')}</Text>
+            <Text style={styles.deleteText}>{t('batch.delete')}</Text>
           </Pressable>
           <Pressable
             onPress={() => setPickerOpen(true)}
@@ -548,6 +586,13 @@ export default function HomeScreen() {
         })}
         onClose={() => setAddOpen(false)}
         actions={addActions}
+      />
+
+      <ActionSheet
+        visible={deleteOpen}
+        title={t('batch.deleteWhat', { count: selected.size })}
+        onClose={() => setDeleteOpen(false)}
+        actions={deleteActions}
       />
 
       <ActionSheet
