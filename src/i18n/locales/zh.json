@@ -46,7 +46,8 @@
     "menu": "菜单",
     "onboardingTitle": "先添加你的第一份工作",
     "onboardingBody": "时薪兼职（便利店、餐厅…）或者按项目结算的客户（翻译、设计…）都可以。",
-    "onboardingButton": "添加工作"
+    "onboardingButton": "添加工作",
+    "settings": "设置"
   },
   "batch": {
     "hint": "点选要排班的日期",
@@ -80,7 +81,12 @@
     "add": "＋ 添加",
     "addTitle": "要添加什么？",
     "addShift": "班次（手动填时间）",
-    "addProject": "项目（报酬 + DDL）"
+    "addProject": "项目（报酬 + DDL）",
+    "events": "日程",
+    "addEvent": "日程（约会、面试…）",
+    "note": "笔记",
+    "notePlaceholder": "写点什么…（自动保存）",
+    "allDay": "全天"
   },
   "jobs": {
     "title": "工作",
@@ -226,5 +232,55 @@
     "added": "已添加 {{what}}",
     "undo": "撤销",
     "undone": "已撤销"
+  },
+  "event": {
+    "newTitle": "添加日程",
+    "editTitle": "编辑日程",
+    "title": "标题",
+    "titlePlaceholder": "例如：和朋友吃饭",
+    "date": "日期",
+    "time": "时间",
+    "allDay": "全天",
+    "timed": "指定时间",
+    "endOptional": "结束时间（可不填）",
+    "color": "颜色",
+    "note": "备注",
+    "deleteTitle": "删除这个日程？"
+  },
+  "reminder": {
+    "label": "提醒",
+    "none": "不提醒",
+    "atTime": "准时",
+    "m30": "提前 30 分钟",
+    "h1": "提前 1 小时",
+    "d1": "前一天",
+    "taskDay": "当天 9:00",
+    "taskD1": "前一天 9:00",
+    "taskD3": "3 天前 9:00",
+    "allDayHint": "全天日程在 9:00 提醒。",
+    "webHint": "网页版不会发送通知，提醒只在手机 App 里有效。",
+    "denied": "通知权限没有打开，提醒不会响。可以在「设置 → 通知」里打开。",
+    "channelName": "提醒",
+    "startsAt": "{{date}} {{time}} 开始",
+    "allDayBody": "{{date}}（全天）",
+    "taskTitle": "DDL：{{title}}",
+    "taskBody": "截止日 {{date}}"
+  },
+  "settings": {
+    "title": "设置",
+    "notifications": "通知",
+    "statusGranted": "已允许通知",
+    "statusDenied": "通知没有打开",
+    "statusUndetermined": "还没有允许通知",
+    "statusUnsupported": "网页版不发送通知，请在手机 App 里使用提醒。",
+    "allow": "允许通知",
+    "openSystem": "打开系统设置",
+    "test": "发送测试通知（5 秒后）",
+    "testTitle": "测试通知",
+    "testBody": "能看到这条，说明提醒可以正常使用。",
+    "testSent": "5 秒后会收到一条测试通知",
+    "batteryTitle": "收不到提醒？",
+    "batteryBody": "部分手机（小米、华为、OPPO、vivo、三星等）的省电功能会拦截 App 的提醒。\n\n请打开手机的「设置 → 应用 → 打工日历」：\n1. 「通知」：全部允许\n2. 「电池 / 省电策略」：选「不限制」或「无限制」\n3. 「自启动 / 允许后台运行」：打开\n\n不同手机的名称可能略有不同。改完后可以点上面的「发送测试通知」试一下。",
+    "moreLater": "语言、币种、备份等设置会在之后的版本加入。"
   }
 }

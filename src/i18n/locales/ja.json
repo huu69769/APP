@@ -46,7 +46,8 @@
     "menu": "メニュー",
     "onboardingTitle": "まずは仕事を1つ追加しましょう",
     "onboardingBody": "時給のバイト（コンビニ、飲食店…）でも、案件ごとのクライアント（翻訳、デザイン…）でも登録できます。",
-    "onboardingButton": "仕事を追加"
+    "onboardingButton": "仕事を追加",
+    "settings": "設定"
   },
   "batch": {
     "hint": "シフトを入れる日をタップして選択",
@@ -80,7 +81,12 @@
     "add": "＋ 追加",
     "addTitle": "何を追加しますか？",
     "addShift": "シフト（時間を入力）",
-    "addProject": "案件（報酬＋締切）"
+    "addProject": "案件（報酬＋締切）",
+    "events": "予定",
+    "addEvent": "予定（約束、面接など）",
+    "note": "メモ",
+    "notePlaceholder": "メモを書く…（自動保存）",
+    "allDay": "終日"
   },
   "jobs": {
     "title": "仕事",
@@ -226,5 +232,55 @@
     "added": "{{what}} を追加しました",
     "undo": "元に戻す",
     "undone": "元に戻しました"
+  },
+  "event": {
+    "newTitle": "予定を追加",
+    "editTitle": "予定を編集",
+    "title": "タイトル",
+    "titlePlaceholder": "例：友達とごはん",
+    "date": "日付",
+    "time": "時間",
+    "allDay": "終日",
+    "timed": "時間を指定",
+    "endOptional": "終了時刻（任意）",
+    "color": "色",
+    "note": "メモ",
+    "deleteTitle": "この予定を削除しますか？"
+  },
+  "reminder": {
+    "label": "リマインダー",
+    "none": "なし",
+    "atTime": "開始時",
+    "m30": "30分前",
+    "h1": "1時間前",
+    "d1": "前日",
+    "taskDay": "当日 9:00",
+    "taskD1": "前日 9:00",
+    "taskD3": "3日前 9:00",
+    "allDayHint": "終日の予定は 9:00 に通知します。",
+    "webHint": "Web版では通知は送られません。リマインダーはスマホのアプリでのみ有効です。",
+    "denied": "通知が許可されていないため、リマインダーは鳴りません。「設定 → 通知」から許可できます。",
+    "channelName": "リマインダー",
+    "startsAt": "{{date}} {{time}} 開始",
+    "allDayBody": "{{date}}（終日）",
+    "taskTitle": "締切：{{title}}",
+    "taskBody": "締切日 {{date}}"
+  },
+  "settings": {
+    "title": "設定",
+    "notifications": "通知",
+    "statusGranted": "通知は許可されています",
+    "statusDenied": "通知がオフになっています",
+    "statusUndetermined": "通知はまだ許可されていません",
+    "statusUnsupported": "Web版では通知は送られません。スマホのアプリでリマインダーを使ってください。",
+    "allow": "通知を許可",
+    "openSystem": "システム設定を開く",
+    "test": "テスト通知を送る（5秒後）",
+    "testTitle": "テスト通知",
+    "testBody": "これが見えていれば、リマインダーは正常に使えます。",
+    "testSent": "5秒後にテスト通知が届きます",
+    "batteryTitle": "リマインダーが届かないときは",
+    "batteryBody": "一部のスマホ（Xiaomi、Huawei、OPPO、vivo、Samsung など）は、省電力機能がアプリの通知を止めてしまうことがあります。\n\nスマホの「設定 → アプリ → バイトカレンダー」で：\n1.「通知」：すべて許可\n2.「電池 / バッテリーの最適化」：「制限なし」を選択\n3.「自動起動 / バックグラウンド実行」：オン\n\n名前は機種によって少し違います。変更したら、上の「テスト通知を送る」で確認してください。",
+    "moreLater": "言語・通貨・バックアップなどの設定は、今後のバージョンで追加します。"
   }
 }

@@ -23,6 +23,8 @@ const config: ExpoConfig = {
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
+    // 让提醒准时响：Android 12 用 SCHEDULE_EXACT_ALARM，13 及以上日历类 app 可用 USE_EXACT_ALARM（自动允许）
+    permissions: ['android.permission.SCHEDULE_EXACT_ALARM', 'android.permission.USE_EXACT_ALARM'],
   },
   web: {
     // 单页应用：GitHub Pages 上用 404.html 兜底，任何路径都能打开
@@ -41,6 +43,7 @@ const config: ExpoConfig = {
     ],
     'expo-sqlite',
     'expo-localization',
+    'expo-notifications',
     './plugins/withReleaseSigning.js',
   ],
   experiments: {

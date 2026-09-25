@@ -5,7 +5,8 @@ import type { Job, NewEntity, Task } from './types';
 /** 新建项目。币种默认用客户（工作）的币种 */
 export function buildTask(
   job: Job,
-  input: Pick<Task, 'title' | 'dueDate' | 'amount'> & Partial<Pick<Task, 'currency' | 'note'>>
+  input: Pick<Task, 'title' | 'dueDate' | 'amount'> &
+    Partial<Pick<Task, 'currency' | 'note' | 'reminderMinutesBefore'>>
 ): NewEntity<Task> {
   return {
     jobId: job.id,
@@ -14,7 +15,7 @@ export function buildTask(
     amount: input.amount,
     currency: input.currency ?? job.currency,
     note: input.note ?? '',
-    reminderMinutesBefore: null,
+    reminderMinutesBefore: input.reminderMinutesBefore ?? null,
   };
 }
 

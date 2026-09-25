@@ -42,11 +42,13 @@ export default function HomeScreen() {
   const { data } = useQuery(
     async (r) => {
       const { from, to } = monthGridRange(month, settings.weekStart);
-      const [shifts, jobs, templates, tasks] = await Promise.all([
+      const [shifts, jobs, templates, tasks, events, notes] = await Promise.all([
         r.shifts.listByDateRange(from, to),
         r.jobs.listWithDeleted(),
         r.shift_templates.list(),
         r.tasks.list(),
+        r.events.listByDateRange(from, to),
+        r.day_notes.listByDateRange(from, to),
       ]);
       const jobsById = new Map(jobs.map((j) => [j.id, j]));
       const bars = new Map<LocalDate, DayBar[]>();
@@ -71,10 +73,18 @@ export default function HomeScreen() {
           task: true,
         });
       }
+      // 日程：用日程的颜色；笔记：灰色
+      const dots = new Map<LocalDate, string[]>();
+      for (const e of [...events].sort((a, b) =>
+        (a.startTime ?? '').localeCompare(b.startTime ?? '')
+      )) {
+        dots.set(e.date, [...(dots.get(e.date) ?? []), e.color]);
+      }
+      for (const n of notes) dots.set(n.date, [...(dots.get(n.date) ?? []), colors.textMuted]);
       const hourlyJobs = jobs
         .filter((j) => isActiveJob(j) && jobPayType(j) === 'hourly')
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-      return { bars, hourlyJobs, templates, hasJobs: jobs.some((j) => !j.deletedAt) };
+      return { bars, dots, hourlyJobs, templates, hasJobs: jobs.some((j) => !j.deletedAt) };
     },
     [month, settings.weekStart, today]
   );
@@ -198,6 +208,7 @@ export default function HomeScreen() {
         weekStart={settings.weekStart}
         today={today}
         bars={data?.bars}
+        dots={data?.dots}
         selected={batchMode ? selected : undefined}
         onPressDay={onPressDay}
         onLongPressDay={(date) => (batchMode ? toggle(date) : startBatch(date))}
@@ -235,6 +246,7 @@ export default function HomeScreen() {
             label: t('home.stats'),
             onPress: () => router.push({ pathname: '/stats', params: { month } }),
           },
+          { label: t('home.settings'), onPress: () => router.push('/settings') },
         ]}
       />
     </SafeAreaView>

@@ -13,6 +13,7 @@ import {
   Section,
   Segmented,
 } from '@/components/form';
+import { ReminderSelect } from '@/components/ReminderSelect';
 import { ShiftTimeFields, useShiftTimeState } from '@/components/ShiftTimeFields';
 import { useData } from '@/data/DataProvider';
 import { buildPendingShift, buildShift } from '@/data/shifts';
@@ -34,6 +35,7 @@ export default function ShiftEditScreen() {
   const [shift, setShift] = useState<Shift | null>(null);
   const [date, setDate] = useState(params.date ?? '');
   const [note, setNote] = useState('');
+  const [reminder, setReminder] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [missing, setMissing] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -59,6 +61,7 @@ export default function ShiftEditScreen() {
           setJobId(s.jobId);
           setDate(s.date);
           setNote(s.note);
+          setReminder(s.reminderMinutesBefore);
           setAll(s);
           const job = (await repos.jobs.listWithDeleted()).find((j) => j.id === s.jobId);
           if (job) setJobs([job]);
@@ -91,15 +94,18 @@ export default function ShiftEditScreen() {
         if (!job) return;
         await repos.shifts.create(
           pending
-            ? buildPendingShift(job, date, note.trim())
-            : buildShift(job, { ...value!, date, note: note.trim() })
+            ? { ...buildPendingShift(job, date, note.trim()), reminderMinutesBefore: reminder }
+            : {
+                ...buildShift(job, { ...value!, date, note: note.trim() }),
+                reminderMinutesBefore: reminder,
+              }
         );
       } else {
         await repos.shifts.update(
           params.id,
           pending
-            ? { startTime: null, endTime: null, note: note.trim() }
-            : { ...value!, note: note.trim() }
+            ? { startTime: null, endTime: null, note: note.trim(), reminderMinutesBefore: reminder }
+            : { ...value!, note: note.trim(), reminderMinutesBefore: reminder }
         );
       }
       router.back();
@@ -168,6 +174,7 @@ export default function ShiftEditScreen() {
             {t('shift.wageSnapshot', { amount: formatMoney(wage.amount, wage.currency) })}
           </EmptyText>
         )}
+        {!times.pending && <ReminderSelect value={reminder} onChange={setReminder} />}
         <Field label={t('shift.note')}>
           <Input
             value={note}

@@ -25,6 +25,8 @@ interface Props {
   weekStart: WeekStart;
   today: LocalDate;
   bars?: Map<LocalDate, DayBar[]>;
+  /** 日程（颜色）和笔记（灰色）显示成小圆点 */
+  dots?: Map<LocalDate, string[]>;
   /** 批量排班时选中的日期；传入时格子显示选中状态 */
   selected?: Set<LocalDate>;
   onPressDay: (date: LocalDate) => void;
@@ -35,13 +37,14 @@ interface Props {
 
 /**
  * 月历：6 行 × 7 列。左右滑动切换月份。
- * 每个班次用兼职的颜色显示成一条色块。M5 起还会显示农历和节假日。
+ * 班次、项目显示成色块；日程和笔记显示成小圆点。M5 起还会显示农历和节假日。
  */
 export function MonthCalendar({
   month,
   weekStart,
   today,
   bars,
+  dots,
   selected,
   onPressDay,
   onLongPressDay,
@@ -77,6 +80,7 @@ export function MonthCalendar({
                 key={day.date}
                 day={day}
                 bars={bars?.get(day.date) ?? []}
+                dots={dots?.get(day.date) ?? []}
                 selected={selected?.has(day.date)}
                 onPress={onPressDay}
                 onLongPress={onLongPressDay}
@@ -92,12 +96,14 @@ export function MonthCalendar({
 function DayCell({
   day,
   bars,
+  dots,
   selected,
   onPress,
   onLongPress,
 }: {
   day: CalendarDay;
   bars: DayBar[];
+  dots: string[];
   selected?: boolean;
   onPress: (date: LocalDate) => void;
   onLongPress?: (date: LocalDate) => void;
@@ -129,6 +135,11 @@ function DayCell({
           ]}>
           {day.day}
         </Text>
+      </View>
+      <View style={[styles.dots, !day.inMonth && styles.barsOutOfMonth]}>
+        {dots.slice(0, 4).map((c, i) => (
+          <View key={i} style={[styles.dot, { backgroundColor: c }]} />
+        ))}
       </View>
       <View style={[styles.bars, !day.inMonth && styles.barsOutOfMonth]}>
         {shown.map((bar) => (
@@ -190,7 +201,9 @@ const styles = StyleSheet.create({
   outOfMonth: { color: colors.textFaint },
   sunday: { color: colors.sunday },
   saturday: { color: colors.saturday },
-  bars: { alignSelf: 'stretch', gap: 2, marginTop: 2, paddingHorizontal: 2 },
+  dots: { flexDirection: 'row', gap: 2, height: 5, marginTop: 1 },
+  dot: { width: 5, height: 5, borderRadius: 2.5 },
+  bars: { alignSelf: 'stretch', gap: 2, marginTop: 1, paddingHorizontal: 2 },
   barsOutOfMonth: { opacity: 0.4 },
   bar: { borderRadius: 3, paddingHorizontal: 2, paddingVertical: 1 },
   barPending: { opacity: 0.45 },

@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { ReminderSync } from '@/components/ReminderSync';
 import { ToastProvider } from '@/components/Toast';
 import { DataProvider } from '@/data/DataProvider';
 import { colors } from '@/theme/colors';
@@ -17,6 +18,7 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <DataProvider fallback={({ error }) => <LoadingScreen error={error} />}>
           <ToastProvider>
+            <ReminderSync />
             <Stack
               screenOptions={{
                 headerTintColor: colors.text,

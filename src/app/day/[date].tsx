@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ActionSheet } from '@/components/ActionSheet';
 import { showMessage } from '@/components/confirm';
+import { DayNoteEditor } from '@/components/DayNoteEditor';
 import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/form';
 import { useToast } from '@/components/Toast';
 import { useData } from '@/data/DataProvider';
@@ -37,11 +38,12 @@ export default function DayScreen() {
   const { data } = useQuery(
     async (r) => {
       if (!valid) return null;
-      const [shifts, allJobs, templates, allTasks] = await Promise.all([
+      const [shifts, allJobs, templates, allTasks, events] = await Promise.all([
         r.shifts.listByDateRange(date, date),
         r.jobs.listWithDeleted(),
         r.shift_templates.list(),
         r.tasks.list(),
+        r.events.listByDateRange(date, date),
       ]);
       const activeJobs = allJobs
         .filter(isActiveJob)
@@ -49,6 +51,8 @@ export default function DayScreen() {
       return {
         shifts: sortShifts(shifts),
         tasks: tasksOnDate(allTasks, date),
+        // 全天的在前，其余按开始时间
+        events: events.sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? '')),
         jobsById: new Map(allJobs.map((j) => [j.id, j])),
         hourlyJobs: activeJobs.filter((j) => jobPayType(j) === 'hourly'),
         activeJobs,
@@ -89,7 +93,8 @@ export default function DayScreen() {
     }
   };
 
-  const nothing = data && data.shifts.length === 0 && data.tasks.length === 0;
+  const nothing =
+    data && data.shifts.length === 0 && data.tasks.length === 0 && data.events.length === 0;
 
   return (
     <FormScreen>
@@ -140,6 +145,27 @@ export default function DayScreen() {
                   })}
                 </Section>
               )}
+              {data.events.length > 0 && (
+                <Section title={t('day.events')}>
+                  {data.events.map((e) => (
+                    <ListRow
+                      key={e.id}
+                      color={e.color}
+                      title={e.title}
+                      subtitle={[
+                        e.allDay
+                          ? t('day.allDay')
+                          : `${e.startTime}${e.endTime ? ` – ${e.endTime}` : ''}`,
+                        e.reminderMinutesBefore !== null ? '🔔' : null,
+                        e.note || null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                      onPress={() => router.push({ pathname: '/event/[id]', params: { id: e.id } })}
+                    />
+                  ))}
+                </Section>
+              )}
               {data.tasks.length > 0 && (
                 <Section title={t('day.tasks')}>
                   {data.tasks.map((task) => {
@@ -162,55 +188,50 @@ export default function DayScreen() {
             </>
           )}
 
-          {data.activeJobs.length === 0 ? (
-            <Section>
-              <EmptyText>{t('day.noJobs')}</EmptyText>
-              <Button
-                title={t('day.goJobs')}
-                onPress={() => router.push({ pathname: '/jobs/[id]', params: { id: 'new' } })}
-              />
-            </Section>
-          ) : (
-            <>
-              {data.hourlyJobs.length > 0 && (
-                <Section title={t('day.quickAdd')}>
-                  <View style={styles.chips}>
-                    {data.hourlyJobs.flatMap((job) => [
-                      ...data.templates
-                        .filter((tpl) => tpl.jobId === job.id)
-                        .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                        .map((tpl) => (
-                          <Chip
-                            key={tpl.id}
-                            color={job.color}
-                            label={`${job.name} · ${tpl.name}`}
-                            detail={`${tpl.startTime}–${tpl.endTime}`}
-                            disabled={adding}
-                            onPress={() => quickAdd(job, tpl)}
-                          />
-                        )),
+          {data.hourlyJobs.length > 0 && (
+            <Section title={t('day.quickAdd')}>
+              <View style={styles.chips}>
+                {data.hourlyJobs.flatMap((job) => [
+                  ...data.templates
+                    .filter((tpl) => tpl.jobId === job.id)
+                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                    .map((tpl) => (
                       <Chip
-                        key={`pending-${job.id}`}
+                        key={tpl.id}
                         color={job.color}
-                        label={t('day.pendingChip', { job: job.name })}
-                        dashed
+                        label={`${job.name} · ${tpl.name}`}
+                        detail={`${tpl.startTime}–${tpl.endTime}`}
                         disabled={adding}
-                        onPress={() => quickAdd(job, null)}
-                      />,
-                    ])}
-                  </View>
-                  {data.templates.length === 0 && <EmptyText>{t('day.noTemplates')}</EmptyText>}
-                </Section>
-              )}
-              <Button title={t('day.add')} onPress={() => setSheetOpen(true)} />
-            </>
+                        onPress={() => quickAdd(job, tpl)}
+                      />
+                    )),
+                  <Chip
+                    key={`pending-${job.id}`}
+                    color={job.color}
+                    label={t('day.pendingChip', { job: job.name })}
+                    dashed
+                    disabled={adding}
+                    onPress={() => quickAdd(job, null)}
+                  />,
+                ])}
+              </View>
+              {data.templates.length === 0 && <EmptyText>{t('day.noTemplates')}</EmptyText>}
+            </Section>
           )}
+          <Button title={t('day.add')} onPress={() => setSheetOpen(true)} />
+
+          <DayNoteEditor date={date} />
 
           <ActionSheet
             visible={sheetOpen}
             title={t('day.addTitle')}
             onClose={() => setSheetOpen(false)}
             actions={[
+              {
+                label: t('day.addEvent'),
+                onPress: () =>
+                  router.push({ pathname: '/event/[id]', params: { id: 'new', date } }),
+              },
               {
                 label: t('day.addShift'),
                 onPress: () =>

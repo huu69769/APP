@@ -14,6 +14,7 @@ import {
   Segmented,
 } from '@/components/form';
 import { DatePicker } from '@/components/pickers/TimePicker';
+import { ReminderSelect } from '@/components/ReminderSelect';
 import { useData } from '@/data/DataProvider';
 import { buildTask } from '@/data/tasks';
 import { CURRENCIES, isActiveJob, jobPayType, type Currency, type Job } from '@/data/types';
@@ -41,6 +42,7 @@ export default function TaskEditScreen() {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('CNY');
   const [note, setNote] = useState('');
+  const [reminder, setReminder] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [missing, setMissing] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -67,6 +69,7 @@ export default function TaskEditScreen() {
           setAmount(moneyToInput(task.amount, task.currency));
           setCurrency(task.currency);
           setNote(task.note);
+          setReminder(task.reminderMinutesBefore);
           const job = (await repos.jobs.listWithDeleted()).find((j) => j.id === task.jobId);
           if (job) setJobs([job]);
         }
@@ -188,6 +191,7 @@ export default function TaskEditScreen() {
             accessibilityLabel={t('task.dueDate')}
           />
         </Field>
+        <ReminderSelect kind="task" value={reminder} onChange={setReminder} />
         <Field label={t('task.note')}>
           <Input
             value={note}
