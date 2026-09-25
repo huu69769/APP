@@ -175,12 +175,12 @@ export default function HomeScreen() {
         if (view === 'schedule') bar(o.date, { id: o.id, color: o.color, label: `★${o.title}` });
         else dot(o.date, o.color);
       }
-      // 项目在两种视图里都显示在 DDL 那天：没到 ⏰，已过 ✓
+      // 项目在两种视图里都显示在 DDL 那天（边框样式），已过的前面加 ✓
       for (const task of tasks) {
         bar(task.dueDate, {
           id: task.id,
           color: jobsById.get(task.jobId)?.color ?? colors.textMuted,
-          label: `${isTaskDone(task, today) ? '✓' : '⏰'}${task.title}`,
+          label: `${isTaskDone(task, today) ? '✓' : ''}${task.title}`,
           task: true,
         });
       }
@@ -320,7 +320,7 @@ export default function HomeScreen() {
       chip(task.dueDate, {
         key: `task:${task.id}`,
         color: data.jobsById.get(task.jobId)?.color ?? colors.textMuted,
-        title: `${isTaskDone(task, today) ? '✓' : '⏰'}${task.title}`,
+        title: `${isTaskDone(task, today) ? '✓' : ''}${task.title}`,
         outline: true,
       });
     }

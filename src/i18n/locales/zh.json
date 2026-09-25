@@ -120,7 +120,9 @@
     "addEvent": "日程（约会、面试…）",
     "note": "笔记",
     "notePlaceholder": "写点什么…（自动保存）",
-    "allDay": "全天"
+    "allDay": "全天",
+    "breakShort": "休息 {{duration}}",
+    "hasReminder": "有提醒"
   },
   "jobs": {
     "title": "工作",
@@ -426,7 +428,8 @@
     "lunarYear": "年",
     "lunarMonth": "月",
     "lunarDay": "日",
-    "lunarInvalid": "这个农历日期不存在（比如这个月没有三十）"
+    "lunarInvalid": "这个农历日期不存在（比如这个月没有三十）",
+    "pinnedShort": "首页显示"
   },
   "tabs": {
     "calendar": "日历",
@@ -452,7 +455,7 @@
   },
   "target": {
     "monthTitle": "{{month}}的目标",
-    "reached": "已达成目标 🎉",
+    "reached": "已达成目标",
     "remaining": "还差 {{amount}}",
     "a11y": "收入目标达成 {{percent}}%",
     "currency": "币种",
@@ -466,12 +469,12 @@
     "target": "目标",
     "earnedLabel": "已赚",
     "expectedLabel": "已排班（含未上）",
-    "reachedShort": "达标",
     "barA11y": "{{month}}月：已赚 {{earned}}，目标 {{target}}",
     "yearEarned": "今年已赚 {{amount}}",
     "yearTarget": "各月目标合计 {{amount}}",
     "reachedCount": "达标 {{reached}} / {{total}} 个月",
     "editTitle": "{{month}}的收入目标",
-    "chartCurrency": "图表显示的币种"
+    "chartCurrency": "图表显示的币种",
+    "edit": "修改"
   }
 }

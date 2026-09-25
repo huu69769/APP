@@ -230,7 +230,9 @@ export default function DayScreen() {
                         title={`${job?.name ?? ''}  ${s.startTime} – ${overnight ? '+1 ' : ''}${s.endTime}`}
                         subtitle={[
                           formatDuration(t, workedMinutes(s)),
-                          s.breakMinutes > 0 ? `☕ ${formatDuration(t, s.breakMinutes)}` : null,
+                          s.breakMinutes > 0
+                            ? t('day.breakShort', { duration: formatDuration(t, s.breakMinutes) })
+                            : null,
                           s.note || null,
                         ]
                           .filter(Boolean)
@@ -253,7 +255,7 @@ export default function DayScreen() {
                         e.allDay
                           ? t('day.allDay')
                           : `${e.startTime}${e.endTime ? ` – ${isOvernight(e.startTime!, e.endTime) ? '+1 ' : ''}${e.endTime}` : ''}`,
-                        e.reminderMinutesBefore !== null ? '🔔' : null,
+                        e.reminderMinutesBefore !== null ? t('day.hasReminder') : null,
                         e.note || null,
                       ]
                         .filter(Boolean)

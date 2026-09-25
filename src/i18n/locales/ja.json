@@ -120,7 +120,9 @@
     "addEvent": "予定（約束、面接など）",
     "note": "メモ",
     "notePlaceholder": "メモを書く…（自動保存）",
-    "allDay": "終日"
+    "allDay": "終日",
+    "breakShort": "休憩 {{duration}}",
+    "hasReminder": "通知あり"
   },
   "jobs": {
     "title": "仕事",
@@ -426,7 +428,8 @@
     "lunarYear": "年",
     "lunarMonth": "月",
     "lunarDay": "日",
-    "lunarInvalid": "存在しない旧暦の日付です（その月に30日がない など）"
+    "lunarInvalid": "存在しない旧暦の日付です（その月に30日がない など）",
+    "pinnedShort": "ホームに表示"
   },
   "tabs": {
     "calendar": "カレンダー",
@@ -452,7 +455,7 @@
   },
   "target": {
     "monthTitle": "{{month}}の目標",
-    "reached": "目標達成 🎉",
+    "reached": "目標達成",
     "remaining": "あと {{amount}}",
     "a11y": "収入目標の達成率 {{percent}}%",
     "currency": "通貨",
@@ -466,12 +469,12 @@
     "target": "目標",
     "earnedLabel": "稼いだ額",
     "expectedLabel": "シフト済み（未勤務を含む）",
-    "reachedShort": "達成",
     "barA11y": "{{month}}月：稼いだ額 {{earned}}、目標 {{target}}",
     "yearEarned": "今年の収入 {{amount}}",
     "yearTarget": "月の目標の合計 {{amount}}",
     "reachedCount": "達成 {{reached}} / {{total}} か月",
     "editTitle": "{{month}}の収入目標",
-    "chartCurrency": "グラフに表示する通貨"
+    "chartCurrency": "グラフに表示する通貨",
+    "edit": "変更"
   }
 }

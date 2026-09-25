@@ -120,10 +120,9 @@ export function DayPanel({
             />
             <View style={styles.body}>
               <Text style={styles.itemTitle} numberOfLines={1}>
-                {item.kind === 'task' ? (item.done ? '✓ ' : '⏰ ') : ''}
+                {item.kind === 'task' && item.done ? '✓ ' : ''}
                 {item.kind === 'anniversary' ? '★ ' : ''}
                 {item.title}
-                {item.reminder ? ' 🔔' : ''}
               </Text>
               {subtitleOf(item) ? (
                 <Text style={styles.itemSubtitle} numberOfLines={1}>

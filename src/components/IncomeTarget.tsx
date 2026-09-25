@@ -86,7 +86,7 @@ export function MonthTargetCard({
     <Pressable onPress={onEdit} accessibilityRole="button" style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('target.monthTitle', { month: label })}</Text>
-        <Text style={styles.edit}>✏️</Text>
+        <Text style={styles.edit}>{t('target.edit')}</Text>
       </View>
       {p && (
         <View style={styles.ringRow}>
@@ -150,7 +150,7 @@ function barPath(x: number, y: number, w: number, h: number) {
 
 /**
  * 全年柱状图：每个月一根柱子（深色 = 已赚，浅色 = 已排班还没上），后面的浅色底柱 = 那个月的目标，
- * 达标的月份上面有 ✓。点一根柱子切换到那个月。
+ * 所有柱子一样宽。点一根柱子切换到那个月。
  */
 export function YearTargetChart({
   bars,
@@ -208,7 +208,7 @@ export function YearTargetChart({
                   )}
                   {b.target !== null && (
                     <Path
-                      d={barPath(x - 2, y(b.target), barW + 4, (b.target / max) * plotH)}
+                      d={barPath(x, y(b.target), barW, (b.target / max) * plotH)}
                       fill={colors.chartTargetFill}
                       stroke={colors.chartTargetStroke}
                       strokeWidth={1.5}
@@ -225,16 +225,6 @@ export function YearTargetChart({
                       d={barPath(x, y(b.earned), barW, (b.earned / max) * plotH)}
                       fill={colors.primary}
                     />
-                  )}
-                  {b.reached && (
-                    <SvgText
-                      x={cx}
-                      y={Math.min(y(b.earned), y(b.target ?? 0)) - 5}
-                      fontSize={10}
-                      fill={colors.text}
-                      textAnchor="middle">
-                      ✓
-                    </SvgText>
                   )}
                   <SvgText
                     x={cx}
@@ -280,7 +270,6 @@ export function YearTargetChart({
           swatch={<View style={[styles.swatch, styles.swTarget]} />}
           label={t('target.target')}
         />
-        <Legend swatch={<Text style={styles.check}>✓</Text>} label={t('target.reachedShort')} />
       </View>
     </View>
   );
@@ -419,7 +408,7 @@ const useStyles = makeStyles((colors) => ({
   copyText: { fontSize: 14, color: colors.textMuted, textDecorationLine: 'underline' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 15, fontWeight: '600', color: colors.text },
-  edit: { fontSize: 14 },
+  edit: { fontSize: 14, color: colors.primary },
   ringRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ringWrap: { width: 150, height: 150, alignItems: 'center', justifyContent: 'center' },
   ringCenter: { position: 'absolute', alignItems: 'center' },
@@ -439,7 +428,6 @@ const useStyles = makeStyles((colors) => ({
     borderWidth: 1.5,
     borderColor: colors.chartTargetStroke,
   },
-  check: { fontSize: 11, color: colors.text },
   axisRow: { flexDirection: 'row' },
   axisText: { fontSize: 10, color: colors.textMuted },
   hitRow: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, flexDirection: 'row' },

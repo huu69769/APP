@@ -45,7 +45,12 @@ export default function AnniversariesScreen() {
 
   const subtitle = (a: Anniversary) => {
     const since = a.repeat ? daysSince(a, today) : null;
-    return [dateText(a), since ? t('anniv.totalDays', { count: since }) : null, a.note || null]
+    return [
+      dateText(a),
+      since ? t('anniv.totalDays', { count: since }) : null,
+      a.pinned ? t('anniv.pinnedShort') : null,
+      a.note || null,
+    ]
       .filter(Boolean)
       .join(' · ');
   };
@@ -63,7 +68,7 @@ export default function AnniversariesScreen() {
           <ListRow
             key={a.id}
             color={a.color}
-            title={`${a.pinned ? '📌 ' : ''}${a.title}`}
+            title={a.title}
             subtitle={subtitle(a)}
             right={anniversaryStatusText(t, status)}
             onPress={() => open(a)}

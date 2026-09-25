@@ -275,7 +275,6 @@ export default function StatsScreen() {
                     <Text style={styles.muted}>
                       {' / '}
                       {formatMoney(targets[row.month]!.amount, targets[row.month]!.currency)}
-                      {summary?.bars.find((b) => b.month === row.month)?.reached ? ' ✓' : ''}
                     </Text>
                   )}
                 </Text>
