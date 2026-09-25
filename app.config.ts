@@ -17,7 +17,7 @@ const config: ExpoConfig = {
     package: 'io.github.huu69769.worklogcalendar',
     versionCode: buildNumber,
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#FFFFFF',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -36,9 +36,11 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
+        // 启动画面：浅灰底 + 图标；手机是深色模式时用深藏青底（和 App 的夜间模式一致）
+        backgroundColor: '#F5F7FA',
         image: './assets/images/splash-icon.png',
-        imageWidth: 76,
+        imageWidth: 160,
+        dark: { backgroundColor: '#151D2A' },
       },
     ],
     'expo-sqlite',
