@@ -10,7 +10,11 @@
     "delete": "删除",
     "add": "添加",
     "close": "关闭",
-    "saveFailed": "保存失败：{{message}}"
+    "saveFailed": "保存失败：{{message}}",
+    "select": "选择",
+    "done": "完成",
+    "deleteSelected": "删除（{{count}}）",
+    "selectedCount": "已选 {{count}} 项"
   },
   "currency": {
     "CNY": "人民币",
@@ -67,7 +71,11 @@
     "selected": "已选 {{count}} 天",
     "apply": "套用模板",
     "chooseTemplate": "选择要套用的模板",
-    "done": "已添加 {{count}} 个班次"
+    "done": "已添加 {{count}} 个班次",
+    "doneSkipped": "已添加 {{count}} 个班次（{{skipped}} 天已经有同样的班次，跳过了）",
+    "deleteShifts": "删除班次",
+    "deleteTitle": "删除所选 {{days}} 天的全部班次（共 {{count}} 个）？",
+    "noShifts": "所选日期没有班次"
   },
   "day": {
     "title": "{{month}}月{{day}}日（{{weekday}}）",
@@ -247,7 +255,9 @@
   "toast": {
     "added": "已添加 {{what}}",
     "undo": "撤销",
-    "undone": "已撤销"
+    "undone": "已撤销",
+    "deleted": "已删除 {{count}} 项",
+    "duplicate": "{{what}} 已经添加过了"
   },
   "event": {
     "newTitle": "添加日程",
@@ -350,5 +360,9 @@
     "off": "放假",
     "work": "调休上班",
     "lunar": "农历 {{date}}"
+  },
+  "bulk": {
+    "deleteTitle": "删除选中的 {{count}} 项？",
+    "deleteMessage": "删除后可以在底部提示里点「撤销」恢复。"
   }
 }

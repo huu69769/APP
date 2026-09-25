@@ -4,12 +4,18 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ActionSheet } from '@/components/ActionSheet';
-import { showMessage } from '@/components/confirm';
+import { confirmAsync, showMessage } from '@/components/confirm';
 import { DayNoteEditor } from '@/components/DayNoteEditor';
 import { Button, EmptyText, FormScreen, ListRow, Section } from '@/components/form';
 import { useToast } from '@/components/Toast';
 import { useData } from '@/data/DataProvider';
-import { buildPendingShift, buildShiftFromTemplate, sortShifts } from '@/data/shifts';
+import { deleteItems, type ItemRef } from '@/data/bulk';
+import {
+  buildPendingShift,
+  buildShiftFromTemplate,
+  createShiftUnlessDuplicate,
+  sortShifts,
+} from '@/data/shifts';
 import { tasksOnDate } from '@/data/tasks';
 import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
@@ -37,6 +43,8 @@ export default function DayScreen() {
   const valid = !!date && isValidLocalDate(date);
   const [adding, setAdding] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // 选择模式（一次删除多条）：选中的 "kind:id"
+  const [selection, setSelection] = useState<Set<string> | undefined>(undefined);
   const safeDate = valid ? date : '2000-01-01';
   const { data: holidayData } = useDayLabels(safeDate, safeDate);
 
@@ -84,18 +92,57 @@ export default function DayScreen() {
     if (adding) return;
     setAdding(true);
     try {
-      const shift = await repos.shifts.create(
-        template ? buildShiftFromTemplate(job, template, date) : buildPendingShift(job, date)
-      );
       const what = template
         ? `${job.name} ${template.startTime}–${template.endTime}`
         : t('day.pendingChip', { job: job.name });
+      const shift = await createShiftUnlessDuplicate(
+        repos,
+        template ? buildShiftFromTemplate(job, template, date) : buildPendingShift(job, date)
+      );
+      if (!shift) {
+        toast(t('toast.duplicate', { what }));
+        return;
+      }
       toast(t('toast.added', { what }), { onUndo: () => repos.shifts.remove(shift.id) });
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
     } finally {
       setAdding(false);
     }
+  };
+
+  /** 列表里一行：选择模式时点一下是勾选，平时是打开编辑 */
+  const rowProps = (kind: ItemRef['kind'], id: string, open: () => void) => {
+    const key = `${kind}:${id}`;
+    if (!selection) return { onPress: open };
+    return {
+      selected: selection.has(key),
+      onPress: () => {
+        const next = new Set(selection);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        setSelection(next);
+      },
+    };
+  };
+
+  const deleteSelected = async () => {
+    if (!selection?.size) return;
+    const ok = await confirmAsync({
+      title: t('bulk.deleteTitle', { count: selection.size }),
+      message: t('bulk.deleteMessage'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    const refs = [...selection].map((k) => {
+      const [kind, id] = k.split(':');
+      return { kind: kind as ItemRef['kind'], id };
+    });
+    const undo = await deleteItems(repos, refs);
+    setSelection(undefined);
+    toast(t('toast.deleted', { count: refs.length }), { onUndo: undo });
   };
 
   const nothing =
@@ -116,6 +163,37 @@ export default function DayScreen() {
             </Section>
           ) : (
             <>
+              <View style={styles.selectBar}>
+                {selection ? (
+                  <>
+                    <Text style={styles.selectCount}>
+                      {t('common.selectedCount', { count: selection.size })}
+                    </Text>
+                    <Pressable
+                      onPress={() => setSelection(undefined)}
+                      accessibilityRole="button"
+                      hitSlop={8}>
+                      <Text style={styles.selectCancel}>{t('common.cancel')}</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={deleteSelected}
+                      disabled={selection.size === 0}
+                      accessibilityRole="button"
+                      style={[styles.deleteButton, selection.size === 0 && styles.disabled]}>
+                      <Text style={styles.deleteText}>
+                        {t('common.deleteSelected', { count: selection.size })}
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Pressable
+                    onPress={() => setSelection(new Set())}
+                    accessibilityRole="button"
+                    hitSlop={8}>
+                    <Text style={styles.selectStart}>{t('common.select')}</Text>
+                  </Pressable>
+                )}
+              </View>
               {data.shifts.length > 0 && (
                 <Section title={t('day.shifts')}>
                   {data.shifts.map((s) => {
@@ -130,7 +208,7 @@ export default function DayScreen() {
                           title={t('shift.pendingTitle', { job: job?.name ?? '' })}
                           subtitle={s.note || undefined}
                           right="—"
-                          onPress={open}
+                          {...rowProps('shift', s.id, open)}
                         />
                       );
                     }
@@ -148,7 +226,7 @@ export default function DayScreen() {
                           .filter(Boolean)
                           .join(' · ')}
                         right={formatMoney(shiftWage(s), s.currencySnapshot)}
-                        onPress={open}
+                        {...rowProps('shift', s.id, open)}
                       />
                     );
                   })}
@@ -170,7 +248,9 @@ export default function DayScreen() {
                       ]
                         .filter(Boolean)
                         .join(' · ')}
-                      onPress={() => router.push({ pathname: '/event/[id]', params: { id: e.id } })}
+                      {...rowProps('event', e.id, () =>
+                        router.push({ pathname: '/event/[id]', params: { id: e.id } })
+                      )}
                     />
                   ))}
                 </Section>
@@ -186,9 +266,9 @@ export default function DayScreen() {
                         title={task.title}
                         subtitle={[job?.name, t('day.taskDue')].filter(Boolean).join(' · ')}
                         right={formatMoney(task.amount, task.currency)}
-                        onPress={() =>
+                        {...rowProps('task', task.id, () =>
                           router.push({ pathname: '/task/[id]', params: { id: task.id } })
-                        }
+                        )}
                       />
                     );
                   })}
@@ -326,6 +406,25 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
+  selectBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 16,
+    paddingHorizontal: 4,
+    minHeight: 32,
+  },
+  selectStart: { color: colors.primary, fontSize: 14 },
+  selectCount: { flex: 1, color: colors.text, fontSize: 14 },
+  selectCancel: { color: colors.textMuted, fontSize: 14 },
+  deleteButton: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+  },
+  deleteText: { color: colors.onColor, fontSize: 14, fontWeight: '600' },
+  disabled: { opacity: 0.4 },
   header: { paddingHorizontal: 4, gap: 2 },
   headerLunar: { fontSize: 13, color: colors.textMuted },
   headerHoliday: { fontSize: 14, fontWeight: '600' },

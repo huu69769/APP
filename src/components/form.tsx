@@ -197,19 +197,24 @@ export function ListRow({
   subtitle,
   right,
   onPress,
+  selected,
 }: {
   color?: string;
   title: string;
   subtitle?: string;
   right?: string;
   onPress?: () => void;
+  /** 传入时显示勾选框（选择模式） */
+  selected?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityState={selected === undefined ? undefined : { checked: selected }}
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+      {selected !== undefined && <CheckCircle checked={selected} />}
       {color && <View style={[styles.rowColor, { backgroundColor: color }]} />}
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle} numberOfLines={1}>
@@ -223,6 +228,15 @@ export function ListRow({
       </View>
       {right ? <Text style={styles.rowRight}>{right}</Text> : null}
     </Pressable>
+  );
+}
+
+/** 选择模式里的圆形勾选框 */
+export function CheckCircle({ checked }: { checked: boolean }) {
+  return (
+    <View style={[styles.check, checked && styles.checkOn]}>
+      {checked && <Text style={styles.checkMark}>✓</Text>}
+    </View>
   );
 }
 
@@ -315,4 +329,15 @@ const styles = StyleSheet.create({
   rowSubtitle: { fontSize: 13, color: colors.textMuted },
   rowRight: { fontSize: 14, color: colors.text },
   empty: { color: colors.textMuted, fontSize: 14 },
+  check: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.textFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkMark: { color: colors.onPrimary, fontSize: 13, fontWeight: '700', lineHeight: 15 },
 });

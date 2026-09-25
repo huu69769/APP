@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { DayItem } from '@/data/dayItems';
+
+import { CheckCircle } from './form';
 import type { LocalDate } from '@/lib/date';
 import { parseLocalDate } from '@/lib/date';
 import type { HolidayMark } from '@/lib/holidays';
@@ -20,7 +22,12 @@ export function DayPanel({
   marks,
   onOpenDetails,
   onPressItem,
+  selection,
+  onStartSelect,
 }: {
+  /** 选择模式：选中的条目 key；undefined = 不在选择模式 */
+  selection?: Set<string>;
+  onStartSelect?: () => void;
   date: LocalDate;
   items: DayItem[] | undefined;
   lunar: LunarInfo | null;
@@ -55,9 +62,16 @@ export function DayPanel({
             </Text>
           ) : null}
         </Pressable>
-        <Pressable onPress={onOpenDetails} accessibilityRole="button" hitSlop={8}>
-          <Text style={styles.details}>{t('home.details')}</Text>
-        </Pressable>
+        {!selection && items && items.length > 0 && onStartSelect && (
+          <Pressable onPress={onStartSelect} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.details}>{t('common.select')}</Text>
+          </Pressable>
+        )}
+        {!selection && (
+          <Pressable onPress={onOpenDetails} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.details}>{t('home.details')}</Text>
+          </Pressable>
+        )}
       </View>
       <View style={styles.list}>
         {items && items.length === 0 && (
@@ -71,7 +85,9 @@ export function DayPanel({
             key={item.key}
             onPress={() => onPressItem(item)}
             accessibilityRole="button"
+            accessibilityState={selection ? { checked: selection.has(item.key) } : undefined}
             style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            {selection && <CheckCircle checked={selection.has(item.key)} />}
             <View style={styles.slot}>
               {typeof item.slot === 'string' ? (
                 <Text style={styles.slotText}>
@@ -116,7 +132,7 @@ export function DayPanel({
                 </Text>
               ) : null}
             </View>
-            <Text style={styles.chevron}>›</Text>
+            {!selection && <Text style={styles.chevron}>›</Text>}
           </Pressable>
         ))}
       </View>

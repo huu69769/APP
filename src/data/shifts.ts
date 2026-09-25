@@ -59,32 +59,72 @@ export function buildShiftFromTemplate(
   });
 }
 
-/** 批量排班：给多个日期套用同一个模板 */
+/**
+ * 是否已经有一模一样的班次：同一天、同一份工作、同样的开始和结束时间
+ * （时间待定的班次：同一天同一份工作已经有待定的就算重复）。
+ * 用来防止一键添加、批量排班时重复登记。
+ */
+export function isDuplicateShift(
+  existing: Pick<Shift, 'jobId' | 'date' | 'startTime' | 'endTime'>[],
+  candidate: Pick<Shift, 'jobId' | 'date' | 'startTime' | 'endTime'>
+): boolean {
+  return existing.some(
+    (s) =>
+      s.jobId === candidate.jobId &&
+      s.date === candidate.date &&
+      s.startTime === candidate.startTime &&
+      s.endTime === candidate.endTime
+  );
+}
+
+/** 添加班次；已经有一模一样的就不添加，返回 null */
+export async function createShiftUnlessDuplicate(
+  repos: Repositories,
+  shift: NewEntity<Shift>
+): Promise<Shift | null> {
+  const sameDay = await repos.shifts.listByDateRange(shift.date, shift.date);
+  if (isDuplicateShift(sameDay, shift)) return null;
+  return repos.shifts.create(shift);
+}
+
+export interface ApplyResult {
+  created: Shift[];
+  /** 因为已经有同样的班次而跳过的日期 */
+  skipped: LocalDate[];
+}
+
+async function applyToDates(
+  repos: Repositories,
+  dates: LocalDate[],
+  build: (date: LocalDate) => NewEntity<Shift>
+): Promise<ApplyResult> {
+  const result: ApplyResult = { created: [], skipped: [] };
+  for (const date of [...dates].sort()) {
+    const shift = await createShiftUnlessDuplicate(repos, build(date));
+    if (shift) result.created.push(shift);
+    else result.skipped.push(date);
+  }
+  return result;
+}
+
+/** 批量排班：给多个日期套用同一个模板（已经有同样班次的日期跳过） */
 export async function applyTemplateToDates(
   repos: Repositories,
   template: ShiftTemplate,
   dates: LocalDate[]
-): Promise<Shift[]> {
+): Promise<ApplyResult> {
   const job = await repos.jobs.get(template.jobId);
   if (!job) throw new Error('Job not found');
-  const created: Shift[] = [];
-  for (const date of [...dates].sort()) {
-    created.push(await repos.shifts.create(buildShiftFromTemplate(job, template, date)));
-  }
-  return created;
+  return applyToDates(repos, dates, (date) => buildShiftFromTemplate(job, template, date));
 }
 
-/** 批量标记「时间待定」：给多个日期加上某份兼职的待定班次 */
+/** 批量标记「时间待定」：给多个日期加上某份工作的待定班次（已经有的跳过） */
 export async function applyPendingToDates(
   repos: Repositories,
   job: Job,
   dates: LocalDate[]
-): Promise<Shift[]> {
-  const created: Shift[] = [];
-  for (const date of [...dates].sort()) {
-    created.push(await repos.shifts.create(buildPendingShift(job, date)));
-  }
-  return created;
+): Promise<ApplyResult> {
+  return applyToDates(repos, dates, (date) => buildPendingShift(job, date));
 }
 
 /** 按日期、开始时间排序；同一天里「时间待定」排在最前 */

@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useBackup } from '@/backup/useBackup';
 import { ActionSheet, type SheetAction } from '@/components/ActionSheet';
-import { showMessage } from '@/components/confirm';
+import { confirmAsync, showMessage } from '@/components/confirm';
 import { DayPanel } from '@/components/DayPanel';
 import { MonthCalendar, type DayBar } from '@/components/MonthCalendar';
 import { Segmented } from '@/components/form';
@@ -15,11 +15,13 @@ import { TemplatePicker } from '@/components/TemplatePicker';
 import { useToast } from '@/components/Toast';
 import { useData } from '@/data/DataProvider';
 import { buildDayItems, type DayItem } from '@/data/dayItems';
+import { deleteItems } from '@/data/bulk';
 import {
   applyPendingToDates,
   applyTemplateToDates,
   buildPendingShift,
   buildShiftFromTemplate,
+  createShiftUnlessDuplicate,
   sortShifts,
 } from '@/data/shifts';
 import { isTaskDone } from '@/data/tasks';
@@ -71,9 +73,13 @@ export default function HomeScreen() {
   const [selected, setSelected] = useState<Set<LocalDate>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // 下方列表的选择模式（一次删除多条）
+  const [selection, setSelection] = useState<Set<string> | undefined>(undefined);
+
   const goToMonth = (m: YearMonth) => {
     setMonth(m);
     setFocused(defaultFocus(m, today));
+    setSelection(undefined);
   };
 
   const { data } = useQuery(
@@ -194,10 +200,20 @@ export default function HomeScreen() {
     }
     // 再点一次已选中的日期 → 打开当天页面
     if (date === focused) openDay(date);
-    else setFocused(date);
+    else {
+      setFocused(date);
+      setSelection(undefined);
+    }
   };
 
   const openItem = (item: DayItem) => {
+    if (selection) {
+      const next = new Set(selection);
+      if (next.has(item.key)) next.delete(item.key);
+      else next.add(item.key);
+      setSelection(next);
+      return;
+    }
     if (item.kind === 'shift') router.push({ pathname: '/shift/[id]', params: { id: item.id } });
     else if (item.kind === 'event')
       router.push({ pathname: '/event/[id]', params: { id: item.id } });
@@ -220,14 +236,19 @@ export default function HomeScreen() {
     setPickerOpen(false);
     try {
       const dates = [...selected];
-      const created = template
+      const { created, skipped } = template
         ? await applyTemplateToDates(repos, template, dates)
         : await applyPendingToDates(repos, job, dates);
       exitBatch();
-      toast(t('batch.done', { count: created.length }), {
-        onUndo: async () => {
-          for (const s of created) await repos.shifts.remove(s.id);
-        },
+      const message = skipped.length
+        ? t('batch.doneSkipped', { count: created.length, skipped: skipped.length })
+        : t('batch.done', { count: created.length });
+      toast(message, {
+        onUndo: created.length
+          ? async () => {
+              for (const s of created) await repos.shifts.remove(s.id);
+            }
+          : undefined,
       });
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
@@ -237,16 +258,61 @@ export default function HomeScreen() {
   /** 一键添加到选中的那天（模板或时间待定），可以撤销 */
   const quickAdd = async (job: Job, template: ShiftTemplate | null) => {
     try {
-      const shift = await repos.shifts.create(
-        template ? buildShiftFromTemplate(job, template, focused) : buildPendingShift(job, focused)
-      );
       const what = template
         ? `${job.name} ${template.startTime}–${template.endTime}`
         : t('day.pendingChip', { job: job.name });
+      const shift = await createShiftUnlessDuplicate(
+        repos,
+        template ? buildShiftFromTemplate(job, template, focused) : buildPendingShift(job, focused)
+      );
+      if (!shift) {
+        toast(t('toast.duplicate', { what }));
+        return;
+      }
       toast(t('toast.added', { what }), { onUndo: () => repos.shifts.remove(shift.id) });
     } catch (e) {
       showMessage(t('common.saveFailed', { message: String(e) }));
     }
+  };
+
+  /** 删除列表里选中的条目，可以撤销 */
+  const deleteSelected = async () => {
+    const chosen = (items ?? []).filter((i) => selection?.has(i.key));
+    if (!chosen.length) return;
+    const ok = await confirmAsync({
+      title: t('bulk.deleteTitle', { count: chosen.length }),
+      message: t('bulk.deleteMessage'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    const undo = await deleteItems(repos, chosen);
+    setSelection(undefined);
+    toast(t('toast.deleted', { count: chosen.length }), { onUndo: undo });
+  };
+
+  /** 批量模式：删除所选日期的全部班次，可以撤销 */
+  const deleteShiftsOnSelectedDays = async () => {
+    const shifts = (data?.shifts ?? []).filter((s) => selected.has(s.date));
+    if (!shifts.length) {
+      toast(t('batch.noShifts'));
+      return;
+    }
+    const ok = await confirmAsync({
+      title: t('batch.deleteTitle', { days: selected.size, count: shifts.length }),
+      message: t('bulk.deleteMessage'),
+      confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    const undo = await deleteItems(
+      repos,
+      shifts.map((s) => ({ kind: 'shift' as const, id: s.id }))
+    );
+    exitBatch();
+    toast(t('toast.deleted', { count: shifts.length }), { onUndo: undo });
   };
 
   const fd = parseLocalDate(focused);
@@ -412,6 +478,8 @@ export default function HomeScreen() {
             marks={holidayData?.marks.get(focused) ?? []}
             onOpenDetails={() => openDay(focused)}
             onPressItem={openItem}
+            selection={selection}
+            onStartSelect={() => setSelection(new Set())}
           />
         )}
       </ScrollView>
@@ -420,11 +488,39 @@ export default function HomeScreen() {
         <View style={styles.batchBar}>
           <Text style={styles.batchCount}>{t('batch.selected', { count: selected.size })}</Text>
           <Pressable
+            onPress={deleteShiftsOnSelectedDays}
+            disabled={selected.size === 0}
+            accessibilityRole="button"
+            style={[styles.deleteButton, selected.size === 0 && styles.disabled]}>
+            <Text style={styles.deleteText}>{t('batch.deleteShifts')}</Text>
+          </Pressable>
+          <Pressable
             onPress={() => setPickerOpen(true)}
             disabled={selected.size === 0}
             accessibilityRole="button"
             style={[styles.applyButton, selected.size === 0 && styles.disabled]}>
             <Text style={styles.applyText}>{t('batch.apply')}</Text>
+          </Pressable>
+        </View>
+      ) : selection ? (
+        <View style={styles.batchBar}>
+          <Text style={styles.batchCount}>
+            {t('common.selectedCount', { count: selection.size })}
+          </Text>
+          <Pressable
+            onPress={() => setSelection(undefined)}
+            accessibilityRole="button"
+            style={styles.cancelButton}>
+            <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={deleteSelected}
+            disabled={selection.size === 0}
+            accessibilityRole="button"
+            style={[styles.deleteButtonFilled, selection.size === 0 && styles.disabled]}>
+            <Text style={styles.deleteTextFilled}>
+              {t('common.deleteSelected', { count: selection.size })}
+            </Text>
           </Pressable>
         </View>
       ) : (
@@ -565,6 +661,23 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   applyText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' },
+  deleteButton: {
+    borderWidth: 1,
+    borderColor: colors.danger,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
+  },
+  deleteText: { color: colors.danger, fontSize: 14 },
+  deleteButtonFilled: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  deleteTextFilled: { color: colors.onColor, fontSize: 14, fontWeight: '600' },
+  cancelButton: { paddingHorizontal: 12, paddingVertical: 8 },
+  cancelText: { color: colors.textMuted, fontSize: 14 },
   disabled: { opacity: 0.4 },
   fab: {
     position: 'absolute',

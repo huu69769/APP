@@ -78,6 +78,14 @@ export class Repository<T extends BaseEntity> {
     await this.driver.put(this.table, { ...existing, deletedAt: ts, updatedAt: ts });
     this.deps.onChange?.(this.table);
   }
+
+  /** 撤销删除（「元に戻す / 撤销」用） */
+  async restore(id: string): Promise<void> {
+    const row = (await this.driver.getById(this.table, id)) as T | null;
+    if (!row || !row.deletedAt) return;
+    await this.driver.put(this.table, { ...row, deletedAt: null, updatedAt: this.timestamp() });
+    this.deps.onChange?.(this.table);
+  }
 }
 
 export type Repositories = { [K in TableName]: Repository<EntityTables[K]> };
