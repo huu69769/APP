@@ -558,7 +558,11 @@
     "reminderBody": "本月该存 {{amount}}",
     "targetLabel": "总目标",
     "addAccount": "＋ 新建账户",
-    "incomeLine": "存钱计划 · {{month}}月已存"
+    "incomeLine": "存钱计划 · {{month}}月已存",
+    "spent": "实际花费（{{currency}}，可选）",
+    "spentHint": "换汇后实际从收入中拿出的金额。填写后，可在收入页查看存钱计划占本月收入的比例。",
+    "planShare": "存钱计划",
+    "planShareOf": "占本月收入 {{percent}}%"
   },
   "accounts": {
     "title": "账户",

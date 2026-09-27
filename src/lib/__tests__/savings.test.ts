@@ -5,6 +5,7 @@ import {
   monthsUntil,
   planStatus,
   pauseFrom,
+  planSpendingIn,
   planTarget,
   resumeIn,
   saveDate,
@@ -128,5 +129,32 @@ describe('pause / resume', () => {
     expect(pauseFrom(paused, '2026-12')).toBe(paused);
     expect(resumeIn(paused, '2027-02')).toEqual([{ from: '2026-11', to: '2027-01' }]);
     expect(resumeIn(paused, '2026-11')).toEqual([]);
+  });
+});
+
+describe('planSpendingIn', () => {
+  const plans = [
+    { id: 'cny', currency: 'CNY' as const },
+    { id: 'jpy', currency: 'JPY' as const },
+  ];
+  it('uses the amount for same-currency plans and the spent amount otherwise', () => {
+    expect(
+      planSpendingIn({
+        plans,
+        deposits: [
+          { planId: 'jpy', date: '2026-09-10', amount: 10000 },
+          {
+            planId: 'cny',
+            date: '2026-09-27',
+            amount: 71500,
+            spent: { amount: 14800, currency: 'JPY' },
+          },
+          { planId: 'cny', date: '2026-09-28', amount: 1000 }, // 没填实际花费
+          { planId: 'jpy', date: '2026-10-01', amount: 5000 }, // 别的月
+        ],
+        month: '2026-09',
+        currency: 'JPY',
+      })
+    ).toBe(24800);
   });
 });

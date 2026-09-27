@@ -39,6 +39,8 @@ export const lightColors = {
   /** 收入图表里「目标」的浅色底柱 */
   chartTargetFill: '#EEF4FC',
   chartTargetStroke: '#B8D4F5',
+  /** 收入环形图里「存钱计划」那一段 */
+  savingsArc: '#30A46C',
 };
 
 export type Palette = { [K in keyof typeof lightColors]: string };
@@ -78,6 +80,7 @@ export const darkColors: Palette = {
   shadow: '#000000',
   chartTargetFill: '#1D2B40',
   chartTargetStroke: '#3E5A80',
+  savingsArc: '#3DBE7E',
 };
 
 /** 兼职可选的颜色 */

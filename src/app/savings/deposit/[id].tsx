@@ -23,7 +23,7 @@ export default function DepositEditScreen() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ id: string; planId?: string }>();
   const isNew = params.id === 'new';
-  const { repos } = useData();
+  const { repos, settings } = useData();
   const styles = useStyles();
 
   const [plan, setPlan] = useState<SavingPlan | null>(null);
@@ -33,6 +33,15 @@ export default function DepositEditScreen() {
   const [accountId, setAccountId] = useState<string>(NO_ACCOUNT);
   const newAccount = useNewAccount(accounts, setAccountId);
   const [note, setNote] = useState('');
+  // 实际花费（收入的币种）：计划币种和收入币种不同时才显示，可以不填
+  const [spentText, setSpentText] = useState('');
+  const [loadedSpent, setLoadedSpent] = useState<Deposit['spent']>(null);
+  // 编辑旧记录：把保存过的实际花费填回输入框
+  useEffect(() => {
+    if (!loadedSpent) return;
+    setSpentText(moneyToInput(loadedSpent.amount, loadedSpent.currency));
+    setLoadedSpent(null);
+  }, [loadedSpent]);
   const [loaded, setLoaded] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
@@ -46,6 +55,7 @@ export default function DepositEditScreen() {
           setDate(d.date);
           setAccountId(d.accountId ?? NO_ACCOUNT);
           setNote(d.note);
+          setLoadedSpent(d.spent ?? null);
         }
         const p = planId ? await repos.saving_plans.get(planId) : null;
         setPlan(p);
@@ -79,10 +89,19 @@ export default function DepositEditScreen() {
     );
   }
 
+  // 收入的币种：那个月收入目标的币种，没设目标就用默认币种
+  const incomeCurrency =
+    settings.monthlyTargets[date.slice(0, 7)]?.currency ?? settings.defaultCurrency;
+  const showSpent = plan.currency !== incomeCurrency;
+  const spentValue = spentText.trim() ? parseMoney(spentText, incomeCurrency) : null;
   const parsed = parseMoney(amount, plan.currency);
   const errors = {
     amount: parsed !== null && parsed > 0 ? null : t('target.amountInvalid'),
     date: isValidLocalDate(date) ? null : t('errors.dateInvalid'),
+    spent:
+      !showSpent || !spentText.trim() || (spentValue !== null && spentValue > 0)
+        ? null
+        : t('target.amountInvalid'),
   };
   const err = (k: keyof typeof errors) => (showErrors ? errors[k] : null);
 
@@ -95,6 +114,7 @@ export default function DepositEditScreen() {
       amount: parsed!,
       accountId: accountId === NO_ACCOUNT ? null : accountId,
       note: note.trim(),
+      spent: showSpent && spentValue ? { amount: spentValue, currency: incomeCurrency } : null,
     };
     try {
       if (isNew) await repos.deposits.create(data);
@@ -127,6 +147,19 @@ export default function DepositEditScreen() {
         <Field label={t('savings.date')} error={err('date')}>
           <DatePicker value={date} onChange={setDate} accessibilityLabel={t('savings.date')} />
         </Field>
+        {showSpent && (
+          <Field
+            label={t('savings.spent', { currency: t(`currency.${incomeCurrency}`) })}
+            error={err('spent')}
+            hint={t('savings.spentHint')}>
+            <Input
+              value={spentText}
+              onChangeText={setSpentText}
+              keyboardType="decimal-pad"
+              accessibilityLabel={t('savings.spent', { currency: t(`currency.${incomeCurrency}`) })}
+            />
+          </Field>
+        )}
         <Field label={t('savings.account')}>
           <Segmented
             options={[

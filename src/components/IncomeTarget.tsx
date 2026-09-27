@@ -18,10 +18,13 @@ export function Ring({
   earned,
   expected,
   size,
+  share = 0,
 }: {
   earned: number;
   expected: number;
   size: number;
+  /** 已赚里存进存钱计划的那一段（0–1，从起点画，不超过 earned） */
+  share?: number;
 }) {
   const colors = useColors();
   const stroke = 14;
@@ -47,6 +50,7 @@ export function Ring({
       <Circle cx={c} cy={c} r={r} stroke={colors.surface} strokeWidth={stroke} fill="none" />
       {arc(expected, colors.selectedBg)}
       {arc(earned, colors.primary)}
+      {arc(Math.min(share, earned), colors.savingsArc)}
     </Svg>
   );
 }
@@ -57,9 +61,12 @@ export function MonthTargetCard({
   target,
   prevTarget,
   wage,
+  planSpent = 0,
   onEdit,
   onCopyPrev,
 }: {
+  /** 这个月存进存钱计划的钱（换成目标的币种），画成绿色的一段 */
+  planSpent?: number;
   /** 「9月」或「本期」 */
   label: string;
   target: IncomeTarget | undefined;
@@ -99,7 +106,12 @@ export function MonthTargetCard({
       {p && (
         <View style={styles.ringRow}>
           <View style={styles.ringWrap}>
-            <Ring earned={p.earnedRatio} expected={p.expectedRatio} size={150} />
+            <Ring
+              earned={p.earnedRatio}
+              expected={p.expectedRatio}
+              share={target.amount > 0 ? planSpent / target.amount : 0}
+              size={150}
+            />
             <View style={styles.ringCenter}>
               <Text style={styles.ringPercent}>{p.percent}%</Text>
               <Text style={styles.ringSub}>{money(p.earned)}</Text>
@@ -109,6 +121,20 @@ export function MonthTargetCard({
             <Info label={t('target.target')} value={money(target.amount)} />
             <Info label={t('target.earnedLabel')} value={money(p.earned)} swatch="earned" />
             <Info label={t('target.expectedLabel')} value={money(p.expected)} swatch="expected" />
+            {planSpent > 0 && (
+              <Info
+                label={t('savings.planShare')}
+                value={money(planSpent)}
+                sub={
+                  p.earned > 0
+                    ? t('savings.planShareOf', {
+                        percent: Math.round((planSpent / p.earned) * 100),
+                      })
+                    : undefined
+                }
+                swatch="share"
+              />
+            )}
             <Text style={styles.status}>
               {p.remaining === 0
                 ? t('target.reached')
@@ -124,11 +150,14 @@ export function MonthTargetCard({
 function Info({
   label,
   value,
+  sub,
   swatch,
 }: {
   label: string;
   value: string;
-  swatch?: 'earned' | 'expected';
+  /** 数值下面的小字 */
+  sub?: string;
+  swatch?: 'earned' | 'expected' | 'share';
 }) {
   const styles = useStyles();
   return (
@@ -136,12 +165,20 @@ function Info({
       <View style={styles.infoLabelRow}>
         {swatch && (
           <View
-            style={[styles.swatch, swatch === 'earned' ? styles.swEarned : styles.swExpected]}
+            style={[
+              styles.swatch,
+              swatch === 'earned'
+                ? styles.swEarned
+                : swatch === 'share'
+                  ? styles.swShare
+                  : styles.swExpected,
+            ]}
           />
         )}
         <Text style={styles.infoLabel}>{label}</Text>
       </View>
       <Text style={styles.infoValue}>{value}</Text>
+      {sub ? <Text style={styles.infoLabel}>{sub}</Text> : null}
     </View>
   );
 }
@@ -435,6 +472,7 @@ const useStyles = makeStyles((colors) => ({
   swatch: { width: 10, height: 10, borderRadius: 2 },
   swEarned: { backgroundColor: colors.primary },
   swExpected: { backgroundColor: colors.selectedBg },
+  swShare: { backgroundColor: colors.savingsArc },
   swTarget: {
     backgroundColor: colors.chartTargetFill,
     borderWidth: 1.5,

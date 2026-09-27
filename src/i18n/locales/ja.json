@@ -558,7 +558,11 @@
     "reminderBody": "今月の貯金額は {{amount}} です",
     "targetLabel": "目標総額",
     "addAccount": "＋ 口座を追加",
-    "incomeLine": "貯金プラン · {{month}}月の貯金"
+    "incomeLine": "貯金プラン · {{month}}月の貯金",
+    "spent": "実際に使った額（{{currency}}、任意）",
+    "spentHint": "両替などで実際に収入から出した金額です。入力すると、収入ページで貯金プランが今月の収入に占める割合を確認できます。",
+    "planShare": "貯金プラン",
+    "planShareOf": "今月の収入の {{percent}}%"
   },
   "accounts": {
     "title": "口座",

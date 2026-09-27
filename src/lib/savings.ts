@@ -181,3 +181,25 @@ export function resumeIn(pauses: PausePeriodLike[], month: YearMonth): PausePeri
 }
 
 type PausePeriodLike = { from: YearMonth; to: YearMonth | null };
+
+/**
+ * 某个月存进存钱计划的钱，换成收入的币种算：
+ * 计划币种相同 → 用存入金额；不同 → 用填写的「实际花费」（没填的不算）
+ */
+export function planSpendingIn(params: {
+  plans: Pick<SavingPlan, 'id' | 'currency'>[];
+  deposits: Pick<Deposit, 'planId' | 'date' | 'amount' | 'spent'>[];
+  month: YearMonth;
+  currency: Currency;
+}): MinorUnits {
+  const { plans, deposits, month, currency } = params;
+  let total = 0;
+  for (const d of deposits) {
+    if (!d.date.startsWith(month)) continue;
+    const plan = plans.find((p) => p.id === d.planId);
+    if (!plan) continue;
+    if (plan.currency === currency) total += d.amount;
+    else if (d.spent && d.spent.currency === currency) total += d.spent.amount;
+  }
+  return total;
+}

@@ -192,6 +192,11 @@ export interface Deposit extends BaseEntity {
   amount: MinorUnits;
   accountId: string | null;
   note: string;
+  /**
+   * 计划币种和收入币种不同时（比如收入日元、存人民币），实际花了多少收入币种的钱。
+   * 可以不填；旧记录没有这个字段。用来算「存钱计划占本月收入的比例」
+   */
+  spent?: { amount: MinorUnits; currency: Currency } | null;
 }
 
 export interface DayNote extends BaseEntity {

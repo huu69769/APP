@@ -14,6 +14,7 @@ import { useMonthStats, useYearIncome } from '@/data/useStats';
 import { addMonths, currentMonth, type YearMonth } from '@/lib/date';
 import { formatMoney, formatMoneyMulti } from '@/lib/money';
 import { addMoney, type MoneyByCurrency } from '@/lib/stats';
+import { planSpendingIn } from '@/lib/savings';
 import { currenciesInYear, type IncomeTarget, yearTargetSummary } from '@/lib/target';
 import type { DateRange } from '@/lib/period';
 import { formatHours } from '@/lib/time';
@@ -72,6 +73,7 @@ function IncomeView() {
   const { data } = useMonthStats(month);
   const year = Number(month.slice(0, 4));
   const { data: yearData } = useYearIncome(year);
+  const targetCurrency = settings.monthlyTargets[month]?.currency;
   // 存钱计划里这个月存了多少（只显示金额，不算比例：App 不知道计划以外的存款）
   const { data: savingsData } = useQuery(
     async (r) => {
@@ -82,9 +84,16 @@ function IncomeView() {
         const plan = plans.find((p) => p.id === d.planId);
         if (plan) addMoney(saved, plan.currency, d.amount);
       }
-      return { hasPlans: plans.length > 0, saved };
+      return {
+        hasPlans: plans.length > 0,
+        saved,
+        // 换成收入目标的币种（不同币种的用填写的「实际花费」）
+        spentInTarget: targetCurrency
+          ? planSpendingIn({ plans, deposits, month, currency: targetCurrency })
+          : 0,
+      };
     },
-    [month]
+    [month, targetCurrency]
   );
   const stats = data?.stats;
   const [editing, setEditing] = useState(false);
@@ -142,6 +151,7 @@ function IncomeView() {
         target={target}
         prevTarget={prevTarget}
         wage={stats?.wage}
+        planSpent={savingsData?.spentInTarget ?? 0}
         onEdit={() => setEditing(true)}
         onCopyPrev={() => prevTarget && setTarget(prevTarget)}
       />
