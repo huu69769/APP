@@ -31,8 +31,13 @@ export function Ring({
   const r = (size - stroke) / 2;
   const c = size / 2;
   const len = 2 * Math.PI * r;
-  const arc = (ratio: number, color: string) =>
-    ratio > 0 ? (
+  // 有「存钱计划」那一段时，各段都用平头，交界处留一道背景色的细缝，两段不会黏在一起
+  const split = share > 0 && earned > 0;
+  const cap = split ? 'butt' : 'round';
+  const gap = split ? 3 : 0;
+  /** 从 from 画到 to（0–1，从 12 点方向顺时针） */
+  const arc = (from: number, to: number, color: string) =>
+    to - from > 0 ? (
       <Circle
         cx={c}
         cy={c}
@@ -40,17 +45,25 @@ export function Ring({
         stroke={color}
         strokeWidth={stroke}
         fill="none"
-        strokeLinecap="round"
-        strokeDasharray={`${len * ratio} ${len}`}
+        strokeLinecap={cap}
+        strokeDasharray={`${Math.max(len * (to - from), 0)} ${len}`}
+        strokeDashoffset={-len * from}
         transform={`rotate(-90 ${c} ${c})`}
       />
     ) : null;
+  const shareEnd = Math.min(share, earned);
   return (
     <Svg width={size} height={size}>
       <Circle cx={c} cy={c} r={r} stroke={colors.surface} strokeWidth={stroke} fill="none" />
-      {arc(expected, colors.selectedBg)}
-      {arc(earned, colors.primary)}
-      {arc(Math.min(share, earned), colors.savingsArc)}
+      {arc(0, expected, colors.selectedBg)}
+      {split ? (
+        <>
+          {arc(0, shareEnd - gap / len, colors.savingsArc)}
+          {arc(shareEnd + gap / len, earned, colors.primary)}
+        </>
+      ) : (
+        arc(0, earned, colors.primary)
+      )}
     </Svg>
   );
 }
