@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppState, Linking, Platform } from 'react-native';
@@ -55,6 +56,9 @@ export default function SettingsScreen() {
 
   return (
     <FormScreen>
+      <Section>
+        <ListRow title={t('guide.open')} right="›" onPress={() => router.push('/guide')} />
+      </Section>
       <Section title={t('settings.general')}>
         <Field label={t('settings.language')} hint={t('settings.languageHint')}>
           <Segmented
