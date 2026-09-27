@@ -1,17 +1,20 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Pressable, Text } from 'react-native';
 
 import { showMessage } from '@/components/confirm';
 import { Button, EmptyText, Field, FormScreen, Input, Section, Segmented } from '@/components/form';
 import { MonthInput, toYearMonth } from '@/components/savings/MonthInput';
 import { accountLabel } from '@/components/savings/SavingsView';
+import { useNewAccount } from '@/components/savings/useNewAccount';
 import { useData } from '@/data/DataProvider';
 import { CURRENCIES, type Currency, type NewEntity, type SavingPlan } from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { currentMonth } from '@/lib/date';
 import { formatMoney, moneyToInput, parseMoney } from '@/lib/money';
 import { planTarget } from '@/lib/savings';
+import { makeStyles } from '@/theme';
 
 const NO_ACCOUNT = 'none';
 
@@ -38,6 +41,8 @@ export default function SavingPlanEditScreen() {
   const [remind, setRemind] = useState(true);
   const [note, setNote] = useState('');
   const [existing, setExisting] = useState<SavingPlan | null>(null);
+  const newAccount = useNewAccount(accounts, setAccountId);
+  const styles = useStyles();
   const [loaded, setLoaded] = useState(isNew);
   const [showErrors, setShowErrors] = useState(false);
 
@@ -218,6 +223,9 @@ export default function SavingPlanEditScreen() {
             value={accountId}
             onChange={setAccountId}
           />
+          <Pressable onPress={() => newAccount(currency)} accessibilityRole="button">
+            <Text style={styles.addAccount}>{t('savings.addAccount')}</Text>
+          </Pressable>
           {accounts && accounts.length === 0 && (
             <EmptyText>{t('savings.noAccountsHint')}</EmptyText>
           )}
@@ -245,3 +253,7 @@ export default function SavingPlanEditScreen() {
     </FormScreen>
   );
 }
+
+const useStyles = makeStyles((colors) => ({
+  addAccount: { fontSize: 14, color: colors.primary, paddingVertical: 4 },
+}));

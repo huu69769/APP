@@ -10,12 +10,16 @@ import { CURRENCIES, type Account, type Currency, type NewEntity } from '@/data/
 /** 账户：新建（id = "new"）或编辑。只记名称和卡号后 4 位 */
 export default function AccountEditScreen() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; currency?: string }>();
   const isNew = params.id === 'new';
   const { repos, settings } = useData();
   const [name, setName] = useState('');
   const [last4, setLast4] = useState('');
-  const [currency, setCurrency] = useState<Currency>(settings.defaultCurrency);
+  const [currency, setCurrency] = useState<Currency>(
+    CURRENCIES.includes(params.currency as Currency)
+      ? (params.currency as Currency)
+      : settings.defaultCurrency
+  );
   const [note, setNote] = useState('');
   const [loaded, setLoaded] = useState(isNew);
   const [showErrors, setShowErrors] = useState(false);

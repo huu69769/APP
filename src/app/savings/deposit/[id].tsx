@@ -1,16 +1,20 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Pressable, Text } from 'react-native';
 
 import { confirmAsync, showMessage } from '@/components/confirm';
 import { Button, EmptyText, Field, FormScreen, Input, Section, Segmented } from '@/components/form';
 import { DatePicker } from '@/components/pickers/TimePicker';
 import { accountLabel } from '@/components/savings/SavingsView';
+import { useNewAccount } from '@/components/savings/useNewAccount';
 import { useData } from '@/data/DataProvider';
-import type { Account, Deposit, NewEntity, SavingPlan } from '@/data/types';
+import type { Deposit, NewEntity, SavingPlan } from '@/data/types';
+import { useQuery } from '@/data/useQuery';
 import { currentMonth, isValidLocalDate, today } from '@/lib/date';
 import { moneyToInput, parseMoney } from '@/lib/money';
 import { monthSummary } from '@/lib/savings';
+import { makeStyles } from '@/theme';
 
 const NO_ACCOUNT = 'none';
 
@@ -20,19 +24,20 @@ export default function DepositEditScreen() {
   const params = useLocalSearchParams<{ id: string; planId?: string }>();
   const isNew = params.id === 'new';
   const { repos } = useData();
+  const styles = useStyles();
 
   const [plan, setPlan] = useState<SavingPlan | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { data: accounts = [] } = useQuery((r) => r.accounts.list(), []);
   const [date, setDate] = useState(today());
   const [amount, setAmount] = useState('');
   const [accountId, setAccountId] = useState<string>(NO_ACCOUNT);
+  const newAccount = useNewAccount(accounts, setAccountId);
   const [note, setNote] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
     (async () => {
-      setAccounts(await repos.accounts.list());
       let planId = params.planId;
       if (!isNew) {
         const d = await repos.deposits.get(params.id);
@@ -131,6 +136,9 @@ export default function DepositEditScreen() {
             value={accountId}
             onChange={setAccountId}
           />
+          <Pressable onPress={() => newAccount(plan.currency)} accessibilityRole="button">
+            <Text style={styles.addAccount}>{t('savings.addAccount')}</Text>
+          </Pressable>
         </Field>
         <Field label={t('savings.note')}>
           <Input
@@ -146,3 +154,7 @@ export default function DepositEditScreen() {
     </FormScreen>
   );
 }
+
+const useStyles = makeStyles((colors) => ({
+  addAccount: { fontSize: 14, color: colors.primary, paddingVertical: 4 },
+}));
