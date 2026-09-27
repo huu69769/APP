@@ -557,7 +557,8 @@
     "reminderTitle": "存钱日：{{name}}",
     "reminderBody": "本月该存 {{amount}}",
     "targetLabel": "总目标",
-    "addAccount": "＋ 新建账户"
+    "addAccount": "＋ 新建账户",
+    "incomeLine": "存钱计划 · {{month}}月已存"
   },
   "accounts": {
     "title": "账户",

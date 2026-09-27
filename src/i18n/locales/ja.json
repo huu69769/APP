@@ -557,7 +557,8 @@
     "reminderTitle": "貯金日：{{name}}",
     "reminderBody": "今月の貯金額は {{amount}} です",
     "targetLabel": "目標総額",
-    "addAccount": "＋ 口座を追加"
+    "addAccount": "＋ 口座を追加",
+    "incomeLine": "貯金プラン · {{month}}月の貯金"
   },
   "accounts": {
     "title": "口座",

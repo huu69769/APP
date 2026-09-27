@@ -9,9 +9,11 @@ import { SavingsView } from '@/components/savings/SavingsView';
 import { MonthTargetCard, TargetEditor, YearTargetChart } from '@/components/IncomeTarget';
 import { useData } from '@/data/DataProvider';
 import { isActiveJob, jobPayType, type Currency } from '@/data/types';
+import { useQuery } from '@/data/useQuery';
 import { useMonthStats, useYearIncome } from '@/data/useStats';
 import { addMonths, currentMonth, type YearMonth } from '@/lib/date';
 import { formatMoney, formatMoneyMulti } from '@/lib/money';
+import { addMoney, type MoneyByCurrency } from '@/lib/stats';
 import { currenciesInYear, type IncomeTarget, yearTargetSummary } from '@/lib/target';
 import type { DateRange } from '@/lib/period';
 import { formatHours } from '@/lib/time';
@@ -70,6 +72,20 @@ function IncomeView() {
   const { data } = useMonthStats(month);
   const year = Number(month.slice(0, 4));
   const { data: yearData } = useYearIncome(year);
+  // 存钱计划里这个月存了多少（只显示金额，不算比例：App 不知道计划以外的存款）
+  const { data: savingsData } = useQuery(
+    async (r) => {
+      const [plans, deposits] = await Promise.all([r.saving_plans.list(), r.deposits.list()]);
+      const saved: MoneyByCurrency = {};
+      for (const d of deposits) {
+        if (!d.date.startsWith(month)) continue;
+        const plan = plans.find((p) => p.id === d.planId);
+        if (plan) addMoney(saved, plan.currency, d.amount);
+      }
+      return { hasPlans: plans.length > 0, saved };
+    },
+    [month]
+  );
   const stats = data?.stats;
   const [editing, setEditing] = useState(false);
   // 年度图表显示哪个币种：默认是设置里的默认币种，可以切换
@@ -129,6 +145,17 @@ function IncomeView() {
         onEdit={() => setEditing(true)}
         onCopyPrev={() => prevTarget && setTarget(prevTarget)}
       />
+      {savingsData?.hasPlans && (
+        <Pressable
+          onPress={() => updateSettings({ walletView: 'savings' })}
+          accessibilityRole="button"
+          style={styles.savedLine}>
+          <Text style={styles.savedLabel}>{t('savings.incomeLine', { month: m })}</Text>
+          <Text style={styles.savedValue}>
+            {formatMoneyMulti(savingsData.saved, settings.defaultCurrency)} ›
+          </Text>
+        </Pressable>
+      )}
 
       <Section>
         <Field label={t('stats.periodMode')}>
@@ -375,6 +402,17 @@ function Big({ label, value }: { label: string; value: string }) {
 }
 
 const useStyles = makeStyles((colors) => ({
+  savedLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  savedLabel: { fontSize: 14, color: colors.textMuted },
+  savedValue: { fontSize: 15, fontWeight: '600', color: colors.text },
   viewSwitch: { alignItems: 'center' },
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   navButton: { paddingHorizontal: 12, paddingVertical: 4 },
