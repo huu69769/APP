@@ -34,7 +34,7 @@ export function Ring({
   // 有「存钱计划」那一段时，各段都用平头，交界处留一道背景色的细缝，两段不会黏在一起
   const split = share > 0 && earned > 0;
   const cap = split ? 'butt' : 'round';
-  const gap = split ? 3 : 0;
+  const gap = split ? 1 : 0;
   /** 从 from 画到 to（0–1，从 12 点方向顺时针） */
   const arc = (from: number, to: number, color: string) =>
     to - from > 0 ? (
