@@ -98,6 +98,9 @@ export function createRepositories(driver: StorageDriver, deps: RepositoryDeps):
     tasks: new Repository(driver, 'tasks', deps),
     events: new Repository(driver, 'events', deps),
     anniversaries: new Repository(driver, 'anniversaries', deps),
+    accounts: new Repository(driver, 'accounts', deps),
+    saving_plans: new Repository(driver, 'saving_plans', deps),
+    deposits: new Repository(driver, 'deposits', deps),
     day_notes: new Repository(driver, 'day_notes', deps),
     holidays_cache: new Repository(driver, 'holidays_cache', deps),
   };

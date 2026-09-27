@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 
 import { useData } from '@/data/DataProvider';
 import { addDays, dayjs, parseLocalDate, today } from '@/lib/date';
+import { formatMoney } from '@/lib/money';
 import { computeReminders, REMINDER_HORIZON_DAYS, type Reminder } from '@/lib/reminders';
 import {
   getPermission,
@@ -43,18 +44,21 @@ export function ReminderSync() {
         if ((await getPermission()) !== 'granted') return;
         const from = addDays(today(), -1);
         const to = addDays(today(), REMINDER_HORIZON_DAYS + 1);
-        const [shifts, events, tasks, anniversaries, jobs] = await Promise.all([
+        const [shifts, events, tasks, anniversaries, jobs, plans, deposits] = await Promise.all([
           repos.shifts.listByDateRange(from, to),
           repos.events.listByDateRange(from, to),
           repos.tasks.list(),
           repos.anniversaries.list(),
           repos.jobs.listWithDeleted(),
+          repos.saving_plans.list(),
+          repos.deposits.list(),
         ]);
         const reminders = computeReminders({
           shifts,
           events,
           tasks,
           anniversaries,
+          savings: { plans, deposits },
           jobNames: new Map(jobs.map((j) => [j.id, j.name])),
           now: new Date(),
         });
@@ -68,6 +72,14 @@ export function ReminderSync() {
     function format(r: Reminder): { title: string; body: string } {
       const d = parseLocalDate(r.date);
       const date = t('calendar.dayLabel', { month: d.month() + 1, day: d.date() });
+      if (r.kind === 'saving') {
+        return {
+          title: t('savings.reminderTitle', { name: r.title }),
+          body: t('savings.reminderBody', {
+            amount: r.amount ? formatMoney(r.amount.value, r.amount.currency) : '',
+          }),
+        };
+      }
       if (r.kind === 'anniversary') {
         const days = dayjs(r.date).diff(dayjs(r.at).startOf('day'), 'day');
         return {

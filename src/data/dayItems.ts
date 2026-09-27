@@ -6,14 +6,15 @@ import type { LocalDate } from '@/lib/date';
 /** 首页下方列表里的一行：班次、日程或项目 */
 export interface DayItem {
   key: string;
-  kind: 'shift' | 'event' | 'task' | 'anniversary';
+  kind: 'shift' | 'event' | 'task' | 'anniversary' | 'saving';
   id: string;
-  /** 左边的时间栏：'allDay' / 'pending' / 'ddl' / 'anniv'（纪念日），或者开始、结束时间 */
+  /** 左边的时间栏：'allDay' / 'pending' / 'ddl' / 'anniv'（纪念日）/ 'saving'（存钱日），或者开始、结束时间 */
   slot:
     | 'allDay'
     | 'pending'
     | 'ddl'
     | 'anniv'
+    | 'saving'
     | { start: string; end: string | null; overnight: boolean };
   color: string;
   title: string;

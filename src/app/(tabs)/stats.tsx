@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyText, Field, FormScreen, ListRow, Section, Segmented } from '@/components/form';
 import { ActionSheet } from '@/components/ActionSheet';
+import { SavingsView } from '@/components/savings/SavingsView';
 import { MonthTargetCard, TargetEditor, YearTargetChart } from '@/components/IncomeTarget';
 import { useData } from '@/data/DataProvider';
 import { isActiveJob, jobPayType, type Currency } from '@/data/types';
@@ -17,9 +18,42 @@ import { formatHours } from '@/lib/time';
 import { makeStyles, useColors } from '@/theme';
 
 /**
- * 统计详情：切换统计周期和工钱显示方式、按兼职统计、空闲时间、年度累计收入。
+ * 钱包标签：顶部切换「收入」（统计）和「存钱」（存钱计划）。
  */
-export default function StatsScreen() {
+export default function WalletScreen() {
+  const { t } = useTranslation();
+  const styles = useStyles();
+  const params = useLocalSearchParams<{ view?: string; at?: string }>();
+  const { settings, updateSettings } = useData();
+  // 从首页的存钱提示点进来时带着 view=savings
+  useEffect(() => {
+    if (params.view === 'savings' || params.view === 'income') {
+      updateSettings({ walletView: params.view });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.view, params.at]);
+  return (
+    <FormScreen>
+      <View style={styles.viewSwitch}>
+        <Segmented
+          size="small"
+          options={[
+            { value: 'income', label: t('wallet.income') },
+            { value: 'savings', label: t('wallet.savings') },
+          ]}
+          value={settings.walletView}
+          onChange={(v) => updateSettings({ walletView: v })}
+        />
+      </View>
+      {settings.walletView === 'savings' ? <SavingsView /> : <IncomeView />}
+    </FormScreen>
+  );
+}
+
+/**
+ * 收入统计：切换统计周期和工钱显示方式、按兼职统计、空闲时间、年度累计收入。
+ */
+function IncomeView() {
   const colors = useColors();
   const styles = useStyles();
   const { t } = useTranslation();
@@ -68,7 +102,7 @@ export default function StatsScreen() {
   const [y, m] = month.split('-').map(Number);
 
   return (
-    <FormScreen>
+    <>
       <View style={styles.monthNav}>
         <NavButton
           label="‹"
@@ -311,7 +345,7 @@ export default function StatsScreen() {
           onPress: () => setChartCurrency(c),
         }))}
       />
-    </FormScreen>
+    </>
   );
 }
 
@@ -341,6 +375,7 @@ function Big({ label, value }: { label: string; value: string }) {
 }
 
 const useStyles = makeStyles((colors) => ({
+  viewSwitch: { alignItems: 'center' },
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   navButton: { paddingHorizontal: 12, paddingVertical: 4 },
   navText: { fontSize: 24, color: colors.text },

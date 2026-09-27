@@ -13,6 +13,8 @@ export type CalendarView = 'work' | 'schedule';
 export type CalendarRange = 'month' | 'week';
 /** 外观：跟随系统 / 浅色 / 深色（夜间模式） */
 export type ThemeMode = 'system' | 'light' | 'dark';
+/** 钱包标签显示收入统计还是存钱计划 */
+export type WalletView = 'income' | 'savings';
 
 export interface Settings {
   /** 界面语言（和节假日国家是两个独立的设置） */
@@ -34,6 +36,7 @@ export interface Settings {
   theme: ThemeMode;
   /** 每个月单独的收入目标（键 "YYYY-MM"）；年目标 = 各月目标加起来 */
   monthlyTargets: MonthlyTargets;
+  walletView: WalletView;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -50,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   calendarRange: 'month',
   theme: 'system',
   monthlyTargets: {},
+  walletView: 'income',
 };
 
 /**

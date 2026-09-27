@@ -28,7 +28,14 @@ import {
   sortShifts,
 } from '@/data/shifts';
 import { isTaskDone } from '@/data/tasks';
-import { isActiveJob, isTimed, jobPayType, type Job, type ShiftTemplate } from '@/data/types';
+import {
+  isActiveJob,
+  isTimed,
+  jobPayType,
+  type Currency,
+  type Job,
+  type ShiftTemplate,
+} from '@/data/types';
 import { useQuery } from '@/data/useQuery';
 import { useMonthStats } from '@/data/useStats';
 import { useDayLabels } from '@/holidays/useHolidays';
@@ -45,6 +52,8 @@ import {
   type YearMonth,
 } from '@/lib/date';
 import { lunarInfo } from '@/lib/lunar';
+import { formatMoney, formatMoneyMulti } from '@/lib/money';
+import { monthSummary } from '@/lib/savings';
 import { startOfWeek, weekDates, weekTotals } from '@/lib/week';
 import { makeStyles, useColors } from '@/theme';
 
@@ -212,7 +221,42 @@ export default function HomeScreen() {
   const grid = monthGridRange(month, settings.weekStart);
   const { data: holidayData } = useDayLabels(grid.from, grid.to);
 
-  const items = data
+  // 存钱计划：首页提示条（存钱日已到还没存）、存钱日那天列表里的一行
+  const { data: savingsData } = useQuery(async (r) => {
+    const [plans, deposits] = await Promise.all([r.saving_plans.list(), r.deposits.list()]);
+    return { plans, deposits };
+  }, []);
+  const savingsNow = savingsData
+    ? monthSummary({ ...savingsData, month: currentMonth(), today })
+    : null;
+  const overdue = savingsNow?.plans.filter((p) => p.overdue) ?? [];
+  const overdueOwed: Partial<Record<Currency, number>> = {};
+  for (const p of overdue) overdueOwed[p.currency] = (overdueOwed[p.currency] ?? 0) + p.owed;
+  const savingItems: DayItem[] = savingsData
+    ? monthSummary({ ...savingsData, month: focused.slice(0, 7), today }).plans.flatMap((info) => {
+        const plan = savingsData.plans.find((p) => p.id === info.planId)!;
+        if (info.status !== 'active' || info.dueDate !== focused) return [];
+        return [
+          {
+            key: `saving:${plan.id}`,
+            kind: 'saving' as const,
+            id: plan.id,
+            slot: 'saving' as const,
+            color: colors.primary,
+            title: t('savings.dayTitle', {
+              name: plan.name,
+              amount: formatMoney(plan.monthlyAmount, plan.currency),
+            }),
+            subtitle:
+              info.owed === 0
+                ? t('savings.dayDone')
+                : t('savings.dayOwed', { amount: formatMoney(info.owed, plan.currency) }),
+          },
+        ];
+      })
+    : [];
+
+  const dayItems = data
     ? buildDayItems({
         date: focused,
         today,
@@ -223,6 +267,7 @@ export default function HomeScreen() {
         jobsById: data.jobsById,
       })
     : undefined;
+  const items = dayItems ? [...savingItems, ...dayItems] : undefined;
 
   const toggle = (date: LocalDate) =>
     setSelected((prev) => {
@@ -254,6 +299,11 @@ export default function HomeScreen() {
   };
 
   const openItem = (item: Pick<DayItem, 'key' | 'kind' | 'id'>) => {
+    if (item.kind === 'saving') {
+      // 存钱那一行不能选中删除，点了就打开计划
+      if (!selection) router.push({ pathname: '/savings/[id]', params: { id: item.id } });
+      return;
+    }
     if (selection) {
       const next = new Set(selection);
       if (next.has(item.key)) next.delete(item.key);
@@ -391,7 +441,9 @@ export default function HomeScreen() {
 
   /** 删除列表里选中的条目，可以撤销 */
   const deleteSelected = async () => {
-    const chosen = (items ?? []).filter((i) => selection?.has(i.key));
+    const chosen = (items ?? []).flatMap((i) =>
+      i.kind !== 'saving' && selection?.has(i.key) ? [{ kind: i.kind, id: i.id }] : []
+    );
     if (!chosen.length) return;
     const ok = await confirmAsync({
       title: t('bulk.deleteTitle', { count: chosen.length }),
@@ -624,6 +676,25 @@ export default function HomeScreen() {
                 wage={statsData?.stats.wage}
                 onPress={() => router.push({ pathname: '/stats', params: { month } })}
               />
+            )}
+            {overdue.length > 0 && (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: '/stats',
+                    params: { view: 'savings', at: String(Date.now()) },
+                  })
+                }
+                accessibilityRole="button"
+                style={styles.savingStrip}>
+                <Text style={styles.savingStripText} numberOfLines={2}>
+                  {t('savings.homeStrip', {
+                    count: overdue.length,
+                    amount: formatMoneyMulti(overdueOwed, settings.defaultCurrency),
+                  })}
+                </Text>
+                <Text style={styles.savingStripGo}>{t('savings.homeGo')} ›</Text>
+              </Pressable>
             )}
             {data && data.pinned.length > 0 && (
               // 只占一行：显示最近的一个，其余的点进去在纪念日列表里看
@@ -885,6 +956,19 @@ const useStyles = makeStyles((colors) => ({
     backgroundColor: colors.infoBg,
   },
   onboardingText: { flex: 1, gap: 2 },
+  savingStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 8,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: colors.warningBg,
+  },
+  savingStripText: { flex: 1, fontSize: 13, color: colors.warningText },
+  savingStripGo: { fontSize: 13, fontWeight: '600', color: colors.warningText },
   pinned: {
     flexDirection: 'row',
     alignItems: 'center',

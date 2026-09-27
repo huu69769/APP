@@ -8,7 +8,7 @@ import { useColors } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-/** 底部标签栏：日历 / 统计 / 工作 / 纪念日 / 设置 */
+/** 底部标签栏：日历 / 钱包（收入统计 + 存钱） / 工作 / 纪念日 / 设置 */
 export default function TabsLayout() {
   const colors = useColors();
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ export default function TabsLayout() {
         name="stats"
         options={{
           title: t('tabs.stats'),
-          tabBarIcon: icon('stats-chart-outline', 'stats-chart'),
+          tabBarIcon: icon('wallet-outline', 'wallet'),
         }}
       />
       <Tabs.Screen

@@ -146,6 +146,54 @@ export interface Anniversary extends BaseEntity {
   note: string;
 }
 
+/** 存钱用的账户（银行卡等）。只记名称和卡号后 4 位，不记完整卡号和密码 */
+export interface Account extends BaseEntity {
+  name: string;
+  /** 卡号后 4 位，可以不填 */
+  last4: string;
+  currency: Currency;
+  note: string;
+}
+
+/** 暂停的一段时间（按月）；to = null 表示现在还在暂停 */
+export interface PausePeriod {
+  from: string;
+  to: string | null;
+}
+
+/**
+ * 存钱计划（一个「罐子」）：每月存固定金额，从 startMonth 开始（之前是「未开始」），
+ * 到 endMonth 结束（null = 长期）。
+ */
+export interface SavingPlan extends BaseEntity {
+  name: string;
+  currency: Currency;
+  /** 每月金额（最小单位整数） */
+  monthlyAmount: MinorUnits;
+  /** "YYYY-MM" */
+  startMonth: string;
+  endMonth: string | null;
+  /** 总目标；null = 每月金额 × 月数（长期计划没有总目标） */
+  targetAmount: MinorUnits | null;
+  /** 每月几号存（1–31，超过当月天数按月底） */
+  saveDay: number;
+  /** 默认账户 */
+  accountId: string | null;
+  pauses: PausePeriod[];
+  /** 存钱日提醒 */
+  remind: boolean;
+  note: string;
+}
+
+/** 一笔存入 */
+export interface Deposit extends BaseEntity {
+  planId: string;
+  date: LocalDate;
+  amount: MinorUnits;
+  accountId: string | null;
+  note: string;
+}
+
 export interface DayNote extends BaseEntity {
   date: LocalDate;
   content: string;
@@ -167,6 +215,9 @@ export interface EntityTables {
   tasks: Task;
   events: CalendarEvent;
   anniversaries: Anniversary;
+  accounts: Account;
+  saving_plans: SavingPlan;
+  deposits: Deposit;
   day_notes: DayNote;
   holidays_cache: HolidayCache;
 }
@@ -180,12 +231,15 @@ export const TABLE_NAMES: TableName[] = [
   'tasks',
   'events',
   'anniversaries',
+  'accounts',
+  'saving_plans',
+  'deposits',
   'day_notes',
   'holidays_cache',
 ];
 
 /** 有 date 字段、需要按日期范围查询的表 */
-export const DATED_TABLES: TableName[] = ['shifts', 'events', 'day_notes'];
+export const DATED_TABLES: TableName[] = ['shifts', 'events', 'day_notes', 'deposits'];
 
 /** 除公共字段外，新建记录时需要提供的内容 */
 export type NewEntity<T extends BaseEntity> = Omit<T, keyof BaseEntity>;

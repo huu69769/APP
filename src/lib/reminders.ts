@@ -1,7 +1,16 @@
-import type { Anniversary, CalendarEvent, Shift, Task } from '@/data/types';
+import type {
+  Anniversary,
+  CalendarEvent,
+  Currency,
+  Deposit,
+  SavingPlan,
+  Shift,
+  Task,
+} from '@/data/types';
 
 import { occurrencesInRange } from './anniversary';
-import { addDays, dayjs, type LocalDate } from './date';
+import { addDays, addMonths, dayjs, type LocalDate } from './date';
+import { isActiveIn, monthSummary, saveDate } from './savings';
 
 /** 班次、日程可选的「提前多久提醒」（分钟）；null = 不提醒 */
 export const TIMED_REMINDER_OPTIONS = [null, 0, 30, 60, 1440] as const;
@@ -20,15 +29,17 @@ export const MAX_REMINDERS = 300;
 export interface Reminder {
   /** 通知的唯一 ID，比如 "shift:<id>" */
   id: string;
-  kind: 'shift' | 'event' | 'task' | 'anniversary';
+  kind: 'shift' | 'event' | 'task' | 'anniversary' | 'saving';
   /** 提醒的时间 */
   at: Date;
   /** 事情开始的日期、时间（全天日程 / 项目的时间为 null） */
   date: LocalDate;
   time: string | null;
   endTime: string | null;
-  /** 班次：兼职名；日程：标题；项目：项目名 */
+  /** 班次：兼职名；日程：标题；项目：项目名；存钱：计划名 */
   title: string;
+  /** 存钱：这次该存的金额 */
+  amount?: { value: number; currency: Currency };
 }
 
 function localDateTime(date: LocalDate, time: string): Date {
@@ -53,6 +64,23 @@ export function computeReminders(params: {
     Anniversary,
     'id' | 'title' | 'date' | 'repeat' | 'lunar' | 'reminderDaysBefore'
   >[];
+  /** 存钱计划：每月存钱日 9:00 提醒（这个月已经存够的不提醒） */
+  savings?: {
+    plans: Pick<
+      SavingPlan,
+      | 'id'
+      | 'name'
+      | 'currency'
+      | 'monthlyAmount'
+      | 'startMonth'
+      | 'endMonth'
+      | 'targetAmount'
+      | 'saveDay'
+      | 'pauses'
+      | 'remind'
+    >[];
+    deposits: Pick<Deposit, 'planId' | 'date' | 'amount'>[];
+  };
   jobNames: Map<string, string>;
   now: Date;
   horizonDays?: number;
@@ -133,6 +161,34 @@ export function computeReminders(params: {
         localDateTime(o.date, ALL_DAY_BASE_TIME),
         a.reminderDaysBefore * 1440
       );
+    }
+  }
+
+  if (params.savings) {
+    const { plans, deposits } = params.savings;
+    const thisMonth = nowDate.slice(0, 7);
+    for (let i = 0; i < 3; i++) {
+      const month = addMonths(thisMonth, i);
+      const summary = monthSummary({ plans, deposits, month, today: nowDate });
+      for (const plan of plans) {
+        if (!plan.remind || !isActiveIn(plan, month)) continue;
+        const info = summary.plans.find((p) => p.planId === plan.id);
+        if (!info || info.status !== 'active' || info.owed === 0) continue;
+        const date = saveDate(plan, month);
+        add(
+          {
+            id: `saving:${plan.id}:${month}`,
+            kind: 'saving',
+            date,
+            time: null,
+            endTime: null,
+            title: plan.name,
+            amount: { value: info.owed, currency: plan.currency },
+          },
+          localDateTime(date, ALL_DAY_BASE_TIME),
+          0
+        );
+      }
     }
   }
 

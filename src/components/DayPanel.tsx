@@ -143,6 +143,7 @@ const SLOT_LABELS = {
   pending: 'home.slotPending',
   ddl: 'home.slotDdl',
   anniv: 'home.slotAnniv',
+  saving: 'savings.slot',
 } as const;
 
 const useStyles = makeStyles((colors) => ({

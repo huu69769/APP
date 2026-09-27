@@ -1,7 +1,7 @@
-# 发布：push 到 main 后自动
-#   1. 运行测试
-#   2. 构建网页版并部署到 GitHub Pages
-#   3. 构建 APK（本地 gradle 构建，不用 EAS）并上传到 GitHub Releases
+# 发布：
+#   push 到 main 后自动：运行测试 → 构建网页版并部署到 GitHub Pages（先在网页上确认）
+#   手动运行（Actions → Release → Run workflow）时：另外构建 APK（本地 gradle 构建，不用 EAS）
+#   并上传到 GitHub Releases
 # 第一次使用前需要设置 Secrets 和 Pages，见 docs/发布设置.md
 name: Release
 
@@ -71,6 +71,8 @@ jobs:
 
   android:
     needs: test
+    # APK 只在手动运行时构建：网页版确认没问题后再发布 App
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write

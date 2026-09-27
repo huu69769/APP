@@ -136,3 +136,44 @@ describe('anniversary reminders', () => {
     ]);
   });
 });
+
+describe('saving reminders', () => {
+  const plan = {
+    id: 'p1',
+    name: '妈妈生日礼金',
+    currency: 'CNY' as const,
+    monthlyAmount: 71500,
+    startMonth: '2026-09',
+    endMonth: '2027-10' as string | null,
+    targetAmount: null,
+    saveDay: 27,
+    pauses: [] as { from: string; to: string | null }[],
+    remind: true,
+  };
+  const run = (
+    plans: (typeof plan)[],
+    deposits: { planId: string; date: string; amount: number }[]
+  ) =>
+    computeReminders({
+      shifts: [],
+      events: [],
+      tasks: [],
+      savings: { plans, deposits },
+      jobNames: new Map(),
+      now: new Date(2026, 8, 25, 12, 0),
+    }).map((r) => [r.id, r.amount?.value]);
+
+  it('reminds on the save day of upcoming months at 9:00 (within 60 days)', () => {
+    expect(run([plan], [])).toEqual([
+      ['saving:p1:2026-09', 71500],
+      ['saving:p1:2026-10', 71500],
+    ]);
+  });
+  it('skips a month already saved, upcoming plans and plans without reminders', () => {
+    expect(run([plan], [{ planId: 'p1', date: '2026-09-25', amount: 71500 }])[0][0]).toBe(
+      'saving:p1:2026-10'
+    );
+    expect(run([{ ...plan, startMonth: '2028-01', endMonth: null }], [])).toEqual([]);
+    expect(run([{ ...plan, remind: false }], [])).toEqual([]);
+  });
+});

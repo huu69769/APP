@@ -14,7 +14,15 @@ import { Button, Field, Input, Segmented } from './form';
 type Wage = { completed: MoneyByCurrency; total: MoneyByCurrency };
 
 /** 环形进度图：深色弧 = 已赚，浅色弧 = 已排班还没上 */
-function Ring({ earned, expected, size }: { earned: number; expected: number; size: number }) {
+export function Ring({
+  earned,
+  expected,
+  size,
+}: {
+  earned: number;
+  expected: number;
+  size: number;
+}) {
   const colors = useColors();
   const stroke = 14;
   const r = (size - stroke) / 2;
@@ -157,16 +165,24 @@ export function YearTargetChart({
   currency,
   selectedMonth,
   onSelectMonth,
+  labels,
 }: {
   bars: MonthBar[];
   currency: Currency;
   selectedMonth: string;
   onSelectMonth: (month: string) => void;
+  /** 图例文字（存钱页用「已存 / 应存」）；expected 不传就不显示浅色那一项 */
+  labels?: { earned: string; expected?: string; target: string };
 }) {
   const { t } = useTranslation();
   const colors = useColors();
   const styles = useStyles();
   const [width, setWidth] = useState(0);
+  const legend = labels ?? {
+    earned: t('target.earnedLabel'),
+    expected: t('target.expectedLabel'),
+    target: t('target.target'),
+  };
   const max = niceCeil(Math.max(0, ...bars.map((b) => Math.max(b.expected, b.target ?? 0))));
   const plotH = CHART_HEIGHT - TOP - BOTTOM;
   const slot = width / 12;
@@ -258,18 +274,14 @@ export function YearTargetChart({
         })}
       </View>
       <View style={styles.legend}>
-        <Legend
-          swatch={<View style={[styles.swatch, styles.swEarned]} />}
-          label={t('target.earnedLabel')}
-        />
-        <Legend
-          swatch={<View style={[styles.swatch, styles.swExpected]} />}
-          label={t('target.expectedLabel')}
-        />
-        <Legend
-          swatch={<View style={[styles.swatch, styles.swTarget]} />}
-          label={t('target.target')}
-        />
+        <Legend swatch={<View style={[styles.swatch, styles.swEarned]} />} label={legend.earned} />
+        {legend.expected && (
+          <Legend
+            swatch={<View style={[styles.swatch, styles.swExpected]} />}
+            label={legend.expected}
+          />
+        )}
+        <Legend swatch={<View style={[styles.swatch, styles.swTarget]} />} label={legend.target} />
       </View>
     </View>
   );
