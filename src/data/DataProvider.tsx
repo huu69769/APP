@@ -1,11 +1,12 @@
 import { getLocales } from 'expo-localization';
 import * as Crypto from 'expo-crypto';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 
 import i18n from '@/i18n';
 
 import { createRepositories, type Repositories } from './repository';
-import { loadSettings, saveSettings, type Settings } from './settings';
+import { languageFromQuery, loadSettings, saveSettings, type Settings } from './settings';
 import { createDefaultDriver } from './storage';
 import type { DataDump, StorageDriver } from './storage/types';
 
@@ -46,7 +47,13 @@ export function DataProvider({
     (async () => {
       const driver = createDefaultDriver();
       await driver.init();
-      const settings = await loadSettings(driver, getLocales()[0]?.languageCode);
+      // 网页版：网址带 ?lang=ja / ?lang=zh 时，第一次打开按它定默认设置，并用这个语言显示
+      const urlLanguage =
+        Platform.OS === 'web' && typeof window !== 'undefined'
+          ? languageFromQuery(window.location.search)
+          : null;
+      const loaded = await loadSettings(driver, urlLanguage ?? getLocales()[0]?.languageCode);
+      const settings = urlLanguage ? { ...loaded, language: urlLanguage } : loaded;
       const repos = createRepositories(driver, {
         newId: () => Crypto.randomUUID(),
         onChange: () => setDataVersion((v) => v + 1),

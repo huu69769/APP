@@ -68,6 +68,16 @@ export function localeDefaults(systemLanguage: string | null | undefined): Parti
 }
 
 /**
+ * 网页版的网址里可以指定语言：`…/APP/?lang=ja` 打开时用日语、`?lang=zh` 用中文
+ * （从作品集网站点过来时用）。只认识 zh / ja，其它情况返回 null。
+ */
+export function languageFromQuery(search: string | null | undefined): Language | null {
+  const match = /[?&]lang=([^&#]*)/i.exec(search ?? '');
+  const lang = match?.[1]?.toLowerCase();
+  return lang === 'ja' || lang === 'zh' ? lang : null;
+}
+
+/**
  * 设置在存储里是键值对，值用 JSON 编码。
  * 还一个设置都没保存过（第一次打开）时，按系统语言定好默认值并保存下来，
  * 之后改了系统语言也不会再变（在「设置」里可以随时改）。
