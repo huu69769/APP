@@ -40,12 +40,12 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  language: 'zh',
-  defaultCurrency: 'CNY',
+  language: 'ja',
+  defaultCurrency: 'JPY',
   weekStart: 0,
   statsPeriod: 'calendarMonth',
   wageDisplay: 'total',
-  holidayMode: 'cn',
+  holidayMode: 'jp',
   showLunar: true,
   lastBackupAt: null,
   backupReminderDismissedAt: null,
@@ -58,14 +58,21 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /**
  * 第一次打开时按手机的系统语言决定默认设置：
- * 系统是日语 → 日语界面、日本节假日、日元；其他语言 → 中文界面、中国节假日、人民币（默认值）。
+ * 系统是中文 → 中文界面、中国节假日、人民币；其他语言 → 日语界面、日本节假日、日元（默认值）。
  */
 export function localeDefaults(systemLanguage: string | null | undefined): Partial<Settings> {
-  if (systemLanguage?.toLowerCase().startsWith('ja')) {
-    return { language: 'ja', holidayMode: 'jp', defaultCurrency: 'JPY' };
+  if (systemLanguage?.toLowerCase().startsWith('zh')) {
+    return { language: 'zh', holidayMode: 'cn', defaultCurrency: 'CNY' };
   }
   return {};
 }
+
+/** 旧版本的默认值是中文：已经在用、但没改过这几项的人，保持原来的样子 */
+const LEGACY_DEFAULTS: Partial<Settings> = {
+  language: 'zh',
+  holidayMode: 'cn',
+  defaultCurrency: 'CNY',
+};
 
 /**
  * 设置在存储里是键值对，值用 JSON 编码。
@@ -78,9 +85,21 @@ export async function loadSettings(
 ): Promise<Settings> {
   const raw = await driver.getAllSettings();
   if (Object.keys(raw).length === 0) {
-    const initial = localeDefaults(systemLanguage);
-    if (Object.keys(initial).length > 0) {
-      await saveSettings(driver, initial);
+    // 第一次打开：语言、节假日、币种都存下来（以后就不会被当成老用户）
+    await saveSettings(driver, {
+      language: DEFAULT_SETTINGS.language,
+      holidayMode: DEFAULT_SETTINGS.holidayMode,
+      defaultCurrency: DEFAULT_SETTINGS.defaultCurrency,
+      ...localeDefaults(systemLanguage),
+    });
+    Object.assign(raw, await driver.getAllSettings());
+  } else {
+    // 老用户：这几项没保存过（一直用的旧默认值），把旧默认值写进去，升级后不会突然变成日语
+    const missing = Object.fromEntries(
+      Object.entries(LEGACY_DEFAULTS).filter(([k]) => raw[k] === undefined)
+    ) as Partial<Settings>;
+    if (Object.keys(missing).length > 0) {
+      await saveSettings(driver, missing);
       Object.assign(raw, await driver.getAllSettings());
     }
   }

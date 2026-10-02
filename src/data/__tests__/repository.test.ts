@@ -78,28 +78,44 @@ describe('settings', () => {
 });
 
 describe('settings on first launch', () => {
-  it('uses Japanese defaults when the system language is Japanese', async () => {
+  it('uses Chinese defaults when the system language is Chinese', async () => {
     const driver = new MemoryDriver();
-    expect(await loadSettings(driver, 'ja')).toEqual({
+    expect(await loadSettings(driver, 'zh')).toEqual({
       ...DEFAULT_SETTINGS,
+      language: 'zh',
+      holidayMode: 'cn',
+      defaultCurrency: 'CNY',
+    });
+    // 保存下来了：之后系统语言变了也不再改
+    expect((await loadSettings(driver, 'ja')).language).toBe('zh');
+  });
+
+  it('uses Japanese for any other system language', async () => {
+    expect(await loadSettings(new MemoryDriver(), 'ja')).toEqual(DEFAULT_SETTINGS);
+    expect(await loadSettings(new MemoryDriver(), 'en')).toEqual(DEFAULT_SETTINGS);
+    expect(await loadSettings(new MemoryDriver(), null)).toEqual(DEFAULT_SETTINGS);
+    expect(DEFAULT_SETTINGS.language).toBe('ja');
+  });
+
+  it('a new Japanese user who changes a setting stays Japanese', async () => {
+    const driver = new MemoryDriver();
+    await loadSettings(driver, 'en');
+    await saveSettings(driver, { showLunar: false });
+    expect(await loadSettings(driver, 'en')).toMatchObject({
       language: 'ja',
       holidayMode: 'jp',
       defaultCurrency: 'JPY',
     });
-    // 保存下来了：之后系统语言变了也不再改
-    expect((await loadSettings(driver, 'zh')).language).toBe('ja');
   });
 
-  it('keeps Chinese defaults for other system languages', async () => {
-    expect(await loadSettings(new MemoryDriver(), 'zh')).toEqual(DEFAULT_SETTINGS);
-    expect(await loadSettings(new MemoryDriver(), 'en')).toEqual(DEFAULT_SETTINGS);
-    expect(await loadSettings(new MemoryDriver(), null)).toEqual(DEFAULT_SETTINGS);
-  });
-
-  it('does not touch existing users', async () => {
+  it('keeps the old Chinese defaults for existing users', async () => {
     const driver = new MemoryDriver();
-    await saveSettings(driver, { showLunar: false });
-    expect((await loadSettings(driver, 'ja')).language).toBe('zh');
+    await saveSettings(driver, { showLunar: false }); // 旧版本留下的设置，没有语言
+    expect(await loadSettings(driver, 'ja')).toMatchObject({
+      language: 'zh',
+      holidayMode: 'cn',
+      defaultCurrency: 'CNY',
+    });
   });
 });
 

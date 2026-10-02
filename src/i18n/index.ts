@@ -14,7 +14,7 @@ export const resources = {
 } as const;
 
 export type AppLanguage = keyof typeof resources;
-export const DEFAULT_LANGUAGE: AppLanguage = 'zh';
+export const DEFAULT_LANGUAGE: AppLanguage = 'ja';
 
 i18n.use(initReactI18next).init({
   resources,

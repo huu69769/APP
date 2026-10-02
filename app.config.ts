@@ -6,16 +6,17 @@ const buildNumber = Number(process.env.APP_BUILD_NUMBER ?? '1');
 const version = process.env.APP_VERSION ?? '0.1.0';
 
 const config: ExpoConfig = {
-  name: '打工日历',
+  name: 'シフト手帳',
   slug: 'worklog-calendar',
   version,
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'worklogcalendar',
   userInterfaceStyle: 'automatic',
-  // 桌面上的 App 名字按手机系统语言显示：日语系统 →「シフト手帳」，其他 →「打工日历」
+  // 桌面上的 App 名字按手机系统语言显示：中文系统 →「打工日历」，其他 →「シフト手帳」
   locales: {
     ja: './locales-native/ja.json',
+    zh: './locales-native/zh.json',
   },
   android: {
     package: 'io.github.huu69769.worklogcalendar',
