@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import i18n from '@/i18n';
 
+import { demoFromQuery, prepareDemo } from './demo';
 import { createRepositories, type Repositories } from './repository';
 import { languageFromQuery, loadSettings, saveSettings, type Settings } from './settings';
 import { createDefaultDriver } from './storage';
@@ -45,19 +46,24 @@ export function DataProvider({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const driver = createDefaultDriver();
+      // 网页版：网址带 ?lang=ja / ?lang=zh 时，第一次打开按它定默认设置，并用这个语言显示；
+      // 带 ?demo=1 时用示例数据（作品集网站里嵌入时用）
+      const search =
+        Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.search : '';
+      const urlLanguage = languageFromQuery(search);
+      const demo = demoFromQuery(search);
+      const driver = createDefaultDriver({ demo });
       await driver.init();
-      // 网页版：网址带 ?lang=ja / ?lang=zh 时，第一次打开按它定默认设置，并用这个语言显示
-      const urlLanguage =
-        Platform.OS === 'web' && typeof window !== 'undefined'
-          ? languageFromQuery(window.location.search)
-          : null;
-      const loaded = await loadSettings(driver, urlLanguage ?? getLocales()[0]?.languageCode);
-      const settings = urlLanguage ? { ...loaded, language: urlLanguage } : loaded;
       const repos = createRepositories(driver, {
         newId: () => Crypto.randomUUID(),
         onChange: () => setDataVersion((v) => v + 1),
       });
+      if (demo) {
+        const language = urlLanguage ?? 'ja';
+        await prepareDemo(driver, repos, { language, t: i18n.getFixedT(language) });
+      }
+      const loaded = await loadSettings(driver, urlLanguage ?? getLocales()[0]?.languageCode);
+      const settings = urlLanguage ? { ...loaded, language: urlLanguage } : loaded;
       await i18n.changeLanguage(settings.language);
       if (!cancelled) setState({ status: 'ready', driver, repos, settings });
     })().catch((error: unknown) => {
