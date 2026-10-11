@@ -68,7 +68,8 @@
     "slotAnniv": "纪念",
     "rangeMonth": "月",
     "rangeWeek": "周",
-    "recurring": "按星期排班"
+    "recurring": "按星期排班",
+    "share": "分享打工日程"
   },
   "batch": {
     "hint": "选择日期后，可批量排班或批量删除。",
@@ -627,5 +628,19 @@
       "detail": "数据只存在你的手机里，没有上传到网上。\n所以换手机、重装 App 之前，一定要先去「设置」→「导出备份」存一份文件。\n到了新手机上，用「从备份恢复」导回来就好。\n注意：网页版和手机 App 的数据是分开的。"
     },
     "tapHint": "点一下展开说明"
+  },
+  "share": {
+    "title": "分享打工日程",
+    "nameLabel": "工作名称",
+    "showNames": "显示",
+    "hideNames": "只写时间",
+    "privacy": "图片只包含打工的日期和时间，不含工资、日程和其他个人信息。",
+    "cardTitle": "{{year}}年{{month}}月 打工安排",
+    "cardSubtitle": "共 {{count}} 天",
+    "work": "打工",
+    "pending": "时间待定",
+    "empty": "这个月还没有班次。",
+    "button": "分享图片",
+    "failed": "分享失败：{{message}}"
   }
 }

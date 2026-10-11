@@ -892,6 +892,10 @@ export default function HomeScreen() {
         actions={[
           { label: t('home.recurring'), onPress: () => router.push('/recurring') },
           { label: t('home.batch'), onPress: () => startBatch() },
+          {
+            label: t('home.share'),
+            onPress: () => router.push({ pathname: '/share', params: { month } }),
+          },
         ]}
       />
     </SafeAreaView>
