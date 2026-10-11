@@ -642,5 +642,16 @@
     "empty": "这个月还没有班次。",
     "button": "分享图片",
     "failed": "分享失败：{{message}}"
+  },
+  "demo": {
+    "cafe": "咖啡店",
+    "juku": "补习班老师",
+    "translation": "翻译（在家）",
+    "morning": "早班",
+    "evening": "晚班",
+    "task1": "商品说明翻译",
+    "task2": "网站翻译",
+    "event1": "交大学作业",
+    "event2": "和朋友吃午饭"
   }
 }

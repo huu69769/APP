@@ -642,5 +642,16 @@
     "empty": "この月はまだシフトがありません。",
     "button": "画像で共有",
     "failed": "共有に失敗しました：{{message}}"
+  },
+  "demo": {
+    "cafe": "カフェ",
+    "juku": "塾講師",
+    "translation": "翻訳（在宅）",
+    "morning": "早番",
+    "evening": "遅番",
+    "task1": "商品説明の翻訳",
+    "task2": "Webサイトの翻訳",
+    "event1": "大学の課題提出",
+    "event2": "友だちとランチ"
   }
 }
